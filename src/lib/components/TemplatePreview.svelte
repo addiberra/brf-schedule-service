@@ -103,7 +103,7 @@
   </div>
 
   {#if selectedApartment}
-    <div class="preview-output">
+    <div class="preview-output" data-testid="template-preview-output">
       {#each displaySegments as segment}
         {#if segment.isError}
           <span class="unmapped-placeholder">{segment.text}</span>

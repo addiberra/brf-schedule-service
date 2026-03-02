@@ -1,8 +1,8 @@
 = Design: Inspection Scheduling
-:version: 1.0.0
+:version: 1.1.0
 :status: Current
-:source-stories-version: 1.1.0
-:source-spec-version: 1.0.0
+:source-stories-version: 1.2.0
+:source-spec-version: 1.1.0
 :last-updated: 2026-03-02
 :feature: inspection-scheduling
 :toc:
@@ -25,11 +25,11 @@ From `docs/constraints.adoc`:
 * All user-facing text in Swedish
 * TypeScript strict mode
 
-No new ADRs are needed. The scheduling algorithm is a pure function operating on dates and times, using only the built-in `Date` API.
+No new ADRs are needed. The scheduling algorithm is a pure function operating on dates and times, using only the built-in `Date` API. The locale-aware date formatting uses the built-in `Intl.DateTimeFormat` API (no dependencies).
 
 == Research and Unknowns
 
-No unknowns remain. The scheduling algorithm uses standard date arithmetic. Time-of-day is represented as minutes since midnight (e.g., 09:00 = 540) to keep arithmetic simple and avoid timezone issues.
+No unknowns remain. The scheduling algorithm uses standard date arithmetic. Time-of-day is represented as minutes since midnight (e.g., 09:00 = 540) to keep arithmetic simple and avoid timezone issues. The `Intl.DateTimeFormat` API is supported in all modern browsers and provides locale-aware formatting with no external dependencies.
 
 == System Design
 
@@ -76,13 +76,13 @@ flowchart TD
 [source,mermaid]
 ----
 flowchart LR
-    USER["User input"] -->|schedule config<br/>date range, times,<br/>exclusions| SCP["ScheduleConfigPanel"]
+    USER["User input"] -->|schedule config<br/>date range, times,<br/>end time, exclusions| SCP["ScheduleConfigPanel"]
     BLDG["BuildingConfig<br/>(from building-config)"] --> SM
     SCP -->|validate| SM["schedule-model.ts"]
     SM -->|validation result| SCP
     SCP -->|valid config| CALC["calculateSchedule()"]
     CALC -->|ScheduleResult| SCH["ScheduleView"]
-    SCH -->|renders| LIST["Appointment list"]
+    SCH -->|renders| LIST["Appointment list<br/>(locale-formatted dates)"]
     SCP -->|config| PS["storage.ts"]
     PS -->|JSON| LS["localStorage"]
     PS -->|load on startup| SCP
@@ -102,7 +102,7 @@ sequenceDiagram
     participant PS as storage
     participant SCH as ScheduleView
 
-    User->>SCP: Changes schedule config (dates, times, etc.)
+    User->>SCP: Changes schedule config (dates, times, end time, etc.)
     SCP->>SM: validateScheduleConfig(config)
     SM-->>SCP: ValidationResult (valid/invalid)
     alt Valid input
@@ -156,6 +156,8 @@ interface ScheduleConfig {
   endDate: string;
   /** Daily inspection start time in minutes since midnight (e.g., 540 = 09:00) */
   dailyStartTime: number;
+  /** Daily inspection end time in minutes since midnight (e.g., 1080 = 18:00) */
+  dailyEndTime: number;
   /** Inspection duration per apartment in minutes (5-120) */
   durationMinutes: number;
   /** Whether lunch break is enabled */
@@ -211,18 +213,19 @@ interface ScheduleResult {
 
 Located at `src/lib/models/schedule-model.ts`. Pure functions with no side effects.
 
-* `createDefaultScheduleConfig(): ScheduleConfig` -- returns a default schedule config. Start date = today, end date = today + 14 days, daily start time = 09:00 (540), duration = 30 minutes, lunch break 12:00-13:00 enabled, exclude weekends = true, no excluded dates, max per day = 10.
-* `validateScheduleConfig(config: ScheduleConfig): Map<string, string>` -- validates all fields. Returns a map of field name to error message. Empty map means valid.
+* `createDefaultScheduleConfig(): ScheduleConfig` -- returns a default schedule config. Start date = today, end date = today + 14 days, daily start time = 09:00 (540), daily end time = 18:00 (1080), duration = 30 minutes, lunch break 12:00-13:00 enabled, exclude weekends = true, no excluded dates, max per day = 10.
+* `validateScheduleConfig(config: ScheduleConfig): Map<string, string>` -- validates all fields including `dailyEndTime > dailyStartTime`. Returns a map of field name to error message. Empty map means valid.
 * `validateDuration(minutes: number): ValidationResult` -- validates duration is integer in [5, 120].
 * `validateDateRange(startDate: string, endDate: string): ValidationResult` -- validates end date is not before start date.
 * `formatTime(minutes: number): string` -- converts minutes since midnight to "HH:MM" string.
 * `parseTime(timeStr: string): number` -- converts "HH:MM" string to minutes since midnight.
 * `isWeekend(dateStr: string): boolean` -- checks if a YYYY-MM-DD string falls on a Saturday or Sunday.
 * `getAvailableDates(config: ScheduleConfig): string[]` -- returns all available dates within the period, excluding weekends (if configured) and excluded dates.
-* `getMaxAppointmentsPerDay(config: ScheduleConfig): number` -- calculates the effective maximum appointments per day based on available time (start time, duration, lunch break) and the configured max per day. Returns the lower of the two.
-* `calculateSchedule(config: ScheduleConfig, apartments: Apartment[], overrides: Map<string, ManualOverride>): ScheduleResult` -- the core scheduling algorithm. Assigns each apartment (in order: floor by floor, position by position) to the next available slot. Manual overrides are preserved. Returns the full schedule result with any warnings.
+* `getMaxAppointmentsPerDay(config: ScheduleConfig): number` -- calculates the effective maximum appointments per day based on available time (`config.dailyEndTime - config.dailyStartTime`, minus lunch break) and the configured max per day. Returns the lower of the two.
+* `calculateSchedule(config: ScheduleConfig, apartments: Apartment[], overrides: Map<string, ManualOverride>): ScheduleResult` -- the core scheduling algorithm. Assigns each apartment (in order: floor by floor, position by position) to the next available slot. Uses `config.dailyEndTime` instead of a hardcoded constant. Manual overrides are preserved. Returns the full schedule result with any warnings.
 * `addDays(dateStr: string, days: number): string` -- adds days to a YYYY-MM-DD date string.
-* `formatDateSwedish(dateStr: string): string` -- formats a YYYY-MM-DD date as a Swedish-friendly display string.
+* `formatDateSwedish(dateStr: string): string` -- formats a YYYY-MM-DD date as a Swedish-friendly display string using hardcoded Swedish weekday/month arrays. Retained for backward compatibility.
+* `formatDateLocale(dateStr: string): string` -- formats a YYYY-MM-DD date using `Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })`. Falls back to `formatDateSwedish()` if `Intl.DateTimeFormat` is unavailable or throws.
 
 ==== Scheduling Algorithm
 
@@ -235,11 +238,11 @@ The `calculateSchedule` function operates as follows:
    b. Otherwise, find the next available slot:
       * Start from the current date at the current time cursor.
       * If the time cursor + duration would overlap with lunch break, advance to after lunch.
-      * If the time cursor + duration exceeds end of day (configurable, but implicitly the time after which no new inspections should start, governed by max per day), move to the next available date and reset to daily start time.
+      * If the time cursor + duration exceeds `config.dailyEndTime`, move to the next available date and reset to daily start time.
       * If no more available dates, the apartment is unscheduled.
 4. Return `ScheduleResult` with all appointments and unscheduled count.
 
-The "end of day" is not a fixed time; it is derived from the daily schedule. The algorithm tracks how many apartments have been scheduled on the current day and respects the effective max per day.
+The end-of-day boundary is `config.dailyEndTime` -- a user-configurable value (defaulting to 1080 = 18:00) that replaces the previously hardcoded `END_OF_DAY` constant.
 
 === Persistence: `storage.ts` (extended)
 
@@ -247,7 +250,7 @@ The existing `storage.ts` is extended with schedule-specific functions:
 
 * `const SCHEDULE_STORAGE_KEY = "brf-schedule:schedule"`
 * `saveSchedule(config: ScheduleConfig, overrides: Map<string, ManualOverride>): void` -- serializes schedule config and overrides to JSON, writes to localStorage.
-* `loadSchedule(): { config: ScheduleConfig; overrides: Map<string, ManualOverride> } | null` -- reads and parses. Returns null if missing or parse fails.
+* `loadSchedule(): { config: ScheduleConfig; overrides: Map<string, ManualOverride> } | null` -- reads and parses. Returns null if missing or parse fails. When loading configs saved before `dailyEndTime` was added, defaults the missing field to 1080 (18:00).
 * `clearSchedule(): void` -- removes the key.
 
 The overrides map is serialized as an array of `[key, value]` tuples since `Map` does not natively JSON-serialize.
@@ -279,12 +282,13 @@ Behavior:
 
 * Renders date inputs for start date and end date.
 * Renders time input for daily start time.
+* Renders time input for daily end time.
 * Renders number input for duration per apartment.
 * Renders lunch break toggle, and start/end time inputs when enabled.
 * Renders weekend exclusion toggle.
 * Renders excluded dates list with add/remove.
 * Renders max per day input.
-* Displays validation errors.
+* Displays validation errors (including end time <= start time).
 * Renders `ScheduleView` with the calculated schedule result.
 
 ==== `ScheduleView.svelte`
@@ -302,6 +306,7 @@ Behavior:
 
 * Renders a table/list of appointments grouped by date.
 * Each row shows apartment ID, date, time, and override status.
+* Date headers use `formatDateLocale()` for browser-locale-aware display.
 * Overridden rows are visually marked.
 * Displays warning if there are unscheduled apartments.
 
@@ -331,23 +336,23 @@ src/
 │   ├── models/
 │   │   ├── building.ts           # Existing (unchanged)
 │   │   ├── building-model.ts     # Existing (unchanged)
-│   │   ├── schedule.ts           # New: schedule TypeScript interfaces
-│   │   └── schedule-model.ts     # New: scheduling algorithm + validation
+│   │   ├── schedule.ts           # Updated: added dailyEndTime to ScheduleConfig
+│   │   └── schedule-model.ts     # Updated: configurable end time, formatDateLocale()
 │   ├── services/
-│   │   └── storage.ts            # Extended: schedule save/load/clear
+│   │   └── storage.ts            # Extended: schedule save/load/clear (migration for dailyEndTime)
 │   └── components/
 │       ├── BuildingConfigPanel.svelte   # Existing (unchanged)
 │       ├── FloorInputRow.svelte         # Existing (unchanged)
 │       ├── BuildingFacade.svelte        # Existing (unchanged)
-│       ├── ScheduleConfigPanel.svelte   # New: schedule configuration UI
-│       ├── ScheduleView.svelte          # New: schedule display
-│       └── ScheduleAppointmentRow.svelte # New: single appointment row
+│       ├── ScheduleConfigPanel.svelte   # Updated: daily end time input
+│       ├── ScheduleView.svelte          # Updated: uses formatDateLocale()
+│       └── ScheduleAppointmentRow.svelte # Existing (unchanged)
 └── __tests__/
     ├── building-model.test.ts    # Existing (unchanged)
     ├── building-facade.test.ts   # Existing (unchanged)
     ├── storage.test.ts           # Existing (unchanged)
-    ├── schedule-model.test.ts    # New: scheduling algorithm tests
-    └── schedule-storage.test.ts  # New: schedule persistence tests
+    ├── schedule-model.test.ts    # Updated: tests for dailyEndTime, formatDateLocale()
+    └── schedule-storage.test.ts  # Existing (unchanged)
 ----
 
 == Story Resolution
@@ -425,3 +430,21 @@ Criteria::
 * Persist on change -> `$effect` in ScheduleConfigPanel calls `saveSchedule(config, overrides)` (SCHED-033)
 * Restore on load -> ScheduleConfigPanel initialization calls `loadSchedule()` (SCHED-034)
 * Empty state when no saved data -> `loadSchedule()` returns null, ScheduleConfigPanel uses `createDefaultScheduleConfig()` (SCHED-035)
+
+=== US-009: Configure Daily End Time
+
+Components:: ScheduleConfigPanel, schedule-model
+Criteria::
+* Daily end time input -> ScheduleConfigPanel renders time input for `dailyEndTime` (SCHED-036)
+* Use configured end time -> `getMaxAppointmentsPerDay()` uses `config.dailyEndTime` instead of hardcoded `END_OF_DAY` constant; `calculateSchedule()` checks `config.dailyEndTime` for end-of-day boundary (SCHED-037)
+* Validation error -> `validateScheduleConfig()` checks `dailyEndTime > dailyStartTime` and sets error on `dailyEndTime` field (SCHED-038)
+* Recalculate on change -> Reactive `$derived` recalculates schedule when `dailyEndTime` changes (SCHED-039)
+* Default to 18:00 -> `createDefaultScheduleConfig()` sets `dailyEndTime: 1080` (SCHED-040)
+
+=== US-010: Browser-Locale Date Formatting
+
+Components:: schedule-model, ScheduleView
+Criteria::
+* Locale-aware formatting -> `formatDateLocale()` uses `Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })` (SCHED-041)
+* Swedish fallback -> `formatDateLocale()` wraps call in try/catch and falls back to `formatDateSwedish()` on failure (SCHED-042)
+* Backward compatibility -> `formatDateSwedish()` remains exported and unchanged (SCHED-043)

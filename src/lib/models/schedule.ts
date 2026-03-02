@@ -6,6 +6,8 @@ export interface ScheduleConfig {
   endDate: string;
   /** Daily inspection start time in minutes since midnight (e.g., 540 = 09:00) */
   dailyStartTime: number;
+  /** Daily inspection end time in minutes since midnight (e.g., 1080 = 18:00) */
+  dailyEndTime: number;
   /** Inspection duration per apartment in minutes (5-120) */
   durationMinutes: number;
   /** Whether lunch break is enabled */

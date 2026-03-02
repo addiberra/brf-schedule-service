@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import type { Apartment } from '../models/building.js';
   import type { ScheduleResult } from '../models/schedule.js';
   import type { MessageTemplate } from '../models/template.js';
@@ -19,27 +20,41 @@
   // Load saved templates
   let templates: MessageTemplate[] = $state(loadTemplates());
   let selectedTemplateId: string | null = $state(null);
+  let editingTemplate: MessageTemplate | null = $state(null);
   let previewApartmentId: string | null = $state(null);
-
-  // Derived: the currently selected/editing template
-  let editingTemplate = $derived(
-    templates.find((t) => t.id === selectedTemplateId) ?? null
-  );
+  let selectionInitialized = $state(false);
 
   // Auto-save to localStorage when templates change
   $effect(() => {
     saveTemplates(templates);
-    ontemplateschange?.(templates);
+    untrack(() => {
+      ontemplateschange?.(templates);
+    });
+  });
+
+  $effect(() => {
+    if (selectionInitialized) {
+      return;
+    }
+
+    selectionInitialized = true;
+    if (templates.length > 0) {
+      const initialTemplate = templates[templates.length - 1];
+      selectedTemplateId = initialTemplate.id;
+      editingTemplate = initialTemplate;
+    }
   });
 
   function handleNewTemplate() {
     const newTemplate = createDefaultTemplate();
     templates = [...templates, newTemplate];
     selectedTemplateId = newTemplate.id;
+    editingTemplate = newTemplate;
   }
 
   function handleSelectTemplate(id: string) {
     selectedTemplateId = id;
+    editingTemplate = templates.find((template) => template.id === id) ?? null;
   }
 
   function handleDeleteTemplate(id: string) {
@@ -48,12 +63,22 @@
     if (!confirm(`Vill du ta bort mallen "${name}"?`)) return;
     templates = templates.filter((t) => t.id !== id);
     if (selectedTemplateId === id) {
-      selectedTemplateId = null;
+      if (templates.length > 0) {
+        const fallbackTemplate = templates[templates.length - 1];
+        selectedTemplateId = fallbackTemplate.id;
+        editingTemplate = fallbackTemplate;
+      } else {
+        selectedTemplateId = null;
+        editingTemplate = null;
+      }
     }
   }
 
   function handleSaveTemplate(updated: MessageTemplate) {
     templates = templates.map((t) => (t.id === updated.id ? updated : t));
+    if (editingTemplate?.id === updated.id) {
+      editingTemplate = updated;
+    }
   }
 
   function handleSelectPreviewApartment(id: string) {
@@ -66,7 +91,7 @@
 
   <div class="templates-layout">
     <div class="sidebar">
-      <button class="btn btn-new" onclick={handleNewTemplate}>
+      <button class="btn btn-new" data-testid="new-template-btn" onclick={handleNewTemplate}>
         + Ny mall
       </button>
       <TemplateList
@@ -91,7 +116,7 @@
           onselectapartment={handleSelectPreviewApartment}
         />
       {:else}
-        <p class="no-selection">Välj en mall eller skapa en ny för att börja.</p>
+        <p class="no-selection" data-testid="no-template-selected">Välj en mall eller skapa en ny för att börja.</p>
       {/if}
     </div>
   </div>

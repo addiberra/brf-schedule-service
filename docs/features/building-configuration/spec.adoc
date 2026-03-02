@@ -1,6 +1,6 @@
 = Specification: Building Configuration
-:version: 1.0.0
-:source-stories-version: 1.1.0
+:version: 1.1.0
+:source-stories-version: 1.2.0
 :last-updated: 2026-03-02
 :feature: building-configuration
 :prefix: BCFG
@@ -183,6 +183,118 @@ Type:: Unwanted behavior
 Source:: US-006: Reset Building Configuration, Criterion 4
 Verification:: Configure a building with 10 floors. Click reset. Cancel the reset. Confirm the configuration remains at 10 floors with all previous values intact.
 
+== BCFG-026
+The system shall provide a toggle control to enable or disable uniform apartment count mode.
+
+Type:: Ubiquitous
+Source:: US-007: Uniform Apartment Count Per Level, Criterion 1
+Verification:: Open the building configuration view. Confirm a labeled toggle (checkbox) for uniform apartment count mode is visible below the floor count input.
+
+== BCFG-027
+When uniform mode is enabled, the system shall replace the per-floor apartment inputs with a single shared input field.
+
+Type:: Event-driven
+Source:: US-007: Uniform Apartment Count Per Level, Criterion 2
+Verification:: Enable uniform mode. Confirm the per-floor input rows disappear and a single shared apartment count input is shown.
+
+== BCFG-028
+When the user changes the shared uniform input value, the system shall apply the same apartment count to all floors.
+
+Type:: Event-driven
+Source:: US-007: Uniform Apartment Count Per Level, Criterion 3
+Verification:: Enable uniform mode. Set the shared input to 4. Confirm all floors in the underlying configuration have 4 apartments. Confirm the facade illustration reflects 4 apartments on every floor.
+
+== BCFG-029
+The system shall accept a uniform apartment count between 1 and 20.
+
+Type:: Ubiquitous
+Source:: US-007: Uniform Apartment Count Per Level, Criterion 4
+Verification:: Enable uniform mode. Enter 1, 10, and 20. Confirm all values are accepted without error.
+
+== BCFG-030
+If the user enters a uniform apartment count less than 1 or greater than 20, then the system shall display a validation error.
+
+Type:: Unwanted behavior
+Source:: US-007: Uniform Apartment Count Per Level, Criterion 5
+Verification:: Enable uniform mode. Enter 0. Confirm a validation error is shown. Enter 21. Confirm the same behavior.
+
+== BCFG-031
+When uniform mode is disabled, the system shall show per-floor inputs with the current apartment counts preserved.
+
+Type:: Event-driven
+Source:: US-007: Uniform Apartment Count Per Level, Criterion 6
+Verification:: Set 3 floors. Enable uniform mode. Set count to 5. Disable uniform mode. Confirm per-floor inputs appear, each showing 5 apartments. Modify floor 2 to 3 apartments. Confirm the change is independent per floor.
+
+== BCFG-032
+When the user enables uniform mode, the system shall set all floors to the apartment count of floor 1.
+
+Type:: Event-driven
+Source:: US-007: Uniform Apartment Count Per Level, Criterion 7
+Verification:: Set floor 1 to 3, floor 2 to 5, floor 3 to 7. Enable uniform mode. Confirm the shared input shows 3 and all floors now have 3 apartments.
+
+== BCFG-033
+The system shall render the building facade with gradient or textured walls that convey material depth.
+
+Type:: Ubiquitous
+Source:: US-008: Enhanced Building Facade Illustration, Criterion 1
+Verification:: Open the building configuration view. Confirm the building walls in the SVG illustration use a visible gradient or texture fill rather than a flat solid color.
+
+== BCFG-034
+The system shall display window frames with sills and headers on each apartment element in the facade.
+
+Type:: Ubiquitous
+Source:: US-008: Enhanced Building Facade Illustration, Criterion 2
+Verification:: Configure a building with apartments. Confirm each apartment window in the facade has a visible sill (below the window) and header (above the window) in addition to the window frame.
+
+== BCFG-035
+The system shall display a detailed roof with a ridge line and chimney.
+
+Type:: Ubiquitous
+Source:: US-008: Enhanced Building Facade Illustration, Criterion 3
+Verification:: Confirm the roof polygon has a visible ridge detail and that a chimney shape is rendered on one side of the roof.
+
+== BCFG-036
+The system shall display an entrance door centered on the ground floor of the facade.
+
+Type:: Ubiquitous
+Source:: US-008: Enhanced Building Facade Illustration, Criterion 4
+Verification:: Configure a building with at least 1 floor. Confirm a door shape is visible at the base of the ground floor, centered horizontally.
+
+== BCFG-037
+The system shall display balconies on alternating apartment elements in the facade.
+
+Type:: Ubiquitous
+Source:: US-008: Enhanced Building Facade Illustration, Criterion 5
+Verification:: Configure a building with 3 floors and 4 apartments per floor. Confirm that balcony elements appear on every other apartment, creating a staggered visual pattern.
+
+== BCFG-038
+The system shall display horizontal floor separator lines between each level in the facade.
+
+Type:: Ubiquitous
+Source:: US-008: Enhanced Building Facade Illustration, Criterion 6
+Verification:: Configure a building with 3 floors. Confirm visible horizontal lines separate each floor level in the illustration.
+
+== BCFG-039
+The system shall display a ground area with vegetation below the building in the facade.
+
+Type:: Ubiquitous
+Source:: US-008: Enhanced Building Facade Illustration, Criterion 7
+Verification:: Confirm a green ground strip with vegetation shapes (bushes or trees) is rendered below the building.
+
+== BCFG-040
+The system shall apply drop shadows to the building element in the facade for visual depth.
+
+Type:: Ubiquitous
+Source:: US-008: Enhanced Building Facade Illustration, Criterion 8
+Verification:: Inspect the SVG output. Confirm an SVG `<filter>` with drop shadow is defined and applied to the building shape.
+
+== BCFG-041
+When the building configuration changes, the enhanced facade shall update in real time.
+
+Type:: Event-driven
+Source:: US-008: Enhanced Building Facade Illustration, Criterion 9
+Verification:: Change the floor count or apartment count. Confirm the enhanced facade (including all detail elements) updates immediately without page reload.
+
 == Traceability
 
 [cols="1,2,2", options="header"]
@@ -288,4 +400,68 @@ Verification:: Configure a building with 10 floors. Click reset. Cancel the rese
 | BCFG-025
 | Cancel reset preserves configuration
 | US-006: Criterion 4
+
+| BCFG-026
+| Uniform mode toggle control
+| US-007: Criterion 1
+
+| BCFG-027
+| Single shared input when uniform enabled
+| US-007: Criterion 2
+
+| BCFG-028
+| Shared input applies to all floors
+| US-007: Criterion 3
+
+| BCFG-029
+| Uniform count valid range 1-20
+| US-007: Criterion 4
+
+| BCFG-030
+| Uniform count validation error
+| US-007: Criterion 5
+
+| BCFG-031
+| Per-floor inputs restored when uniform disabled
+| US-007: Criterion 6
+
+| BCFG-032
+| Enable uniform sets all floors to floor 1 count
+| US-007: Criterion 7
+
+| BCFG-033
+| Gradient/textured walls
+| US-008: Criterion 1
+
+| BCFG-034
+| Window frames with sills and headers
+| US-008: Criterion 2
+
+| BCFG-035
+| Detailed roof with ridge and chimney
+| US-008: Criterion 3
+
+| BCFG-036
+| Entrance door on ground floor
+| US-008: Criterion 4
+
+| BCFG-037
+| Balconies on alternating apartments
+| US-008: Criterion 5
+
+| BCFG-038
+| Floor separator lines
+| US-008: Criterion 6
+
+| BCFG-039
+| Ground area with vegetation
+| US-008: Criterion 7
+
+| BCFG-040
+| Drop shadows for depth
+| US-008: Criterion 8
+
+| BCFG-041
+| Enhanced facade real-time update
+| US-008: Criterion 9
 |===

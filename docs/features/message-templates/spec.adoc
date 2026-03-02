@@ -1,6 +1,6 @@
 = Specification: Message Templates
-:version: 1.0.0
-:source-stories-version: 1.1.0
+:version: 1.1.0
+:source-stories-version: 1.2.0
 :last-updated: 2026-03-02
 :feature: message-templates
 :prefix: TMPL
@@ -169,6 +169,41 @@ Type:: Unwanted behavior
 Source:: US-006: Save Templates, Criterion 3
 Verification:: Clear all application data from browser storage. Open the application. Confirm the template list is empty (not an error state).
 
+== TMPL-024
+When the user creates a new template, the system shall immediately display the template editor with the new template loaded for editing.
+
+Type:: Event-driven
+Source:: US-001: Create Message Template, Criterion 2 (new)
+Verification:: Click the new template button. Confirm the template editor area appears immediately with the new template's name input, body editor, and placeholder management visible and editable.
+
+== TMPL-025
+When the system renders a date data field in a template preview, the system shall format the date using the browser's locale via the Intl API.
+
+Type:: Event-driven
+Source:: US-007: Locale-Aware Data Field Formatting, Criterion 1
+Verification:: Set the browser locale to a non-Swedish language (e.g., English). Create a template with a locale-formatted date placeholder. Preview it for an apartment. Confirm the date is formatted according to the browser's locale (e.g., "Thursday, April 10, 2026" for en-US).
+
+== TMPL-026
+The system shall provide a locale-formatted date data field as a placeholder mapping option.
+
+Type:: Ubiquitous
+Source:: US-007: Locale-Aware Data Field Formatting, Criterion 2
+Verification:: Open the placeholder mapping interface. Confirm that a locale-formatted date option is available in the list of data fields.
+
+== TMPL-027
+While a saved template uses the former Swedish-specific date field identifier, the system shall continue to resolve it correctly.
+
+Type:: State-driven
+Source:: US-007: Locale-Aware Data Field Formatting, Criterion 3
+Verification:: Load a template saved before the locale change that uses the `dateSwedish` data field. Confirm the placeholder still resolves to a formatted date.
+
+== TMPL-028
+If the browser's locale cannot be determined, then the system shall fall back to Swedish date formatting.
+
+Type:: Unwanted behavior
+Source:: US-007: Locale-Aware Data Field Formatting, Criterion 4
+Verification:: Simulate an environment where `Intl.DateTimeFormat` locale detection fails or returns undefined. Confirm dates are formatted in Swedish (e.g., "torsdag 10 april 2026").
+
 == Traceability
 
 [cols="1,2,2", options="header"]
@@ -266,4 +301,24 @@ Verification:: Clear all application data from browser storage. Open the applica
 | TMPL-023
 | Empty template list when no data
 | US-006: Criterion 3
+
+| TMPL-024
+| Immediate editor display on creation
+| US-001: Criterion 2 (new)
+
+| TMPL-025
+| Locale-formatted date rendering
+| US-007: Criterion 1
+
+| TMPL-026
+| Locale-formatted date field option
+| US-007: Criterion 2
+
+| TMPL-027
+| Backward compatibility with dateSwedish
+| US-007: Criterion 3
+
+| TMPL-028
+| Swedish fallback for locale
+| US-007: Criterion 4
 |===

@@ -13,19 +13,21 @@
 
 <div class="template-list">
   {#if templates.length === 0}
-    <p class="empty-notice">Inga sparade mallar.</p>
+    <p class="empty-notice" data-testid="template-list-empty">Inga sparade mallar.</p>
   {:else}
     <ul>
       {#each templates as template (template.id)}
-        <li class:selected={template.id === selectedId}>
+        <li class:selected={template.id === selectedId} data-testid="template-item-{template.id}">
           <button
             class="template-name"
+            data-testid="template-select-{template.id}"
             onclick={() => onselect(template.id)}
           >
             {template.name || 'Namnlös mall'}
           </button>
           <button
             class="btn btn-delete"
+            data-testid="template-delete-{template.id}"
             onclick={() => ondelete(template.id)}
             title="Ta bort mall"
           >✕</button>

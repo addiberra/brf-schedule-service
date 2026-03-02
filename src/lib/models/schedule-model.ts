@@ -11,8 +11,7 @@ const MAX_DURATION = 120;
 const MIN_MAX_PER_DAY = 1;
 const MAX_MAX_PER_DAY = 100;
 
-// End of inspection day: 18:00 (1080 minutes)
-const END_OF_DAY = 18 * 60;
+
 
 /**
  * Creates a default schedule configuration.
@@ -27,6 +26,7 @@ export function createDefaultScheduleConfig(): ScheduleConfig {
     startDate: formatDateISO(today),
     endDate: formatDateISO(twoWeeksLater),
     dailyStartTime: 9 * 60, // 09:00
+    dailyEndTime: 18 * 60, // 18:00
     durationMinutes: 30,
     lunchBreakEnabled: true,
     lunchStartTime: 12 * 60, // 12:00
@@ -122,6 +122,10 @@ export function validateScheduleConfig(
     errors.set('maxPerDay', maxResult.error!);
   }
 
+  if (config.dailyEndTime <= config.dailyStartTime) {
+    errors.set('dailyEndTime', 'Sluttid måste vara efter starttid.');
+  }
+
   if (config.lunchBreakEnabled && config.lunchEndTime <= config.lunchStartTime) {
     errors.set(
       'lunchEndTime',
@@ -207,6 +211,26 @@ export function formatDateSwedish(dateStr: string): string {
 }
 
 /**
+ * Formats a YYYY-MM-DD date using the browser's locale-aware Intl.DateTimeFormat.
+ * Example (sv locale): "2026-04-10" -> "torsdag 10 april 2026"
+ * Falls back to formatDateSwedish() on error.
+ */
+export function formatDateLocale(dateStr: string): string {
+  try {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    return new Intl.DateTimeFormat(undefined, {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(date);
+  } catch {
+    return formatDateSwedish(dateStr);
+  }
+}
+
+/**
  * Returns all available dates within the period, excluding weekends
  * (if configured) and excluded dates.
  */
@@ -233,7 +257,7 @@ export function getAvailableDates(config: ScheduleConfig): string[] {
  * available time and the configured maximum.
  */
 export function getMaxAppointmentsPerDay(config: ScheduleConfig): number {
-  let availableMinutes = END_OF_DAY - config.dailyStartTime;
+  let availableMinutes = config.dailyEndTime - config.dailyStartTime;
 
   if (config.lunchBreakEnabled) {
     const lunchDuration = config.lunchEndTime - config.lunchStartTime;
@@ -316,7 +340,7 @@ export function calculateSchedule(
       }
 
       // Check if inspection fits before end of day
-      if (timeCursor + config.durationMinutes > END_OF_DAY) {
+      if (timeCursor + config.durationMinutes > config.dailyEndTime) {
         dateIndex++;
         timeCursor = config.dailyStartTime;
         dayCount = 0;

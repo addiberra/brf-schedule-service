@@ -103,6 +103,7 @@
 
   <button
     class="print-button"
+    data-testid="print-btn"
     onclick={handlePrint}
     disabled={!canPrint}
   >

@@ -1,8 +1,8 @@
 = Design: Message Templates
-:version: 1.0.0
+:version: 1.1.0
 :status: Current
-:source-stories-version: 1.1.0
-:source-spec-version: 1.0.0
+:source-stories-version: 1.2.0
+:source-spec-version: 1.1.0
 :last-updated: 2026-03-02
 :feature: message-templates
 :toc:
@@ -25,11 +25,11 @@ From `docs/constraints.adoc`:
 * All user-facing text in Swedish
 * TypeScript strict mode
 
-No new ADRs are needed. The template engine is a simple string replacement using built-in JavaScript string methods -- no library required.
+No new ADRs are needed. The template engine is a simple string replacement using built-in JavaScript string methods -- no library required. Locale-aware date formatting uses the browser-native `Intl.DateTimeFormat` API (no library) with `undefined` locale (browser default) and Swedish as the hardcoded fallback.
 
 == Research and Unknowns
 
-No unknowns remain. The template engine is a straightforward find-and-replace of `{placeholder_name}` tokens. Available data fields are derived from the existing `Apartment` and `ScheduleAppointment` interfaces.
+No unknowns remain. The template engine is a straightforward find-and-replace of `{placeholder_name}` tokens. Available data fields are derived from the existing `Apartment` and `ScheduleAppointment` interfaces. The `Intl.DateTimeFormat` API is available in all modern browsers (Chrome 24+, Firefox 29+, Safari 10+) and requires no polyfill.
 
 == System Design
 
@@ -68,8 +68,8 @@ flowchart TD
     MTP --> TP
     MTP --> TEM
     MTP --> PS
+    TEM -->|"resolveDataField uses<br/>formatDateSwedish &<br/>formatDateLocale"| SM
     TEM --> BM
-    TEM --> SM
     PS --> LS
 ----
 
@@ -156,7 +156,8 @@ type DataField =
   | 'position'
   | 'date'
   | 'time'
-  | 'dateSwedish';
+  | 'dateSwedish'
+  | 'dateFormatted';
 
 /** A complete message template */
 interface MessageTemplate {
@@ -178,7 +179,8 @@ The `DataField` type enumerates the available fields:
 * `position` -- position on floor as string (e.g., "2")
 * `date` -- scheduled date in YYYY-MM-DD format (e.g., "2026-03-10")
 * `time` -- scheduled start time as HH:MM (e.g., "09:00")
-* `dateSwedish` -- Swedish formatted date (e.g., "tisdag 10 mars 2026")
+* `dateSwedish` -- Swedish formatted date (e.g., "tisdag 10 mars 2026"). Retained for backward compatibility with saved templates.
+* `dateFormatted` -- locale-formatted date using the browser's `Intl.DateTimeFormat` API (e.g., "Thursday, March 10, 2026" for en-US, "torsdag 10 mars 2026" for sv-SE). Falls back to Swedish formatting if locale detection fails.
 
 === Business Logic: `template-model.ts`
 
@@ -187,11 +189,11 @@ Located at `src/lib/models/template-model.ts`. Pure functions with no side effec
 * `createDefaultTemplate(): MessageTemplate` -- returns a new template with a generated ID, empty name, empty body, and default placeholders.
 * `getDefaultPlaceholders(): PlaceholderMapping[]` -- returns suggested placeholders pre-mapped to data fields: `{lagenhet}` → `apartmentId`, `{vaning}` → `floor`, `{datum}` → `dateSwedish`, `{tid}` → `time`.
 * `parsePlaceholders(body: string): string[]` -- extracts all `{...}` placeholder names from a template body string. Returns an array of unique names found.
-* `resolveDataField(field: DataField, apartment: Apartment, appointment: ScheduleAppointment | null): string` -- resolves a single data field to its string value given an apartment and optional appointment. Returns empty string if appointment is null and a schedule field is requested.
+* `resolveDataField(field: DataField, apartment: Apartment, appointment: ScheduleAppointment | null): string` -- resolves a single data field to its string value given an apartment and optional appointment. Returns empty string if appointment is null and a schedule field is requested. For `dateFormatted`, uses `formatDateLocale()` from `schedule-model.ts`. For `dateSwedish`, continues to use the existing `formatDateSwedish()` function for backward compatibility.
 * `renderTemplate(template: MessageTemplate, apartment: Apartment, appointment: ScheduleAppointment | null): string` -- replaces all `{placeholder_name}` tokens in the template body with resolved values. For each placeholder found in the body, looks up the mapping in `template.placeholders`. If mapped, resolves the data field. If unmapped, leaves the placeholder as-is (the UI will display unmapped ones in error style).
 * `getUnmappedPlaceholders(template: MessageTemplate): string[]` -- returns placeholder names found in the body that have no mapping in `template.placeholders`.
 * `generateTemplateId(): string` -- generates a unique ID using `crypto.randomUUID()`.
-* `getAvailableDataFields(): { field: DataField; label: string }[]` -- returns the list of all data fields with Swedish display labels for the UI.
+* `getAvailableDataFields(): { field: DataField; label: string }[]` -- returns the list of all data fields with Swedish display labels for the UI. Includes the new `dateFormatted` field with label "Datum (formaterat)" and retains `dateSwedish` with label "Datum (svenska)" for backward compatibility.
 
 === Persistence: `storage.ts` (extended)
 
@@ -216,9 +218,16 @@ State management (Svelte 5 runes):
 
 * `let templates = $state<MessageTemplate[]>(...)` -- initialized from `loadTemplates()`.
 * `let selectedTemplateId = $state<string | null>(null)` -- the currently selected template.
-* `let editingTemplate = $state<MessageTemplate | null>(null)` -- the template being edited.
+* `let editingTemplate = $derived(...)` -- computed from `templates` and `selectedTemplateId` via `templates.find()`. This is a `$derived` value, not `$state`, ensuring it always reflects the current templates array.
 * `let previewApartmentId = $state<string | null>(null)` -- the apartment selected for preview.
-* `$effect(() => { ... })` -- persists templates to localStorage whenever the list changes.
+* Auto-save `$effect` -- persists templates to localStorage and notifies parent when templates change. The save effect must use `$effect` with `untrack` around the parent callback to prevent the callback from becoming a reactive dependency that could interfere with template selection state.
+
+**Template creation flow (TMPL-024):** When the user clicks "Ny mall":
+
+1. `handleNewTemplate()` creates a new template via `createDefaultTemplate()`, appends it to `templates`, and sets `selectedTemplateId` to the new template's ID.
+2. The `editingTemplate` derived value resolves to the new template.
+3. The `{#if editingTemplate}` conditional renders `TemplateEditor` immediately.
+4. The save `$effect` fires and persists the updated list asynchronously without interfering with the selection state.
 
 Props:
 
@@ -228,7 +237,7 @@ Props:
 Behavior:
 
 * Renders `TemplateList` for the list of saved templates.
-* Renders `TemplateEditor` for creating/editing a template.
+* Renders `TemplateEditor` for creating/editing a template. The editor appears immediately when a new template is created (TMPL-024).
 * Renders `TemplatePreview` for previewing rendered output.
 * Provides "Ny mall" (New template) button that calls `createDefaultTemplate()`.
 * Handles save, delete (with `confirm()` dialog), and select operations.
@@ -258,6 +267,10 @@ Props:
 
 * `template: MessageTemplate` -- the template being edited.
 * `onsave: (template: MessageTemplate) => void` -- callback on save.
+
+State synchronization:
+
+The editor maintains local editing state (name, body, placeholders) that is a deep clone of the incoming `template` prop. When the `template` prop changes (user selects a different template), the local state must be re-synced. This uses a tracked `$effect` that watches the template's `id` specifically (not the full object reference) to avoid spurious resets during the same editing session.
 
 Behavior:
 
@@ -332,6 +345,7 @@ Criteria::
 * Text editor for composing -> TemplateEditor renders a textarea for the template body (TMPL-001)
 * Template name input -> TemplateEditor renders a name input field (TMPL-002)
 * Persist on save -> MessageTemplatePanel calls `saveTemplates()` on save (TMPL-003)
+* Immediate editor display on creation -> `handleNewTemplate()` sets `selectedTemplateId`, `editingTemplate` derived resolves, `{#if editingTemplate}` renders editor immediately (TMPL-024)
 * Multiple saved templates -> Templates stored as an array in localStorage (TMPL-004)
 
 === US-002: Insert Placeholders in Template
@@ -378,3 +392,12 @@ Criteria::
 * Persist on create/modify -> `$effect` in MessageTemplatePanel calls `saveTemplates()` when templates change (TMPL-003)
 * Restore on load -> MessageTemplatePanel initialization calls `loadTemplates()` (TMPL-022)
 * Empty list when no data -> `loadTemplates()` returns `[]`, MessageTemplatePanel displays empty state (TMPL-023)
+
+=== US-007: Locale-Aware Data Field Formatting
+
+Components:: template-model, schedule-model, TemplateEditor, TemplatePreview
+Criteria::
+* Locale-formatted date rendering -> `resolveDataField('dateFormatted', ...)` calls `formatDateLocale()` which uses `Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })` (TMPL-025)
+* Locale-formatted date field option -> `getAvailableDataFields()` includes `{ field: 'dateFormatted', label: 'Datum (formaterat)' }` (TMPL-026)
+* Backward compatibility with dateSwedish -> `resolveDataField('dateSwedish', ...)` continues to call `formatDateSwedish()`. Templates saved with `dateSwedish` mappings still work (TMPL-027)
+* Swedish fallback -> `formatDateLocale()` wraps the `Intl.DateTimeFormat` call in a try-catch; on failure, delegates to `formatDateSwedish()` (TMPL-028)

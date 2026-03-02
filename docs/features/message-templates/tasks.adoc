@@ -1,18 +1,20 @@
 = Implementation Tasks: Message Templates
-:version: 1.0.0
-:status: Implemented
-:source-design-version: 1.0.0
-:source-stories-version: 1.1.0
-:source-spec-version: 1.0.0
+:version: 2.0.0
+:status: Current
+:source-design-version: 1.1.0
+:source-stories-version: 1.2.0
+:source-spec-version: 1.1.0
 :last-updated: 2026-03-02
 :feature: message-templates
 :toc:
 
 == Overview
 
-Implement the message templates feature for BRF inspection schedules. The feature allows administrators to create, edit, preview, and manage message templates with user-defined placeholders that map to building and schedule data fields. 3 phases, 9 tasks.
+Implement the message templates feature for BRF inspection schedules. The feature allows administrators to create, edit, preview, and manage message templates with user-defined placeholders that map to building and schedule data fields.
 
-== Phase 1: Foundation
+Version 1.0.0 delivered the initial implementation (Phases 1-3, 9 tasks -- all completed). Version 2.0.0 adds incremental work: fix template creation reactivity bug (TMPL-024) and add locale-aware date formatting (TMPL-025 through TMPL-028). 2 new phases, 5 new tasks.
+
+== Phase 1: Foundation _(v1.0.0 -- Implemented)_
 
 Data model and template engine -- pure TypeScript functions with no UI.
 
@@ -37,7 +39,7 @@ Stories:: US-001, US-003, US-006
 Specs:: TMPL-003, TMPL-012, TMPL-022, TMPL-023
 Description:: Extend `src/lib/services/storage.ts` with `saveTemplates()`, `loadTemplates()`, and `clearTemplates()` functions using the `brf-schedule:templates` localStorage key.
 
-== Phase 2: UI Components
+== Phase 2: UI Components _(v1.0.0 -- Implemented)_
 
 Svelte 5 components for template management.
 
@@ -62,7 +64,7 @@ Stories:: US-004
 Specs:: TMPL-009, TMPL-015, TMPL-016, TMPL-017, TMPL-018
 Description:: Create `src/lib/components/TemplatePreview.svelte` with apartment selector dropdown and rendered template display. Unmapped placeholders shown in error style.
 
-== Phase 3: Integration
+== Phase 3: Integration _(v1.0.0 -- Implemented)_
 
 Wire up the orchestrating panel and integrate with App.
 
@@ -87,6 +89,56 @@ Stories:: US-001, US-002, US-003, US-004, US-005, US-006
 Specs:: All TMPL specs
 Description:: Run all existing and new tests. Verify `npm run build` passes. Confirm no regressions in building-configuration or inspection-scheduling features.
 
+== Phase 4: Fix Template Creation Reactivity _(v2.0.0 -- Current)_
+
+Fix the bug where the editor form does not appear after clicking "Ny mall". The root cause is incorrect Svelte 5 reactivity wiring: `editingTemplate` must be a `$derived` value, the save `$effect` must use `untrack` around the parent callback, and the TemplateEditor `$effect` must track `template.id` specifically.
+
+* [ ] TASK-010: Make editingTemplate a $derived value in MessageTemplatePanel [sequential]
++
+Components:: MessageTemplatePanel.svelte
+Stories:: US-001
+Specs:: TMPL-024
+Description:: Change `editingTemplate` from `$state` (or incorrectly structured reactive variable) to a `$derived` value computed from `templates` and `selectedTemplateId` via `templates.find(t => t.id === selectedTemplateId)`. This ensures `editingTemplate` always reflects the current templates array and that the `{#if editingTemplate}` conditional renders the editor immediately when a new template is created.
+
+* [ ] TASK-011: Use untrack around parent callback in save $effect [sequential]
++
+Components:: MessageTemplatePanel.svelte
+Stories:: US-001, US-006
+Specs:: TMPL-024, TMPL-003
+Description:: In the `$effect` that persists templates to localStorage and notifies the parent when templates change, wrap the parent callback invocation with `untrack(() => ...)`. This prevents the callback from becoming a reactive dependency that could interfere with template selection state, ensuring the save fires asynchronously without disrupting the editor display.
+
+* [ ] TASK-012: Fix TemplateEditor $effect to track template.id [sequential]
++
+Components:: TemplateEditor.svelte
+Stories:: US-001, US-003
+Specs:: TMPL-024, TMPL-011
+Description:: Update the `$effect` in TemplateEditor that syncs local editing state from the incoming `template` prop to track `template.id` specifically (not the full object reference). This avoids spurious resets of the editing state during the same session while correctly re-syncing when a different template is selected or a new template is created.
+
+== Phase 5: Locale-Aware Date Formatting _(v2.0.0 -- Current)_
+
+Add a new `dateFormatted` data field that uses the browser's `Intl.DateTimeFormat` API for locale-aware date rendering. Retain `dateSwedish` for backward compatibility.
+
+* [ ] TASK-013: Add formatDateLocale function to schedule-model.ts [parallel]
++
+Components:: schedule-model.ts
+Stories:: US-007
+Specs:: TMPL-025, TMPL-028
+Description:: Add a `formatDateLocale(dateStr: string): string` function to `src/lib/models/schedule-model.ts`. The function parses the `YYYY-MM-DD` date string and formats it using `new Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(date)`. Wrap the call in a try-catch; on failure, fall back to `formatDateSwedish(dateStr)` for Swedish output.
+
+* [ ] TASK-014: Add dateFormatted to DataField union and update template engine [parallel]
++
+Components:: template.ts, template-model.ts
+Stories:: US-007
+Specs:: TMPL-025, TMPL-026, TMPL-027
+Description:: Add `'dateFormatted'` to the `DataField` union type in `src/lib/models/template.ts`. Update `resolveDataField()` in `template-model.ts` to handle `'dateFormatted'` by calling `formatDateLocale()` from `schedule-model.ts`. Keep the existing `'dateSwedish'` case unchanged (calls `formatDateSwedish()`) for backward compatibility. Update `getAvailableDataFields()` to include `{ field: 'dateFormatted', label: 'Datum (formaterat)' }`.
+
+* [ ] TASK-015: Verify build and run tests [sequential]
++
+Components:: All
+Stories:: US-001, US-007
+Specs:: TMPL-024, TMPL-025, TMPL-026, TMPL-027, TMPL-028
+Description:: Run `npm run build` and all tests (`npm test`). Verify no type errors, no regressions in existing template functionality, and that the new `dateFormatted` field resolves correctly. Confirm backward compatibility: templates saved with `dateSwedish` mappings still resolve.
+
 == Traceability
 
 [cols="1,1,1", options="header"]
@@ -94,8 +146,8 @@ Description:: Run all existing and new tests. Verify `npm run build` passes. Con
 | Story | Spec IDs | Tasks
 
 | US-001: Create Message Template
-| TMPL-001, TMPL-002, TMPL-003, TMPL-004
-| TASK-001, TASK-002, TASK-003, TASK-005, TASK-007, TASK-008
+| TMPL-001, TMPL-002, TMPL-003, TMPL-004, TMPL-024
+| TASK-001, TASK-002, TASK-003, TASK-005, TASK-007, TASK-008, TASK-010, TASK-011, TASK-012
 
 | US-002: Insert Placeholders in Template
 | TMPL-005, TMPL-006, TMPL-007, TMPL-008, TMPL-009
@@ -103,7 +155,7 @@ Description:: Run all existing and new tests. Verify `npm run build` passes. Con
 
 | US-003: Edit Existing Template
 | TMPL-010, TMPL-011, TMPL-012, TMPL-013, TMPL-014
-| TASK-003, TASK-004, TASK-005, TASK-007
+| TASK-003, TASK-004, TASK-005, TASK-007, TASK-012
 
 | US-004: Preview Rendered Template
 | TMPL-015, TMPL-016, TMPL-017, TMPL-018
@@ -115,5 +167,9 @@ Description:: Run all existing and new tests. Verify `npm run build` passes. Con
 
 | US-006: Save Templates
 | TMPL-003, TMPL-022, TMPL-023
-| TASK-003, TASK-007, TASK-008
+| TASK-003, TASK-007, TASK-008, TASK-011
+
+| US-007: Locale-Aware Data Field Formatting
+| TMPL-025, TMPL-026, TMPL-027, TMPL-028
+| TASK-013, TASK-014, TASK-015
 |===

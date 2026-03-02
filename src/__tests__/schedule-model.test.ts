@@ -32,6 +32,7 @@ import {
   isWeekend,
   addDays,
   formatDateSwedish,
+  formatDateLocale,
   getAvailableDates,
   getMaxAppointmentsPerDay,
   calculateSchedule,
@@ -65,6 +66,7 @@ function makeConfig(overrides: Partial<ScheduleConfig> = {}): ScheduleConfig {
     startDate: '2026-03-02',
     endDate: '2026-03-13', // two weeks
     dailyStartTime: 9 * 60, // 09:00
+    dailyEndTime: 18 * 60, // 18:00
     durationMinutes: 30,
     lunchBreakEnabled: true,
     lunchStartTime: 12 * 60,
@@ -144,6 +146,7 @@ describe('SCHED-035: Empty state / default configuration', () => {
     expect(config.startDate).toBeDefined();
     expect(config.endDate).toBeDefined();
     expect(config.dailyStartTime).toBeGreaterThan(0);
+    expect(config.dailyEndTime).toBe(1080);
     expect(config.durationMinutes).toBeGreaterThanOrEqual(5);
     expect(config.durationMinutes).toBeLessThanOrEqual(120);
     expect(config.maxPerDay).toBeGreaterThanOrEqual(1);
@@ -628,6 +631,35 @@ describe('validateScheduleConfig', () => {
     const errors = validateScheduleConfig(config);
     expect(errors.has('lunchEndTime')).toBe(false);
   });
+
+  it('should accept dailyEndTime greater than dailyStartTime', () => {
+    const config = makeConfig({
+      dailyStartTime: 9 * 60,
+      dailyEndTime: 18 * 60,
+    });
+    const errors = validateScheduleConfig(config);
+    expect(errors.has('dailyEndTime')).toBe(false);
+  });
+
+  it('should return error when dailyEndTime equals dailyStartTime', () => {
+    const config = makeConfig({
+      dailyStartTime: 9 * 60,
+      dailyEndTime: 9 * 60,
+    });
+    const errors = validateScheduleConfig(config);
+    expect(errors.has('dailyEndTime')).toBe(true);
+    expect(errors.get('dailyEndTime')).toBe('Sluttid måste vara efter starttid.');
+  });
+
+  it('should return error when dailyEndTime is before dailyStartTime', () => {
+    const config = makeConfig({
+      dailyStartTime: 10 * 60,
+      dailyEndTime: 9 * 60,
+    });
+    const errors = validateScheduleConfig(config);
+    expect(errors.has('dailyEndTime')).toBe(true);
+    expect(errors.get('dailyEndTime')).toBe('Sluttid måste vara efter starttid.');
+  });
 });
 
 describe('validateMaxPerDay', () => {
@@ -672,5 +704,76 @@ describe('edge cases', () => {
     expect(result.appointments).toHaveLength(3);
     const dates = new Set(result.appointments.map((a) => a.date));
     expect(dates.size).toBe(1);
+  });
+});
+
+describe('formatDateLocale', () => {
+  it('should return a non-empty string for a valid date', () => {
+    const result = formatDateLocale('2026-03-10');
+    expect(result.length).toBeGreaterThan(0);
+  });
+
+  it('should return a string containing the year', () => {
+    const result = formatDateLocale('2026-03-10');
+    expect(result).toContain('2026');
+  });
+
+  it('should not throw on valid input', () => {
+    expect(() => formatDateLocale('2026-04-15')).not.toThrow();
+  });
+});
+
+describe('dailyEndTime affects scheduling', () => {
+  it('should schedule fewer appointments per day when dailyEndTime is earlier', () => {
+    const apartments = makeApartments(20);
+    // End at 14:00 instead of 18:00 — only 5 hours available (09:00-14:00)
+    // With 1 hour lunch (12:00-13:00), 4 hours available = 8 slots at 30 min
+    const config = makeConfig({
+      dailyEndTime: 14 * 60,
+      lunchBreakEnabled: true,
+      lunchStartTime: 12 * 60,
+      lunchEndTime: 13 * 60,
+      maxPerDay: 100,
+    });
+    const maxPerDay = getMaxAppointmentsPerDay(config);
+    expect(maxPerDay).toBe(8);
+
+    const result = calculateSchedule(config, apartments, new Map());
+    // Count per day — should not exceed 8
+    const countByDate = new Map<string, number>();
+    for (const apt of result.appointments) {
+      if (!apt.manualOverride) {
+        countByDate.set(apt.date, (countByDate.get(apt.date) ?? 0) + 1);
+      }
+    }
+    for (const [, count] of countByDate) {
+      expect(count).toBeLessThanOrEqual(8);
+    }
+  });
+
+  it('should not schedule past the configured dailyEndTime', () => {
+    const apartments = makeApartments(20);
+    const config = makeConfig({
+      dailyEndTime: 14 * 60,
+      lunchBreakEnabled: false,
+      maxPerDay: 100,
+    });
+    const result = calculateSchedule(config, apartments, new Map());
+    for (const apt of result.appointments) {
+      if (!apt.manualOverride) {
+        expect(apt.startTime + config.durationMinutes).toBeLessThanOrEqual(14 * 60);
+      }
+    }
+  });
+
+  it('should use dailyEndTime in getMaxAppointmentsPerDay calculation', () => {
+    // End at 12:00, start at 9:00, no lunch = 3 hours = 6 slots at 30 min
+    const config = makeConfig({
+      dailyStartTime: 9 * 60,
+      dailyEndTime: 12 * 60,
+      lunchBreakEnabled: false,
+      maxPerDay: 100,
+    });
+    expect(getMaxAppointmentsPerDay(config)).toBe(6);
   });
 });

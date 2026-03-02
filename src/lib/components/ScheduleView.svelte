@@ -32,7 +32,7 @@
 
 <div class="schedule-view">
   {#if result.warning}
-    <div class="warning" role="alert">
+    <div class="warning" role="alert" data-testid="schedule-warning">
       <strong>Varning:</strong> {result.warning}
     </div>
   {/if}
@@ -40,7 +40,7 @@
   {#if result.appointments.length === 0}
     <p class="empty-state">Inga besiktningar schemalagda.</p>
   {:else}
-    <p class="summary">
+    <p class="summary" data-testid="schedule-summary">
       Totalt: <strong>{result.appointments.length}</strong> besiktningar schemalagda
       {#if overrides.size > 0}
         ({overrides.size} manuellt ändrade)

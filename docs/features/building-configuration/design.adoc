@@ -1,17 +1,17 @@
 = Design: Building Configuration
-:version: 1.0.0
+:version: 1.1.0
 :status: Current
-:source-stories-version: 1.1.0
-:source-spec-version: 1.0.0
+:source-stories-version: 1.2.0
+:source-spec-version: 1.1.0
 :last-updated: 2026-03-02
 :feature: building-configuration
 :toc:
 
 == Technical Context
 
-This is a greenfield project. No code exists yet. The building configuration feature is the first feature to be implemented, so the project must be scaffolded as part of this work (Vite 6 + Svelte 5 + TypeScript + Vitest).
+The building configuration feature is implemented and deployed. This update adds two enhancements: a uniform apartment count mode that simplifies input for buildings with identical floors, and a visually rich SVG facade illustration that replaces the current minimal rendering.
 
-The building configuration feature allows a BRF administrator to define the structure of a building (number of floors, apartments per floor) and see it represented as a front-facade SVG illustration. The configuration is persisted to localStorage so it survives browser sessions.
+All existing code, persistence, and validation remain unchanged. The enhancements are additive.
 
 == Decisions and Constraints
 
@@ -28,9 +28,7 @@ From `docs/constraints.adoc`:
 
 == Research and Unknowns
 
-No unknowns remain. All technology decisions are covered by the two ADRs. The feature is self-contained with no external dependencies.
-
-The apartment identifier format (`floor * 1000 + position`) is specified in the user stories and needs no further research.
+No unknowns remain. SVG `<defs>`, `<filter>`, `<pattern>`, and `<linearGradient>` are universally supported in modern browsers. No external libraries are needed.
 
 == System Design
 
@@ -49,7 +47,7 @@ flowchart TD
     end
 
     subgraph Logic ["Business Logic"]
-        BM["building-model.ts<br/>(validation, identifiers,<br/>default config)"]
+        BM["building-model.ts<br/>(validation, identifiers,<br/>default config, uniform)"]
     end
 
     subgraph Persistence ["Persistence Layer"]
@@ -74,13 +72,13 @@ flowchart TD
 [source,mermaid]
 ----
 flowchart LR
-    USER["User input"] -->|floor count,<br/>apt counts| BCP["BuildingConfigPanel"]
+    USER["User input"] -->|floor count,<br/>apt counts,<br/>uniform toggle| BCP["BuildingConfigPanel"]
     BCP -->|validate| BM["building-model.ts"]
     BM -->|validation result| BCP
     BCP -->|valid config| PS["storage.ts"]
     PS -->|JSON| LS["localStorage"]
     BCP -->|config data| BFI["BuildingFacade"]
-    BFI -->|renders| SVG["SVG illustration"]
+    BFI -->|renders| SVG["Enhanced SVG illustration"]
     PS -->|load on startup| BCP
 ----
 
@@ -105,7 +103,7 @@ sequenceDiagram
         BCP->>PS: saveBuilding(config)
         PS->>PS: JSON.stringify → localStorage
         BCP->>BFI: Pass updated config (reactive prop)
-        BFI->>BFI: Re-render SVG facade
+        BFI->>BFI: Re-render enhanced SVG facade
     else Invalid input
         BCP->>BCP: Display validation error
     end
@@ -150,9 +148,13 @@ interface ValidationResult {
 }
 ----
 
+NOTE: The `BuildingConfig` interface is unchanged. Uniform mode is purely a UI concern -- when enabled, the panel writes the same apartment count to every floor in the existing `floors` array. No new fields are needed in the persisted model.
+
 === Business Logic: `building-model.ts`
 
 Located at `src/lib/models/building-model.ts`. Pure functions with no side effects.
+
+Existing functions (unchanged):
 
 * `createDefaultConfig(): BuildingConfig` -- returns a default building with 1 floor, 2 apartments.
 * `validateFloorCount(value: number): ValidationResult` -- validates floor count is integer in [1, 30].
@@ -162,9 +164,26 @@ Located at `src/lib/models/building-model.ts`. Pure functions with no side effec
 * `totalApartments(config: BuildingConfig): number` -- sums apartment counts across floors.
 * `adjustFloors(config: BuildingConfig, newFloorCount: number): BuildingConfig` -- adds or removes floors when floor count changes, preserving existing floor data. New floors default to 2 apartments.
 
+New function:
+
+* `setUniformApartmentCount(config: BuildingConfig, count: number): BuildingConfig` -- returns a new `BuildingConfig` where every floor has `apartmentCount` set to `count`. Preserves `floorCount` and `floorNumber` values. Used by BuildingConfigPanel when uniform mode is active and the shared input changes.
+
+[source,typescript]
+----
+export function setUniformApartmentCount(
+  config: BuildingConfig,
+  count: number
+): BuildingConfig {
+  return {
+    ...config,
+    floors: config.floors.map((floor) => ({ ...floor, apartmentCount: count })),
+  };
+}
+----
+
 === Persistence: `storage.ts`
 
-Located at `src/lib/services/storage.ts`.
+Located at `src/lib/services/storage.ts`. Unchanged.
 
 * `const STORAGE_KEY = "brf-schedule:building"`
 * `saveBuilding(config: BuildingConfig): void` -- serializes to JSON, writes to localStorage.
@@ -177,7 +196,7 @@ Uses `try/catch` around all localStorage operations for robustness (private brow
 
 ==== `App.svelte`
 
-Root component. Renders `BuildingConfigPanel` as the main (and currently only) view.
+Root component. Renders `BuildingConfigPanel` as the main (and currently only) view. Unchanged.
 
 ==== `BuildingConfigPanel.svelte`
 
@@ -186,53 +205,181 @@ The main orchestrating component for building configuration.
 State management (Svelte 5 runes):
 
 * `let config = $state<BuildingConfig>(...)` -- initialized from `loadBuilding()` or `createDefaultConfig()`.
-* `let validationErrors = $state<Map<string, string>>(new Map())` -- keyed by field identifier (e.g., `"floorCount"`, `"floor-1-apartments"`).
+* `let validationErrors = $state<Map<string, string>>(new Map())` -- keyed by field identifier (e.g., `"floorCount"`, `"floor-1-apartments"`, `"uniformCount"`).
+* `let uniformMode = $state<boolean>(false)` -- whether uniform apartment count mode is active. UI-only state, not persisted.
 * `let apartments = $derived(generateAllApartments(config))` -- recalculated reactively.
 * `let totalCount = $derived(totalApartments(config))` -- recalculated reactively.
 * `$effect(() => { ... })` -- persists valid configuration to localStorage whenever config changes.
 
-Behavior:
+New behavior for uniform mode:
 
-* Renders a floor count input field at the top.
-* Renders a `FloorInputRow` for each floor.
-* Displays total apartment count.
-* Renders a `BuildingFacade` component with the current config and apartments.
-* Provides a reset button. On click, shows a `confirm()` dialog (browser native). On confirm, calls `clearBuilding()` and resets config to `createDefaultConfig()`.
+* A checkbox labeled "Samma antal lägenheter på alla våningar" is rendered below the floor count input.
+* When checked (`uniformMode = true`), the `{#each config.floors}` block rendering `FloorInputRow` components is hidden, and a single input field labeled "Antal lägenheter per våning:" is shown instead.
+* The single input's value is derived from `config.floors[0].apartmentCount`.
+* On change, the handler validates with `validateApartmentCount()` and calls `config = setUniformApartmentCount(config, value)`.
+* When the checkbox is toggled ON, the handler calls `config = setUniformApartmentCount(config, config.floors[0].apartmentCount)` to synchronize all floors to floor 1's count.
+* When the checkbox is toggled OFF, no changes are made -- the current per-floor values (which are all equal) are preserved and the per-floor inputs reappear.
+
+Existing behavior for floor count, per-floor input, total count, reset, and auto-save is unchanged.
 
 ==== `FloorInputRow.svelte`
 
-Props:
-
-* `floorNumber: number` -- the floor being configured.
-* `apartmentCount: number` -- current apartment count for this floor (bindable).
-* `error: string | undefined` -- validation error for this floor.
-
-Renders a labeled input for the apartment count on a specific floor. Emits changes via Svelte's `bind:` or callback prop pattern.
+Unchanged. Props: `floorNumber`, `apartmentCount`, `error`, `onchange`.
 
 ==== `BuildingFacade.svelte`
 
-Props:
+Fully rewritten to render a detailed, visually rich SVG facade. Props remain unchanged: `config: BuildingConfig`, `apartments: Apartment[]`.
 
-* `config: BuildingConfig` -- the building configuration.
-* `apartments: Apartment[]` -- computed apartment objects.
+===== SVG Structure
 
-Renders an inline SVG element representing the building front facade:
+The SVG uses a `<defs>` section for reusable definitions:
 
-* The SVG is a calculated viewBox based on the maximum apartments per floor and the floor count.
-* Each floor is a horizontal row of rectangles (apartment windows/doors).
-* Each rectangle is labeled with the apartment identifier using SVG `<text>`.
-* Floors are rendered bottom-up (floor 1 at the bottom).
-* A roof triangle is drawn at the top.
-* The building has a simple outline (walls).
+[source,xml]
+----
+<defs>
+  <!-- Wall gradient: warm stone, lighter at top, slightly darker at bottom -->
+  <linearGradient id="wallGradient" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#e8d5b7" />
+    <stop offset="100%" stop-color="#d4b896" />
+  </linearGradient>
 
-The SVG dimensions are computed reactively:
+  <!-- Sky gradient: light blue fading to white -->
+  <linearGradient id="skyGradient" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#87ceeb" />
+    <stop offset="100%" stop-color="#d4eaf7" />
+  </linearGradient>
 
-* `const APARTMENT_WIDTH = 60`
-* `const APARTMENT_HEIGHT = 50`
-* `const FLOOR_PADDING = 10`
-* `const WALL_PADDING = 20`
-* ViewBox width = `max apartments per floor * APARTMENT_WIDTH + 2 * WALL_PADDING`
-* ViewBox height = `floor count * (APARTMENT_HEIGHT + FLOOR_PADDING) + roof height + WALL_PADDING`
+  <!-- Window glass gradient: subtle reflection -->
+  <linearGradient id="glassGradient" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#a8d4e6" />
+    <stop offset="40%" stop-color="#d4e6f1" />
+    <stop offset="100%" stop-color="#87b5c9" />
+  </linearGradient>
+
+  <!-- Ground gradient: grass -->
+  <linearGradient id="groundGradient" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#5a8c69" />
+    <stop offset="100%" stop-color="#4a7c59" />
+  </linearGradient>
+
+  <!-- Drop shadow filter for building depth -->
+  <filter id="buildingShadow" x="-5%" y="-5%" width="115%" height="115%">
+    <feDropShadow dx="3" dy="3" stdDeviation="4" flood-color="#00000033" />
+  </filter>
+</defs>
+----
+
+===== Color Palette
+
+[cols="2,2,3", options="header"]
+|===
+| Element | Color | Hex
+
+| Wall base (warm stone)
+| Linear gradient
+| #e8d5b7 to #d4b896
+
+| Window frame (dark)
+| Solid
+| #2c3e50
+
+| Window glass
+| Linear gradient
+| #a8d4e6 to #87b5c9
+
+| Window sill / header
+| Solid
+| #8b7355
+
+| Roof (terracotta)
+| Solid
+| #a0522d
+
+| Roof ridge
+| Solid
+| #7a3b1e
+
+| Chimney
+| Solid
+| #6b4c3b
+
+| Sky
+| Linear gradient
+| #87ceeb to #d4eaf7
+
+| Ground (green)
+| Linear gradient
+| #5a8c69 to #4a7c59
+
+| Door (dark wood)
+| Solid
+| #5c4033
+
+| Balcony railing
+| Solid
+| #4a4a4a
+
+| Floor separator
+| Solid
+| #c4a882 (subtle)
+|===
+
+===== Rendering Layers (back to front)
+
+1. **Sky background**: Full-viewport `<rect>` with `skyGradient` fill.
+
+2. **Ground area**: A `<rect>` at the bottom spanning full width, filled with `groundGradient`. Simple ellipses (2-3 bushes) positioned along the ground strip in dark green (#3a6b49).
+
+3. **Building body**: A `<rect>` with `wallGradient` fill, with `filter="url(#buildingShadow)"` applied. Positioned from roof base to ground level.
+
+4. **Floor separators**: Horizontal `<line>` elements between each floor in `#c4a882`, `stroke-width="1"`, `opacity="0.6"`.
+
+5. **Windows per apartment**: Each apartment is rendered as a window group:
+   * Outer frame: `<rect>` in `#2c3e50`, 2px wider/taller than inner glass.
+   * Inner glass: `<rect>` with `glassGradient` fill.
+   * Window cross: Vertical and horizontal `<line>` in `#2c3e50`, `stroke-width="0.5"`.
+   * Sill: A small `<rect>` below the window, `#8b7355`, protruding 2px on each side.
+   * Header: A small `<rect>` above the window, `#8b7355`, protruding 1px on each side.
+   * Apartment label: `<text>` centered below the sill, `font-size="9"`, `#2c3e50`.
+
+6. **Balconies**: On alternating apartments (every other `position` on each floor, offset by 1 between floors for staggering), render:
+   * A protruding `<rect>` below the window (balcony platform), `#8b7355`, 4px thick.
+   * Vertical railing lines: 3 thin `<line>` elements in `#4a4a4a` above the platform.
+   * Condition: `(floorNumber + position) % 2 === 0` determines which apartments get balconies.
+
+7. **Entrance door** (ground floor only): Centered horizontally on the building.
+   * Outer doorframe: `<rect>` in `#5c4033`.
+   * Two door panels: Two `<rect>` elements side by side in `#7a5c47`.
+   * Door handles: Two small `<circle>` elements in `#c4a882`.
+   * Replaces the center window(s) on floor 1 -- if floor 1 has an odd apartment count, the middle apartment is replaced by the door; if even, the door occupies the center gap between the two middle apartments. Door width equals approximately 1.5x a window width.
+
+8. **Roof**: A `<polygon>` (triangle) in `#a0522d` spanning the building width.
+   * Ridge line: A `<line>` along the top edge of the triangle, `#7a3b1e`, `stroke-width="2"`.
+   * Chimney: A `<rect>` on the right quarter of the roof, `#6b4c3b`, extending above the roof slope. A small smoke wisp: 2-3 `<path>` elements using quadratic bezier curves (`Q`), `stroke="#cccccc"`, `fill="none"`, `stroke-width="1.5"`, `opacity="0.5"`.
+
+===== Layout Constants
+
+Updated constants for the enhanced facade:
+
+* `APARTMENT_WIDTH = 70` (increased from 60 for sills/headers)
+* `APARTMENT_HEIGHT = 55` (increased from 50 for sills/headers)
+* `FLOOR_PADDING = 12`
+* `WALL_PADDING = 30` (increased for shadows and ground)
+* `ROOF_HEIGHT = 50` (increased for chimney)
+* `GROUND_HEIGHT = 35` (new -- vegetation strip)
+* `WINDOW_INSET = 8` (padding inside the apartment cell for the window)
+* `SILL_HEIGHT = 4`
+* `HEADER_HEIGHT = 3`
+* `BALCONY_DEPTH = 12`
+
+ViewBox:
+
+* Width = `maxApartments * APARTMENT_WIDTH + 2 * WALL_PADDING`
+* Height = `floorCount * (APARTMENT_HEIGHT + FLOOR_PADDING) + ROOF_HEIGHT + GROUND_HEIGHT + WALL_PADDING`
+
+===== Accessibility
+
+The `<svg>` element retains `role="img"` and `aria-label="Fasadillustration av byggnaden"` for screen reader accessibility.
 
 === File Structure
 
@@ -243,17 +390,17 @@ src/
 ├── App.svelte                  # Root component
 ├── lib/
 │   ├── models/
-│   │   ├── building.ts         # TypeScript interfaces
-│   │   └── building-model.ts   # Pure business logic functions
+│   │   ├── building.ts         # TypeScript interfaces (unchanged)
+│   │   └── building-model.ts   # Pure business logic + setUniformApartmentCount
 │   ├── services/
-│   │   └── storage.ts          # localStorage persistence
+│   │   └── storage.ts          # localStorage persistence (unchanged)
 │   └── components/
-│       ├── BuildingConfigPanel.svelte
-│       ├── FloorInputRow.svelte
-│       └── BuildingFacade.svelte
+│       ├── BuildingConfigPanel.svelte  # + uniform mode toggle
+│       ├── FloorInputRow.svelte        # unchanged
+│       └── BuildingFacade.svelte       # rewritten: enhanced SVG
 └── __tests__/
-    ├── building-model.test.ts  # Unit tests for business logic
-    └── storage.test.ts         # Unit tests for persistence
+    ├── building-model.test.ts  # + tests for setUniformApartmentCount
+    └── storage.test.ts         # unchanged
 ----
 
 == Story Resolution
@@ -312,3 +459,29 @@ Criteria::
 * Confirmation before reset -> Button click triggers `confirm()` dialog (BCFG-023)
 * Clear and restore defaults on confirm -> Calls `clearBuilding()` + `createDefaultConfig()` (BCFG-024)
 * Cancel preserves configuration -> `confirm()` returns false, no action taken (BCFG-025)
+
+=== US-007: Uniform Apartment Count Per Level
+
+Components:: BuildingConfigPanel, building-model
+Criteria::
+* Toggle control -> Checkbox "Samma antal lägenheter på alla våningar" in BuildingConfigPanel (BCFG-026)
+* Single shared input when enabled -> Per-floor FloorInputRow components hidden; single "Antal lägenheter per våning" input shown (BCFG-027)
+* Shared input applies to all floors -> Handler calls `setUniformApartmentCount(config, value)` (BCFG-028)
+* Uniform count range 1-20 -> Reuses `validateApartmentCount()` (BCFG-029)
+* Validation error -> Error displayed next to shared input (BCFG-030)
+* Per-floor inputs restored when disabled -> `uniformMode = false` re-shows FloorInputRow components; floor data unchanged (BCFG-031)
+* Enable sets all floors to floor 1 count -> `setUniformApartmentCount(config, config.floors[0].apartmentCount)` on toggle ON (BCFG-032)
+
+=== US-008: Enhanced Building Facade Illustration
+
+Components:: BuildingFacade
+Criteria::
+* Gradient/textured walls -> `wallGradient` applied to building body rect (BCFG-033)
+* Window frames with sills and headers -> Each window has outer frame, inner glass, sill rect, header rect (BCFG-034)
+* Detailed roof with ridge and chimney -> Roof polygon + ridge line + chimney rect + smoke wisps (BCFG-035)
+* Entrance door on ground floor -> Centered double door with handles, replacing center window(s) (BCFG-036)
+* Balconies on alternating apartments -> Platform + railing lines where `(floorNumber + position) % 2 === 0` (BCFG-037)
+* Floor separator lines -> Horizontal lines between floors in subtle color (BCFG-038)
+* Ground area with vegetation -> Green gradient strip + bush ellipses below building (BCFG-039)
+* Drop shadows -> SVG `<filter>` with `feDropShadow` on building body (BCFG-040)
+* Real-time update -> Svelte reactivity re-renders all SVG elements on config change (BCFG-041)

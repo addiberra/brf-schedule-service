@@ -22,6 +22,7 @@ import {
   totalApartments,
   createDefaultConfig,
   adjustFloors,
+  setUniformApartmentCount,
 } from '../lib/models/building-model.js';
 import type { BuildingConfig } from '../lib/models/building.js';
 
@@ -312,5 +313,87 @@ describe('adjustFloors: preserve existing data when changing floor count', () =>
     // Remaining floors preserved
     expect(adjusted.floors[0].apartmentCount).toBe(5);
     expect(adjusted.floors[1].apartmentCount).toBe(3);
+  });
+});
+
+describe('setUniformApartmentCount', () => {
+  it('should set all floors to the given count', () => {
+    const config: BuildingConfig = {
+      floorCount: 3,
+      floors: [
+        { floorNumber: 1, apartmentCount: 2 },
+        { floorNumber: 2, apartmentCount: 5 },
+        { floorNumber: 3, apartmentCount: 1 },
+      ],
+    };
+    const result = setUniformApartmentCount(config, 4);
+    for (const floor of result.floors) {
+      expect(floor.apartmentCount).toBe(4);
+    }
+  });
+
+  it('should preserve floor numbers', () => {
+    const config: BuildingConfig = {
+      floorCount: 3,
+      floors: [
+        { floorNumber: 1, apartmentCount: 2 },
+        { floorNumber: 2, apartmentCount: 3 },
+        { floorNumber: 3, apartmentCount: 4 },
+      ],
+    };
+    const result = setUniformApartmentCount(config, 6);
+    expect(result.floors[0].floorNumber).toBe(1);
+    expect(result.floors[1].floorNumber).toBe(2);
+    expect(result.floors[2].floorNumber).toBe(3);
+  });
+
+  it('should work with different floor counts', () => {
+    const config1: BuildingConfig = {
+      floorCount: 1,
+      floors: [{ floorNumber: 1, apartmentCount: 2 }],
+    };
+    const result1 = setUniformApartmentCount(config1, 5);
+    expect(result1.floors.length).toBe(1);
+    expect(result1.floors[0].apartmentCount).toBe(5);
+
+    const config5: BuildingConfig = {
+      floorCount: 5,
+      floors: Array.from({ length: 5 }, (_, i) => ({
+        floorNumber: i + 1,
+        apartmentCount: i + 1,
+      })),
+    };
+    const result5 = setUniformApartmentCount(config5, 3);
+    expect(result5.floors.length).toBe(5);
+    for (const floor of result5.floors) {
+      expect(floor.apartmentCount).toBe(3);
+    }
+  });
+
+  it('should produce a config whose uniform count passes validation', () => {
+    const config: BuildingConfig = {
+      floorCount: 2,
+      floors: [
+        { floorNumber: 1, apartmentCount: 2 },
+        { floorNumber: 2, apartmentCount: 3 },
+      ],
+    };
+
+    // Valid count
+    const valid = setUniformApartmentCount(config, 10);
+    for (const floor of valid.floors) {
+      expect(validateApartmentCount(floor.apartmentCount).valid).toBe(true);
+    }
+
+    // Out-of-range counts fail validation (the function itself does not clamp)
+    const tooHigh = setUniformApartmentCount(config, 21);
+    for (const floor of tooHigh.floors) {
+      expect(validateApartmentCount(floor.apartmentCount).valid).toBe(false);
+    }
+
+    const tooLow = setUniformApartmentCount(config, 0);
+    for (const floor of tooLow.floors) {
+      expect(validateApartmentCount(floor.apartmentCount).valid).toBe(false);
+    }
   });
 });

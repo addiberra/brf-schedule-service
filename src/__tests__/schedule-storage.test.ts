@@ -47,6 +47,7 @@ const testConfig: ScheduleConfig = {
   startDate: '2026-03-02',
   endDate: '2026-03-13',
   dailyStartTime: 540,
+  dailyEndTime: 1080,
   durationMinutes: 30,
   lunchBreakEnabled: true,
   lunchStartTime: 720,
@@ -144,5 +145,33 @@ describe('clearSchedule', () => {
     );
     const loaded = loadSchedule();
     expect(loaded).toBeNull();
+  });
+});
+
+describe('backward compatibility: dailyEndTime', () => {
+  it('should default dailyEndTime to 1080 when loading saved data without it', () => {
+    // Simulate saved data from before dailyEndTime was added
+    const legacyConfig = {
+      startDate: '2026-03-02',
+      endDate: '2026-03-13',
+      dailyStartTime: 540,
+      durationMinutes: 30,
+      lunchBreakEnabled: true,
+      lunchStartTime: 720,
+      lunchEndTime: 780,
+      excludeWeekends: true,
+      excludedDates: [],
+      maxPerDay: 10,
+    };
+    const legacyData = {
+      config: legacyConfig,
+      overrides: [],
+    };
+    localStorageMock.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(legacyData));
+    vi.clearAllMocks();
+
+    const loaded = loadSchedule();
+    expect(loaded).not.toBeNull();
+    expect(loaded!.config.dailyEndTime).toBe(1080);
   });
 });

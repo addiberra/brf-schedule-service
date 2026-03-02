@@ -1,5 +1,18 @@
 = State Transition Log
-:last-updated: 2026-03-02
+:last-updated: 2026-03-03
+
+== TRANSITION-002
+:date: 2026-03-03
+:intent: Fix template creation bug, add browser-locale date/time formatting, configurable end-of-day, uniform apartment count per level, enhanced building illustration, Playwright E2E tests, and README
+:type: Feature evolution (multi-feature)
+:risk: High
+:features: message-templates (extended), inspection-scheduling (extended), building-configuration (extended)
+:desired-state: Template creation works correctly, dates/times format per browser locale, end-of-day is configurable, floors support uniform apartment count, building facade is detailed and visually rich, Playwright E2E tests verify all features across 3 browsers, and a README documents the project
+:prior-state: All 4 features implemented (TRANSITION-001). Template add bug present. Hardcoded Swedish date formatting. Hardcoded 18:00 end-of-day. Per-floor apartment input only. Simple building SVG. No E2E tests. No README.
+:capabilities-invoked: needs-stories (x3), needs-spec (x3), needs-design (x3), needs-tasks (x3), needs-tests (x3), needs-implementation (x3)
+:constraints-checked: Dependencies (pass -- Playwright added as dev dependency, 0 runtime deps), Hosting (pass -- static output unchanged), Data (pass -- localStorage only), UI (pass -- Swedish UI retained), Print (pass -- browser-native print unchanged), Quality (pass -- TypeScript strict, 229 unit tests passing, 105 E2E tests passing across Chromium/Firefox/WebKit, build clean)
+:artifacts-modified: docs/features/message-templates/user-stories.adoc (v1.2.0), docs/features/message-templates/spec.adoc (v1.1.0), docs/features/message-templates/design.adoc (v1.1.0), docs/features/message-templates/tasks.adoc (v2.0.0), docs/features/inspection-scheduling/user-stories.adoc (v1.2.0), docs/features/inspection-scheduling/spec.adoc (v1.1.0), docs/features/inspection-scheduling/design.adoc (v1.1.0), docs/features/inspection-scheduling/tasks.adoc (v2.0.0), docs/features/building-configuration/user-stories.adoc (v1.2.0), docs/features/building-configuration/spec.adoc (v1.1.0), docs/features/building-configuration/design.adoc (v1.1.0), docs/features/building-configuration/tasks.adoc (v2.0.0), src/lib/components/BuildingConfigPanel.svelte, src/lib/components/BuildingFacade.svelte, src/lib/components/MessageTemplatePanel.svelte, src/lib/components/TemplateEditor.svelte, src/lib/components/TemplateList.svelte, src/lib/components/TemplatePreview.svelte, src/lib/components/ScheduleConfigPanel.svelte, src/lib/components/ScheduleView.svelte, src/lib/components/ScheduleAppointmentRow.svelte, src/lib/components/PrintPanel.svelte, src/lib/models/building-model.ts, src/lib/models/schedule.ts, src/lib/models/schedule-model.ts, src/lib/models/template.ts, src/lib/models/template-model.ts, src/lib/services/storage.ts, src/__tests__/building-model.test.ts, src/__tests__/building-facade.test.ts, src/__tests__/schedule-model.test.ts, src/__tests__/schedule-storage.test.ts, src/__tests__/template-model.test.ts, playwright.config.ts, e2e/*.spec.ts, package.json, package-lock.json, .gitignore, README.md
+:result: Achieved
 
 == TRANSITION-001
 :date: 2026-03-02

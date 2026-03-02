@@ -1,5 +1,5 @@
 = User Stories: Building Configuration
-:version: 1.1.0
+:version: 1.2.0
 :last-updated: 2026-03-02
 :feature: building-configuration
 :toc:
@@ -76,3 +76,35 @@ Acceptance Criteria:
 * [ ] When the user activates the reset function, the system shall ask for confirmation before proceeding.
 * [ ] When the user confirms the reset, the system shall clear the saved configuration and restore default values.
 * [ ] If the user cancels the reset, then the system shall leave the configuration unchanged.
+
+== US-007: Uniform Apartment Count Per Level
+As a BRF administrator,
+I want to set all floors to the same apartment count with a single input,
+so that I don't have to configure each floor individually when the building has uniform floors.
+
+Acceptance Criteria:
+
+* [ ] The system shall provide a toggle control to enable uniform apartment count mode.
+* [ ] When uniform mode is enabled, the system shall replace the per-floor apartment inputs with a single shared input field.
+* [ ] When the user changes the shared input value, the system shall apply the same apartment count to all floors.
+* [ ] The system shall accept a uniform apartment count between 1 and 20.
+* [ ] If the user enters a uniform apartment count less than 1 or greater than 20, then the system shall display a validation error.
+* [ ] When uniform mode is disabled, the system shall show per-floor inputs with the current apartment counts preserved.
+* [ ] When the user enables uniform mode, the system shall set all floors to the apartment count of floor 1.
+
+== US-008: Enhanced Building Facade Illustration
+As a BRF administrator,
+I want the building illustration to be detailed and visually appealing,
+so that I get a clear visual overview of the building structure.
+
+Acceptance Criteria:
+
+* [ ] The system shall render the building facade with textured or gradient walls that convey material depth.
+* [ ] The system shall display window frames with sills and headers on each apartment.
+* [ ] The system shall display a detailed roof with a ridge line and chimney.
+* [ ] The system shall display an entrance door on the ground floor.
+* [ ] The system shall display balconies on alternating apartments.
+* [ ] The system shall display floor separator lines between each level.
+* [ ] The system shall display a ground area with vegetation below the building.
+* [ ] The system shall apply drop shadows to the building for visual depth.
+* [ ] When the building configuration changes, the enhanced facade shall update in real time.

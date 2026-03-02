@@ -10,17 +10,19 @@
   let { template, onsave }: Props = $props();
 
   // Local editing state -- deep clone to avoid mutating parent state
-  let editName = $state(template.name);
-  let editBody = $state(template.body);
-  let editPlaceholders = $state<PlaceholderMapping[]>(
-    template.placeholders.map((p) => ({ ...p }))
-  );
+  let editName = $state('');
+  let editBody = $state('');
+  let editPlaceholders: PlaceholderMapping[] = $state([]);
 
-  // Sync when a different template is selected
+  // Sync when a different template is selected (track id only)
+  let lastTemplateId = $state('');
   $effect(() => {
-    editName = template.name;
-    editBody = template.body;
-    editPlaceholders = template.placeholders.map((p) => ({ ...p }));
+    if (template.id !== lastTemplateId) {
+      lastTemplateId = template.id;
+      editName = template.name;
+      editBody = template.body;
+      editPlaceholders = template.placeholders.map((p) => ({ ...p }));
+    }
   });
 
   const availableFields = getAvailableDataFields();
@@ -64,7 +66,7 @@
   }
 </script>
 
-<div class="template-editor">
+<div class="template-editor" data-testid="template-editor">
   <div class="field-group">
     <label for="template-name">Mallnamn:</label>
     <input
@@ -81,7 +83,7 @@
       id="template-body"
       bind:value={editBody}
       rows="8"
-      placeholder="Skriv ditt meddelande här. Använd {platshållare} för dynamiska fält..."
+      placeholder="Skriv ditt meddelande här. Använd &#123;platshållare&#125; för dynamiska fält..."
     ></textarea>
   </div>
 
@@ -152,7 +154,7 @@
   </div>
 
   <div class="actions">
-    <button class="btn btn-save" onclick={handleSave}>Spara mall</button>
+    <button class="btn btn-save" data-testid="template-save-btn" onclick={handleSave}>Spara mall</button>
   </div>
 </div>
 

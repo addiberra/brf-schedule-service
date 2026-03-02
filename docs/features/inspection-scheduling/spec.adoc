@@ -1,6 +1,6 @@
 = Specification: Inspection Scheduling
-:version: 1.0.0
-:source-stories-version: 1.1.0
+:version: 1.1.0
+:source-stories-version: 1.2.0
 :last-updated: 2026-03-02
 :feature: inspection-scheduling
 :prefix: SCHED
@@ -253,6 +253,62 @@ Type:: Unwanted behavior
 Source:: US-008: Save Inspection Schedule, Criterion 3
 Verification:: Clear all application data from browser storage. Open the application. Confirm the system displays an empty schedule state (not an error state) with default configuration values.
 
+== SCHED-036
+The system shall provide an input for the daily inspection end time.
+
+Type:: Ubiquitous
+Source:: US-009: Configure Daily End Time, Criterion 1
+Verification:: Open the inspection scheduling view. Confirm that a time input for daily end time is visible.
+
+== SCHED-037
+The system shall use the configured daily end time when calculating the maximum number of inspections that fit in a day.
+
+Type:: Ubiquitous
+Source:: US-009: Configure Daily End Time, Criterion 2
+Verification:: Set daily start time to 09:00, end time to 15:00, duration 60 minutes, lunch disabled. Confirm only 6 inspections are scheduled per day. Change end time to 17:00. Confirm 8 are now possible.
+
+== SCHED-038
+If the daily end time is not after the daily start time, then the system shall display a validation error.
+
+Type:: Unwanted behavior
+Source:: US-009: Configure Daily End Time, Criterion 3
+Verification:: Set daily start time to 14:00 and end time to 10:00. Confirm a validation error is displayed. Set end time equal to start time. Confirm a validation error is displayed.
+
+== SCHED-039
+When the user changes the daily end time, the system shall recalculate the schedule.
+
+Type:: Event-driven
+Source:: US-009: Configure Daily End Time, Criterion 4
+Verification:: Configure a schedule. Change the daily end time. Confirm the appointment times update.
+
+== SCHED-040
+The system shall default the daily end time to 18:00 (1080 minutes since midnight).
+
+Type:: Ubiquitous
+Source:: US-009: Configure Daily End Time, Criterion 5
+Verification:: Open the application with no saved schedule. Confirm the daily end time defaults to 18:00.
+
+== SCHED-041
+The system shall provide a locale-aware date formatting function that uses the browser's `Intl.DateTimeFormat` API with weekday, day, month, and year.
+
+Type:: Ubiquitous
+Source:: US-010: Browser-Locale Date Formatting, Criterion 1, 2
+Verification:: Call `formatDateLocale()` with a known date. Confirm the output includes the weekday, day number, month name, and year formatted according to the browser's locale.
+
+== SCHED-042
+If the browser's `Intl.DateTimeFormat` is unavailable or throws an error, then the system shall fall back to Swedish date formatting.
+
+Type:: Unwanted behavior
+Source:: US-010: Browser-Locale Date Formatting, Criterion 3
+Verification:: Simulate `Intl.DateTimeFormat` failure. Confirm `formatDateLocale()` returns the same output as `formatDateSwedish()`.
+
+== SCHED-043
+The system shall retain the existing `formatDateSwedish()` function for backward compatibility.
+
+Type:: Ubiquitous
+Source:: US-010: Browser-Locale Date Formatting, Criterion 4
+Verification:: Confirm `formatDateSwedish()` is still exported and produces the same output as before (e.g., "torsdag 10 april 2026").
+
 == Traceability
 
 [cols="1,2,2", options="header"]
@@ -398,4 +454,36 @@ Verification:: Clear all application data from browser storage. Open the applica
 | SCHED-035
 | Empty state when no saved schedule
 | US-008: Criterion 3
+
+| SCHED-036
+| Daily end time input
+| US-009: Criterion 1
+
+| SCHED-037
+| Use configured end time for max per day calculation
+| US-009: Criterion 2
+
+| SCHED-038
+| Validation error for end time not after start time
+| US-009: Criterion 3
+
+| SCHED-039
+| Recalculate on end time change
+| US-009: Criterion 4
+
+| SCHED-040
+| Default daily end time to 18:00
+| US-009: Criterion 5
+
+| SCHED-041
+| Locale-aware date formatting via Intl.DateTimeFormat
+| US-010: Criterion 1, 2
+
+| SCHED-042
+| Swedish fallback on Intl failure
+| US-010: Criterion 3
+
+| SCHED-043
+| Retain formatDateSwedish for compatibility
+| US-010: Criterion 4
 |===

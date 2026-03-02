@@ -427,3 +427,32 @@ describe('generateTemplateId', () => {
     expect(ids.size).toBe(10);
   });
 });
+
+describe('TMPL-025 to TMPL-028: dateFormatted DataField', () => {
+  it('should resolve dateFormatted to a non-empty string', () => {
+    const apartment = makeApartment('1001', 1, 1);
+    const appointment = makeAppointment('1001', 1, 1, '2026-03-10', 540);
+    const result = resolveDataField('dateFormatted', apartment, appointment);
+    expect(result.length).toBeGreaterThan(0);
+  });
+
+  it('should include dateFormatted in available data fields', () => {
+    const fields = getAvailableDataFields();
+    const fieldKeys = fields.map((f) => f.field);
+    expect(fieldKeys).toContain('dateFormatted');
+  });
+
+  it('should return empty string for dateFormatted when no appointment exists', () => {
+    const apartment = makeApartment('1001', 1, 1);
+    const result = resolveDataField('dateFormatted', apartment, null);
+    expect(result).toBe('');
+  });
+
+  it('should still resolve dateSwedish for backward compatibility', () => {
+    const apartment = makeApartment('1001', 1, 1);
+    const appointment = makeAppointment('1001', 1, 1, '2026-03-10', 540);
+    const result = resolveDataField('dateSwedish', apartment, appointment);
+    expect(result).toContain('mars');
+    expect(result).toContain('2026');
+  });
+});

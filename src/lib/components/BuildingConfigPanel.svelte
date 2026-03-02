@@ -8,6 +8,7 @@
     generateAllApartments,
     totalApartments,
     adjustFloors,
+    setUniformApartmentCount,
   } from '../models/building-model.js';
   import { saveBuilding, loadBuilding, clearBuilding } from '../services/storage.js';
   import FloorInputRow from './FloorInputRow.svelte';
@@ -21,6 +22,8 @@
 
   let config: BuildingConfig = $state(loadBuilding() ?? createDefaultConfig());
   let validationErrors: Map<string, string> = $state(new Map());
+  let uniformMode = $state(false);
+  let uniformCount = $state(2);
 
   let apartments: Apartment[] = $derived(generateAllApartments(config));
   let totalCount: number = $derived(totalApartments(config));
@@ -54,6 +57,10 @@
     errors.delete('floorCount');
     validationErrors = errors;
     config = adjustFloors(config, value);
+
+    if (uniformMode) {
+      config = setUniformApartmentCount(config, uniformCount);
+    }
   }
 
   function handleApartmentCountChange(floorIndex: number, value: number) {
@@ -81,6 +88,8 @@
       clearBuilding();
       config = createDefaultConfig();
       validationErrors = new Map();
+      uniformMode = false;
+      uniformCount = 2;
     }
   }
 </script>
@@ -108,16 +117,66 @@
       {/if}
     </div>
 
+    <div class="field-group">
+      <label class="checkbox-label">
+        <input
+          type="checkbox"
+          checked={uniformMode}
+          onchange={(e) => {
+            uniformMode = (e.target as HTMLInputElement).checked;
+            if (uniformMode) {
+              uniformCount = config.floors[0]?.apartmentCount ?? 2;
+              config = setUniformApartmentCount(config, uniformCount);
+            }
+          }}
+        />
+        Samma antal på alla våningar
+      </label>
+    </div>
+
     <h3>Lägenheter per våning</h3>
 
-    {#each config.floors as floor, i}
-      <FloorInputRow
-        floorNumber={floor.floorNumber}
-        apartmentCount={floor.apartmentCount}
-        error={validationErrors.get(`floor-${i}-apartments`)}
-        onchange={(value) => handleApartmentCountChange(i, value)}
-      />
-    {/each}
+    {#if uniformMode}
+      <div class="field-group">
+        <label for="uniform-apartments">Antal lägenheter per våning:</label>
+        <input
+          id="uniform-apartments"
+          type="number"
+          min="1"
+          max="20"
+          value={uniformCount}
+          oninput={(e) => {
+            const value = parseInt((e.target as HTMLInputElement).value, 10);
+            if (isNaN(value)) return;
+            const result = validateApartmentCount(value);
+            const errors = new Map(validationErrors);
+            if (!result.valid) {
+              errors.set('uniform-apartments', result.error!);
+              validationErrors = errors;
+              return;
+            }
+            errors.delete('uniform-apartments');
+            validationErrors = errors;
+            uniformCount = value;
+            config = setUniformApartmentCount(config, value);
+          }}
+        />
+        {#if validationErrors.has('uniform-apartments')}
+          <p class="error" id="uniform-apartments-error" role="alert">
+            {validationErrors.get('uniform-apartments')}
+          </p>
+        {/if}
+      </div>
+    {:else}
+      {#each config.floors as floor, i}
+        <FloorInputRow
+          floorNumber={floor.floorNumber}
+          apartmentCount={floor.apartmentCount}
+          error={validationErrors.get(`floor-${i}-apartments`)}
+          onchange={(value) => handleApartmentCountChange(i, value)}
+        />
+      {/each}
+    {/if}
 
     <div class="summary">
       <p>Totalt antal lägenheter: <strong>{totalCount}</strong></p>
@@ -179,7 +238,7 @@
     font-weight: 500;
   }
 
-  .field-group input {
+  .field-group input[type="number"] {
     width: 5rem;
     padding: 0.4rem 0.5rem;
     border: 1px solid #ccc;
@@ -187,9 +246,22 @@
     font-size: 1rem;
   }
 
-  .field-group input:focus {
+  .field-group input[type="number"]:focus {
     outline: 2px solid #3498db;
     outline-offset: 1px;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    font-weight: 500;
+  }
+
+  .checkbox-label input[type="checkbox"] {
+    width: auto;
+    cursor: pointer;
   }
 
   .error {

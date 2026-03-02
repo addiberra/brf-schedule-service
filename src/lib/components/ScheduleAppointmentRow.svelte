@@ -35,7 +35,7 @@
   }
 </script>
 
-<tr class="appointment-row" class:override={appointment.manualOverride}>
+<tr class="appointment-row" class:override={appointment.manualOverride} data-testid="appointment-row-{appointment.apartmentId}">
   <td class="apt-id">{appointment.apartmentId}</td>
   <td class="apt-floor">Vån {appointment.floor}</td>
   {#if editing}

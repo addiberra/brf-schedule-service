@@ -1,5 +1,5 @@
 = User Stories: Message Templates
-:version: 1.1.0
+:version: 1.2.0
 :last-updated: 2026-03-02
 :feature: message-templates
 :toc:
@@ -14,6 +14,7 @@ Acceptance Criteria:
 * [ ] The system shall provide a text editor for composing a message template.
 * [ ] The system shall allow the user to give the template a name for identification.
 * [ ] When the user saves the template, the system shall persist it to localStorage.
+* [ ] When the user creates a new template, the system shall immediately display the template editor with the new template loaded for editing.
 * [ ] The system shall support multiple saved templates.
 
 == US-002: Insert Placeholders in Template
@@ -75,3 +76,15 @@ Acceptance Criteria:
 * [ ] When the user creates or modifies a template, the system shall persist all templates to localStorage.
 * [ ] When the application loads, the system shall restore all previously saved templates from localStorage.
 * [ ] If no saved templates exist, then the system shall display an empty template list.
+
+== US-007: Locale-Aware Data Field Formatting
+As a BRF administrator,
+I want date and time values in rendered templates to be formatted according to my browser's locale,
+so that the output matches my language and regional conventions.
+
+Acceptance Criteria:
+
+* [ ] When the system renders a date data field in a template, the system shall format the date using the browser's locale via the Intl API.
+* [ ] The system shall provide a locale-formatted date data field as a placeholder mapping option.
+* [ ] The system shall retain backward compatibility with previously saved templates that use the former Swedish-specific date field.
+* [ ] If the browser's locale cannot be determined, then the system shall fall back to Swedish date formatting.

@@ -68,6 +68,14 @@
     const target = e.target as HTMLInputElement;
     const minutes = parseTime(target.value);
     scheduleConfig = { ...scheduleConfig, dailyStartTime: minutes };
+    updateValidation();
+  }
+
+  function handleDailyEndTimeChange(e: Event) {
+    const target = e.target as HTMLInputElement;
+    const minutes = parseTime(target.value);
+    scheduleConfig = { ...scheduleConfig, dailyEndTime: minutes };
+    updateValidation();
   }
 
   function handleDurationChange(e: Event) {
@@ -215,6 +223,19 @@
             value={formatTime(scheduleConfig.dailyStartTime)}
             oninput={handleDailyStartTimeChange}
           />
+        </div>
+        <div class="field-group">
+          <label for="daily-end-time">Sluttid:</label>
+          <input
+            id="daily-end-time"
+            type="time"
+            value={formatTime(scheduleConfig.dailyEndTime)}
+            oninput={handleDailyEndTimeChange}
+            aria-invalid={validationErrors.has('dailyEndTime')}
+          />
+          {#if validationErrors.has('dailyEndTime')}
+            <p class="error" role="alert">{validationErrors.get('dailyEndTime')}</p>
+          {/if}
         </div>
         <div class="field-group">
           <label for="duration">Tid per lägenhet (min):</label>

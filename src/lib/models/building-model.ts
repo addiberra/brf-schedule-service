@@ -113,3 +113,19 @@ export function adjustFloors(
   }
   return { floorCount: newFloorCount, floors };
 }
+
+/**
+ * Sets all floors in a building config to the same apartment count.
+ */
+export function setUniformApartmentCount(
+  config: BuildingConfig,
+  count: number
+): BuildingConfig {
+  return {
+    ...config,
+    floors: config.floors.map((floor) => ({
+      ...floor,
+      apartmentCount: count,
+    })),
+  };
+}

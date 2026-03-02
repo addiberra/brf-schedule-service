@@ -5,7 +5,8 @@ export type DataField =
   | 'position'
   | 'date'
   | 'time'
-  | 'dateSwedish';
+  | 'dateSwedish'
+  | 'dateFormatted';
 
 /** A mapping from a placeholder name to a data field */
 export interface PlaceholderMapping {

@@ -1,5 +1,5 @@
 = User Stories: Inspection Scheduling
-:version: 1.1.0
+:version: 1.2.0
 :last-updated: 2026-03-02
 :feature: inspection-scheduling
 :toc:
@@ -102,3 +102,28 @@ Acceptance Criteria:
 * [ ] When the schedule is calculated or modified, the system shall persist the schedule to localStorage.
 * [ ] When the application loads, the system shall restore the previously saved schedule from localStorage.
 * [ ] If no saved schedule exists, then the system shall display an empty schedule state.
+
+== US-009: Configure Daily End Time
+As a BRF administrator,
+I want to specify the daily end time for inspections,
+so that I can control how late in the day inspections are scheduled rather than being limited to a fixed 18:00 cutoff.
+
+Acceptance Criteria:
+
+* [ ] The system shall provide an input for the daily inspection end time.
+* [ ] The system shall use the configured end time when calculating the maximum number of inspections per day.
+* [ ] If the daily end time is not after the daily start time, then the system shall display a validation error.
+* [ ] When the user changes the daily end time, the system shall recalculate the schedule.
+* [ ] The system shall default the daily end time to 18:00 (1080 minutes since midnight).
+
+== US-010: Browser-Locale Date Formatting
+As a BRF administrator,
+I want the schedule to display dates formatted according to my browser's locale,
+so that the dates are readable in my preferred language with a Swedish fallback.
+
+Acceptance Criteria:
+
+* [ ] The system shall provide a locale-aware date formatting function using the browser's `Intl.DateTimeFormat` API.
+* [ ] The locale-aware format shall include weekday, day, month, and year.
+* [ ] If the browser's `Intl.DateTimeFormat` is unavailable or fails, then the system shall fall back to Swedish formatting.
+* [ ] The system shall retain the existing Swedish-only formatting function for backward compatibility.

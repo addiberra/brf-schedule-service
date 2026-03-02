@@ -1,16 +1,16 @@
 = Implementation Tasks: Building Configuration
-:version: 1.0.0
-:status: Implemented
-:source-design-version: 1.0.0
-:source-stories-version: 1.1.0
-:source-spec-version: 1.0.0
+:version: 2.0.0
+:status: Current
+:source-design-version: 1.1.0
+:source-stories-version: 1.2.0
+:source-spec-version: 1.1.0
 :last-updated: 2026-03-02
 :feature: building-configuration
 :toc:
 
 == Overview
 
-Implementation of the building configuration feature -- the first feature in the project. Includes project scaffolding (Vite 6 + Svelte 5 + TypeScript + Vitest), data model, persistence layer, business logic, and UI components with SVG facade illustration. 4 phases, 10 tasks.
+Implementation of the building configuration feature -- the first feature in the project. Includes project scaffolding (Vite 6 + Svelte 5 + TypeScript + Vitest), data model, persistence layer, business logic, and UI components with SVG facade illustration. Phases 1-4 are complete (initial implementation). Phases 5-6 add uniform apartment count mode and enhanced SVG facade. 6 phases, 16 tasks.
 
 == Phase 1: Foundation
 
@@ -98,6 +98,56 @@ Stories:: All (quality)
 Specs:: All (test verification)
 Description:: Ensure `vitest` is configured correctly in `vite.config.ts` (inline config or vitest.config.ts). Add a `"test"` script to package.json. Run `npm run test` and verify all spec-derived tests pass. Fix any issues.
 
+== Phase 5: Uniform Apartment Count
+
+Add the uniform apartment count mode to the model and UI.
+
+* [ ] TASK-011: Add `setUniformApartmentCount` to building-model.ts [parallel]
++
+Components:: src/lib/models/building-model.ts
+Stories:: US-007
+Specs:: BCFG-028, BCFG-032
+Description:: Implement `setUniformApartmentCount(config: BuildingConfig, count: number): BuildingConfig`. Returns a new config with all floors set to the given apartment count. Pure function, no side effects.
+
+* [ ] TASK-012: Add unit tests for `setUniformApartmentCount` [parallel]
++
+Components:: src/__tests__/building-model.test.ts
+Stories:: US-007
+Specs:: BCFG-028, BCFG-029, BCFG-030, BCFG-032
+Description:: Add test cases: applies count to all floors, preserves floor numbers, works with 1 floor, works with many floors. Verify the returned config has the correct structure.
+
+* [ ] TASK-013: Add uniform mode toggle and shared input to BuildingConfigPanel [sequential]
++
+Components:: src/lib/components/BuildingConfigPanel.svelte
+Stories:: US-007
+Specs:: BCFG-026, BCFG-027, BCFG-028, BCFG-029, BCFG-030, BCFG-031, BCFG-032
+Description:: Add `uniformMode` state (boolean, default false). Add a labeled checkbox "Samma antal lägenheter på alla våningar" below the floor count input. When checked, hide per-floor FloorInputRow components and show a single "Antal lägenheter per våning:" input. On change, validate with `validateApartmentCount()` and call `setUniformApartmentCount()`. On toggle ON, sync all floors to floor 1's count. On toggle OFF, preserve current counts and show per-floor inputs. Reset handler also resets `uniformMode` to false.
+
+== Phase 6: Enhanced Building Facade
+
+Rewrite the BuildingFacade SVG to be detailed and visually rich.
+
+* [ ] TASK-014: Rewrite BuildingFacade.svelte with enhanced SVG rendering [sequential]
++
+Components:: src/lib/components/BuildingFacade.svelte
+Stories:: US-008
+Specs:: BCFG-033, BCFG-034, BCFG-035, BCFG-036, BCFG-037, BCFG-038, BCFG-039, BCFG-040, BCFG-041
+Description:: Replace the current SVG rendering with the enhanced design. Add `<defs>` section with gradients (wallGradient, skyGradient, glassGradient, groundGradient) and filter (buildingShadow with feDropShadow). Render layers back-to-front: sky background, ground area with bush ellipses, building body with wall gradient and drop shadow, floor separator lines, window groups (frame + glass + cross + sill + header + label), balconies on alternating apartments `(floorNumber + position) % 2 === 0`, entrance door on ground floor (double door with handles replacing center window), roof polygon with ridge line, chimney with smoke wisps. Update layout constants: APARTMENT_WIDTH=70, APARTMENT_HEIGHT=55, FLOOR_PADDING=12, WALL_PADDING=30, ROOF_HEIGHT=50, GROUND_HEIGHT=35. Preserve `role="img"` and `aria-label` for accessibility.
+
+* [ ] TASK-015: Verify enhanced facade renders correctly across configurations [sequential]
++
+Components:: src/lib/components/BuildingFacade.svelte
+Stories:: US-008, US-004
+Specs:: BCFG-015, BCFG-018, BCFG-041
+Description:: Manually verify the enhanced facade with various configurations: 1 floor / 1 apartment (minimal), 3 floors / 4 apartments (medium), 10 floors / 6 apartments (tall), variable apartments per floor. Confirm all visual elements render correctly, no SVG clipping or overlaps, labels are readable, and real-time updates work.
+
+* [ ] TASK-016: Run full test suite and verify build [sequential]
++
+Components:: All
+Stories:: All
+Specs:: All
+Description:: Run `npm run test` and `npm run build`. Verify all existing tests still pass (no regressions). Verify the build succeeds with no TypeScript errors. Fix any issues.
+
 == Traceability
 
 [cols="1,1,1", options="header"]
@@ -118,7 +168,7 @@ Description:: Ensure `vitest` is configured correctly in `vite.config.ts` (inlin
 
 | US-004: Building Facade Illustration
 | BCFG-014, BCFG-015, BCFG-016, BCFG-017, BCFG-018
-| TASK-007, TASK-008
+| TASK-007, TASK-008, TASK-015
 
 | US-005: Save Building Configuration
 | BCFG-019, BCFG-020, BCFG-021
@@ -127,4 +177,12 @@ Description:: Ensure `vitest` is configured correctly in `vite.config.ts` (inlin
 | US-006: Reset Building Configuration
 | BCFG-022, BCFG-023, BCFG-024, BCFG-025
 | TASK-004, TASK-006, TASK-008
+
+| US-007: Uniform Apartment Count Per Level
+| BCFG-026, BCFG-027, BCFG-028, BCFG-029, BCFG-030, BCFG-031, BCFG-032
+| TASK-011, TASK-012, TASK-013
+
+| US-008: Enhanced Building Facade Illustration
+| BCFG-033, BCFG-034, BCFG-035, BCFG-036, BCFG-037, BCFG-038, BCFG-039, BCFG-040, BCFG-041
+| TASK-014, TASK-015, TASK-016
 |===

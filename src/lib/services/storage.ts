@@ -84,6 +84,10 @@ export function loadSchedule(): {
       return null;
     }
     const data = JSON.parse(raw) as StoredSchedule;
+    // Backward compatibility: default dailyEndTime if missing from saved data
+    if (data.config.dailyEndTime === undefined) {
+      data.config.dailyEndTime = 1080; // 18:00
+    }
     return {
       config: data.config,
       overrides: new Map(data.overrides),
