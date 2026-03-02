@@ -1,0 +1,290 @@
+= System Architecture
+:version: 1.0.0
+:last-updated: 2026-03-02
+:toc:
+
+== Feature Design Sources
+
+[cols="1,1", options="header"]
+|===
+| Feature | Design Version
+
+| building-configuration | 1.0.0
+| inspection-scheduling | 1.0.0
+| message-templates | 1.0.0
+| print-output | 1.0.0
+|===
+
+== Overview
+
+BRF Besiktningsschema is a single-page application for Swedish housing cooperative (BRF) administrators to create apartment inspection schedules. The administrator configures a building's structure, generates an inspection schedule across a date range, writes per-apartment notification letters using templates with placeholders, and prints either individual letters or a schedule overview via the browser's native print dialog.
+
+The application is a static site compiled to vanilla HTML, CSS, and JavaScript. It has zero runtime dependencies. All user data is persisted in the browser's localStorage. There is no backend, no authentication, and no external services.
+
+== System Context (C4 Level 1)
+
+[source,mermaid]
+----
+C4Context
+  title System Context - BRF Besiktningsschema
+
+  Person(admin, "BRF Administrator", "Creates and prints inspection schedules for the housing cooperative")
+
+  System(app, "BRF Besiktningsschema", "Static SPA for building configuration, schedule generation, message templating, and print output")
+
+  System_Ext(browser_storage, "Browser localStorage", "Persists building config, schedule, and templates between sessions")
+  System_Ext(os_print, "OS Print Dialog", "Handles printing and PDF export via window.print()")
+
+  Rel(admin, app, "Configures building, generates schedule, writes templates, prints output")
+  Rel(app, browser_storage, "Reads and writes JSON data", "localStorage API")
+  Rel(app, os_print, "Triggers print", "window.print()")
+----
+
+The system has a single user role: the BRF administrator. External interactions are limited to browser-native APIs -- localStorage for persistence (<<adrs/0002-browser-localstorage-persistence.adoc#,ADR-0002>>) and the OS print dialog for output. No network requests are made after the initial page load.
+
+== Container View (C4 Level 2)
+
+[source,mermaid]
+----
+C4Container
+  title Container Diagram - BRF Besiktningsschema
+
+  Person(admin, "BRF Administrator", "Creates inspection schedules")
+
+  System_Boundary(system, "BRF Besiktningsschema") {
+    Container(spa, "Single-Page Application", "Svelte 5, TypeScript, Vite 6", "Static HTML/CSS/JS served from GitHub Pages. All application logic runs client-side.")
+  }
+
+  System_Ext(gh_pages, "GitHub Pages", "Static file hosting")
+  System_Ext(local_storage, "Browser localStorage", "JSON persistence under brf-schedule:* keys")
+  System_Ext(print_dialog, "OS Print Dialog", "A4 print and PDF export")
+
+  Rel(admin, spa, "Uses", "HTTPS")
+  Rel(gh_pages, spa, "Serves static files", "HTTPS")
+  Rel(spa, local_storage, "Reads/writes", "localStorage API")
+  Rel(spa, print_dialog, "Triggers", "window.print()")
+----
+
+The system is a single container: a client-side SPA compiled by Vite 6 into static assets. GitHub Pages serves the built files. All logic executes in the browser.
+
+== Component Overview
+
+The SPA container is organized into three internal layers. This section provides a structural overview without a formal C4 Level 3 diagram, since the project's complexity does not warrant one.
+
+=== Layer Diagram
+
+[source,mermaid]
+----
+flowchart TD
+  subgraph Components ["UI Layer — Svelte 5 Components"]
+    App["App.svelte<br/>(root, data flow hub)"]
+    BCP["BuildingConfigPanel"]
+    FIR["FloorInputRow"]
+    BF["BuildingFacade"]
+    SCP["ScheduleConfigPanel"]
+    SV["ScheduleView"]
+    SAR["ScheduleAppointmentRow"]
+    MTP["MessageTemplatePanel"]
+    TL["TemplateList"]
+    TE["TemplateEditor"]
+    TP["TemplatePreview"]
+    PP["PrintPanel"]
+    PLP["PrintLetterPage"]
+    PSO["PrintScheduleOverview"]
+  end
+
+  subgraph Models ["Business Logic Layer — Pure TypeScript Functions"]
+    BM["building-model.ts"]
+    SM["schedule-model.ts"]
+    TEM["template-model.ts"]
+    PM["print-model.ts"]
+  end
+
+  subgraph Services ["Persistence Layer"]
+    ST["storage.ts"]
+  end
+
+  subgraph Browser ["Browser APIs"]
+    LS["localStorage"]
+    WP["window.print()"]
+  end
+
+  App --> BCP & SCP & MTP & PP
+  BCP --> FIR & BF & BM & ST
+  SCP --> SV & SM & ST
+  SV --> SAR & SM
+  MTP --> TL & TE & TP & TEM & ST
+  PP --> PLP & PSO & PM
+  PM --> TEM & SM
+  SM --> BM
+  ST --> LS
+  PP --> WP
+----
+
+=== Models (Business Logic)
+
+Pure TypeScript functions with no side effects. Each feature has a type definition file and a model file:
+
+[cols="1,2", options="header"]
+|===
+| Module | Responsibility
+
+| `building.ts` / `building-model.ts`
+| Building configuration types. Validation (floors 1-30, apartments 1-20), apartment ID generation (`floor * 1000 + position`), floor adjustment, default config.
+
+| `schedule.ts` / `schedule-model.ts`
+| Schedule types. Date arithmetic, time formatting (minutes since midnight), weekend/exclusion filtering, lunch break handling, scheduling algorithm (sequential floor-by-floor assignment with manual overrides), validation.
+
+| `template.ts` / `template-model.ts`
+| Template types. Placeholder parsing (`{...}` tokens), data field resolution (apartment + appointment data), template rendering (string substitution), default placeholder mappings with Swedish labels.
+
+| `print.ts` / `print-model.ts`
+| Print data types. Composes data from all three upstream features: generates per-apartment letter data (rendered templates) and schedule overview data (date-grouped appointment tables).
+|===
+
+=== Services (Persistence)
+
+A single module `storage.ts` provides save/load/clear functions for each data domain:
+
+[cols="1,1", options="header"]
+|===
+| localStorage Key | Data
+
+| `brf-schedule:building`
+| `BuildingConfig` as JSON
+
+| `brf-schedule:schedule`
+| `ScheduleConfig` + `ManualOverride[]` tuples as JSON
+
+| `brf-schedule:templates`
+| `MessageTemplate[]` as JSON
+|===
+
+All operations are wrapped in `try/catch` for robustness (private browsing, quota exceeded). The print feature has no persistence.
+
+=== Components (UI)
+
+13 Svelte 5 components using runes (`$state`, `$derived`, `$effect`) for reactivity:
+
+[cols="1,1,2", options="header"]
+|===
+| Feature | Components | Role
+
+| Building Configuration
+| `BuildingConfigPanel`, `FloorInputRow`, `BuildingFacade`
+| Floor/apartment inputs, SVG facade illustration, validation display
+
+| Inspection Scheduling
+| `ScheduleConfigPanel`, `ScheduleView`, `ScheduleAppointmentRow`
+| Date/time/exclusion configuration, appointment list, manual overrides
+
+| Message Templates
+| `MessageTemplatePanel`, `TemplateList`, `TemplateEditor`, `TemplatePreview`
+| Template CRUD, placeholder mapping, live preview with real data
+
+| Print Output
+| `PrintPanel`, `PrintLetterPage`, `PrintScheduleOverview`
+| Mode selection, A4 letter rendering, schedule table, print trigger
+|===
+
+`App.svelte` is the root component and data flow hub. It loads persisted data on startup, computes shared derived state (apartments, schedule result), and passes data down to feature panels via props and callbacks.
+
+== Data Flow
+
+Data flows through the four features in a pipeline, with each feature consuming output from the previous ones:
+
+[source,mermaid]
+----
+flowchart LR
+  subgraph Input ["User Input"]
+    U1["Building structure<br/>(floors, apartments)"]
+    U2["Schedule parameters<br/>(dates, times, exclusions)"]
+    U3["Template text<br/>(body, placeholders)"]
+    U4["Print mode selection"]
+  end
+
+  subgraph Processing ["Business Logic"]
+    BM["building-model<br/>→ Apartment[]"]
+    SM["schedule-model<br/>→ ScheduleResult"]
+    TEM["template-model<br/>→ rendered text"]
+    PM["print-model<br/>→ print data"]
+  end
+
+  subgraph Output ["Output"]
+    SVG["SVG facade illustration"]
+    LIST["Appointment list"]
+    PREVIEW["Template preview"]
+    PRINT["A4 print / PDF"]
+  end
+
+  U1 --> BM --> SM
+  U2 --> SM --> TEM
+  U3 --> TEM --> PM
+  U4 --> PM
+  BM --> SVG
+  SM --> LIST
+  TEM --> PREVIEW
+  PM --> PRINT
+----
+
+1. **Building Configuration** produces `Apartment[]` from the user-defined building structure.
+2. **Inspection Scheduling** consumes `Apartment[]` and schedule parameters to produce `ScheduleResult` (appointments assigned to dates/times).
+3. **Message Templates** consumes `Apartment[]` and `ScheduleResult` to resolve placeholders in user-written templates into rendered text.
+4. **Print Output** consumes all three upstream outputs to compose A4-formatted individual letters or a schedule overview table, triggering `window.print()`.
+
+All intermediate state is reactive. Changes to building configuration cascade through the schedule, templates, and print output automatically via Svelte 5 `$derived` runes in `App.svelte`.
+
+== Technology Stack
+
+[cols="1,2,2", options="header"]
+|===
+| Category | Technology | Rationale
+
+| UI Framework
+| Svelte 5 (`^5.0.0`)
+| <<adrs/0001-svelte5-vite6-typescript-static-site.adoc#,ADR-0001>>: Compiles to vanilla JS, runes for reactivity, zero runtime overhead
+
+| Build Tool
+| Vite 6 (`^6.0.0`)
+| <<adrs/0001-svelte5-vite6-typescript-static-site.adoc#,ADR-0001>>: Fast HMR, native ESM, minimal configuration
+
+| Language
+| TypeScript (`^5.5.0`)
+| <<adrs/0001-svelte5-vite6-typescript-static-site.adoc#,ADR-0001>>: Strict mode type safety for models and algorithms
+
+| Testing
+| Vitest (`^4.0.0`)
+| <<adrs/0001-svelte5-vite6-typescript-static-site.adoc#,ADR-0001>>: Native Vite integration
+
+| Svelte Plugin
+| `@sveltejs/vite-plugin-svelte` (`^5.0.3`)
+| <<adrs/0001-svelte5-vite6-typescript-static-site.adoc#,ADR-0001>>: Official Svelte 5 + Vite 6 integration
+
+| Persistence
+| Browser localStorage
+| <<adrs/0002-browser-localstorage-persistence.adoc#,ADR-0002>>: Zero-infrastructure, namespaced JSON storage
+
+| Print / PDF
+| Browser `window.print()` + CSS `@media print`
+| Project constraint: no PDF library, A4 via `@page` CSS rule
+|===
+
+All five packages are dev dependencies only. The compiled output is vanilla HTML, CSS, and JavaScript with zero runtime dependencies.
+
+== Deployment
+
+[source,mermaid]
+----
+flowchart LR
+  DEV["Developer"] -->|"git push"| GH["GitHub Repository"]
+  GH -->|"GitHub Actions<br/>vite build"| PAGES["GitHub Pages<br/>(static files)"]
+  PAGES -->|"HTTPS"| BROWSER["User's Browser"]
+  BROWSER -->|"localStorage API"| LS["localStorage<br/>(user data)"]
+----
+
+The application is deployed as static files on GitHub Pages:
+
+* `vite build` compiles Svelte components and TypeScript into optimized HTML, CSS, and JavaScript bundles.
+* The `dist/` output is published to GitHub Pages.
+* No server-side code, no API endpoints, no backend infrastructure.
+* User data lives entirely in the browser's localStorage and never leaves the user's device.

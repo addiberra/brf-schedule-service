@@ -1,0 +1,183 @@
+= Specification: Print Output
+:version: 1.0.0
+:source-stories-version: 1.1.0
+:last-updated: 2026-03-02
+:feature: print-output
+:prefix: PRNT
+:toc:
+
+== PRNT-001
+The system shall generate one A4 page per apartment containing the rendered message template with that apartment's data.
+
+Type:: Ubiquitous
+Source:: US-001: Print Individual Apartment Letters, Criterion 1
+Verification:: Configure a building with at least 2 apartments, create a schedule and a message template. Select individual letters print mode. Confirm that each apartment has its own page with the rendered template content.
+
+== PRNT-002
+When the user initiates print for individual letters, the system shall open the browser's print dialog with all apartment letters.
+
+Type:: Event-driven
+Source:: US-001: Print Individual Apartment Letters, Criterion 2
+Verification:: Select individual letters print mode. Click the print button. Confirm the browser's print dialog opens with all apartment letters in the preview.
+
+== PRNT-003
+The system shall format each letter to fit on a single A4 page.
+
+Type:: Ubiquitous
+Source:: US-001: Print Individual Apartment Letters, Criterion 3
+Verification:: Print or print-preview the individual letters. Confirm each letter fits on a single A4 page without content being cut off.
+
+== PRNT-004
+The system shall insert page breaks between each apartment's letter.
+
+Type:: Ubiquitous
+Source:: US-001: Print Individual Apartment Letters, Criterion 4
+Verification:: Print or print-preview letters for multiple apartments. Confirm each apartment's letter starts on a new page.
+
+== PRNT-005
+The system shall generate a schedule overview document listing all apartments with their inspection date and time.
+
+Type:: Ubiquitous
+Source:: US-002: Print Schedule Overview, Criterion 1
+Verification:: Configure a building with apartments and a schedule. Select schedule overview print mode. Confirm a document listing all apartments with their inspection date and time is generated.
+
+== PRNT-006
+The system shall format the schedule overview as a table organized by date.
+
+Type:: Ubiquitous
+Source:: US-002: Print Schedule Overview, Criterion 2
+Verification:: View the schedule overview. Confirm it is formatted as a table with appointments grouped by date.
+
+== PRNT-007
+When the user initiates print for the schedule overview, the system shall open the browser's print dialog.
+
+Type:: Event-driven
+Source:: US-002: Print Schedule Overview, Criterion 3
+Verification:: Select schedule overview print mode. Click the print button. Confirm the browser's print dialog opens.
+
+== PRNT-008
+The system shall format the schedule overview to fit A4 pages with proper pagination.
+
+Type:: Ubiquitous
+Source:: US-002: Print Schedule Overview, Criterion 4
+Verification:: Print or print-preview the schedule overview for a building with many apartments. Confirm it spans multiple A4 pages with proper pagination.
+
+== PRNT-009
+The system shall provide a print section with two options: individual apartment letters and schedule overview.
+
+Type:: Ubiquitous
+Source:: US-003: Select Print Mode, Criterion 1
+Verification:: Navigate to the print section. Confirm two print mode options are visible: individual apartment letters and schedule overview.
+
+== PRNT-010
+When the user selects a print option, the system shall prepare the corresponding print layout.
+
+Type:: Event-driven
+Source:: US-003: Select Print Mode, Criterion 2
+Verification:: Select "individual letters." Confirm the individual letters layout is prepared. Select "schedule overview." Confirm the schedule overview layout is prepared.
+
+== PRNT-011
+The system shall allow the user to preview the print layout before printing.
+
+Type:: Ubiquitous
+Source:: US-003: Select Print Mode, Criterion 3
+Verification:: Select a print mode. Confirm a preview of the print layout is displayed on screen before the user initiates printing.
+
+NOTE: A4 paper dimensions (210mm x 297mm) and minimum 15mm margins are enforced by project constraint (Print section in constraints.adoc). Not duplicated here.
+
+== PRNT-012
+While the print layout is active, the system shall hide all navigation and UI elements that are not part of the printed content.
+
+Type:: State-driven
+Source:: US-004: A4 Page Layout, Criterion 3
+Verification:: Initiate printing. Confirm that navigation, buttons, and other UI elements are not visible in the print output.
+
+== PRNT-013
+The system shall use a print-friendly font and font size for readability in print output.
+
+Type:: Ubiquitous
+Source:: US-004: A4 Page Layout, Criterion 4
+Verification:: Print or print-preview the output. Confirm the text uses a readable serif or sans-serif font at a legible size (at least 11pt equivalent).
+
+== PRNT-014
+When the user opens the browser's print dialog, the system shall present a print-ready layout that produces correct output when saved as PDF.
+
+Type:: Event-driven
+Source:: US-005: PDF Export via System Print Dialog, Criterion 1
+Verification:: Open the print dialog. Save as PDF. Open the resulting PDF. Confirm the layout, text, and formatting are correct.
+
+== PRNT-015
+The system shall ensure that page breaks, margins, and formatting are preserved in PDF output.
+
+Type:: Ubiquitous
+Source:: US-005: PDF Export via System Print Dialog, Criterion 2
+Verification:: Save the printout as a PDF. Open the PDF. Confirm page breaks occur between apartment letters, margins are consistent, and formatting matches the on-screen preview.
+
+NOTE: The constraint that no PDF library or plugin is required is enforced by project constraint (Print section and Dependencies section in constraints.adoc). Not duplicated here.
+
+== Traceability
+
+[cols="1,2,2", options="header"]
+|===
+| Requirement ID | Requirement Summary | Source
+
+| PRNT-001
+| One A4 page per apartment with rendered template
+| US-001: Criterion 1
+
+| PRNT-002
+| Open print dialog for individual letters
+| US-001: Criterion 2
+
+| PRNT-003
+| Letter fits single A4 page
+| US-001: Criterion 3
+
+| PRNT-004
+| Page breaks between letters
+| US-001: Criterion 4
+
+| PRNT-005
+| Schedule overview listing all apartments
+| US-002: Criterion 1
+
+| PRNT-006
+| Overview formatted as table by date
+| US-002: Criterion 2
+
+| PRNT-007
+| Open print dialog for schedule overview
+| US-002: Criterion 3
+
+| PRNT-008
+| Overview fits A4 with pagination
+| US-002: Criterion 4
+
+| PRNT-009
+| Print section with two options
+| US-003: Criterion 1
+
+| PRNT-010
+| Prepare selected print layout
+| US-003: Criterion 2
+
+| PRNT-011
+| Preview before printing
+| US-003: Criterion 3
+
+| PRNT-012
+| Hide UI elements during print
+| US-004: Criterion 3
+
+| PRNT-013
+| Print-friendly font and size
+| US-004: Criterion 4
+
+| PRNT-014
+| Print-ready layout for PDF export
+| US-005: Criterion 1
+
+| PRNT-015
+| Preserve formatting in PDF
+| US-005: Criterion 2
+|===

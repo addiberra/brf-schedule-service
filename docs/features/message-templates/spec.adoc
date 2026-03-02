@@ -1,0 +1,269 @@
+= Specification: Message Templates
+:version: 1.0.0
+:source-stories-version: 1.1.0
+:last-updated: 2026-03-02
+:feature: message-templates
+:prefix: TMPL
+:toc:
+
+== TMPL-001
+The system shall provide a text editor for composing a message template.
+
+Type:: Ubiquitous
+Source:: US-001: Create Message Template, Criterion 1
+Verification:: Open the message templates view. Confirm that a text editor area is visible for composing a message template.
+
+== TMPL-002
+The system shall allow the user to give the template a name for identification.
+
+Type:: Ubiquitous
+Source:: US-001: Create Message Template, Criterion 2
+Verification:: Open the template editor. Confirm that a name input field is visible. Enter a name. Confirm it is accepted.
+
+== TMPL-003
+When the user saves a template, the system shall persist it to browser storage.
+
+Type:: Event-driven
+Source:: US-001: Create Message Template, Criterion 3; US-006: Save Templates, Criterion 1
+Verification:: Create a template with a name and body. Save it. Close and reopen the application. Confirm the template is still present.
+
+NOTE: The storage mechanism (localStorage with `brf-schedule:` namespace) is enforced by project constraint. Not duplicated here.
+
+== TMPL-004
+The system shall support multiple saved templates.
+
+Type:: Ubiquitous
+Source:: US-001: Create Message Template, Criterion 4
+Verification:: Create two templates with different names. Confirm both are listed and accessible.
+
+== TMPL-005
+The system shall support user-defined placeholders using the `{placeholder_name}` syntax.
+
+Type:: Ubiquitous
+Source:: US-002: Insert Placeholders in Template, Criterion 1
+Verification:: Type `{datum}` in the template body. Confirm the system recognizes it as a placeholder.
+
+== TMPL-006
+The system shall provide a way to create new custom placeholders with a name.
+
+Type:: Ubiquitous
+Source:: US-002: Insert Placeholders in Template, Criterion 2
+Verification:: Open the placeholder management area. Create a custom placeholder with a name. Confirm it appears in the list of available placeholders.
+
+== TMPL-007
+The system shall provide a way to map each placeholder to a data field from the building configuration or inspection schedule.
+
+Type:: Ubiquitous
+Source:: US-002: Insert Placeholders in Template, Criterion 3
+Verification:: Create a placeholder. Map it to the "apartment number" data field. Confirm the mapping is saved and displayed.
+
+== TMPL-008
+The system shall display a list of available data fields that placeholders can be mapped to.
+
+Type:: Ubiquitous
+Source:: US-002: Insert Placeholders in Template, Criterion 4
+Verification:: Open the placeholder mapping interface. Confirm a list of available data fields (e.g., apartment number, floor, date, time) is displayed.
+
+== TMPL-009
+While a placeholder is present in the template body, the system shall display it visually distinct from regular text in the preview.
+
+Type:: State-driven
+Source:: US-002: Insert Placeholders in Template, Criterion 5
+Verification:: Insert a placeholder `{datum}` in the template. Open the preview. Confirm that placeholders with valid mappings are rendered with their resolved values, and unmapped placeholders are visually distinct from regular text.
+
+== TMPL-010
+The system shall display a list of saved templates.
+
+Type:: Ubiquitous
+Source:: US-003: Edit Existing Template, Criterion 1
+Verification:: Save two or more templates. Confirm a list showing all saved templates is displayed.
+
+== TMPL-011
+When the user selects a template from the list, the system shall load it into the editor.
+
+Type:: Event-driven
+Source:: US-003: Edit Existing Template, Criterion 2
+Verification:: Save a template with a specific name and body. Select it from the template list. Confirm the editor shows the correct name and body.
+
+== TMPL-012
+When the user saves changes to an existing template, the system shall update the stored template in browser storage.
+
+Type:: Event-driven
+Source:: US-003: Edit Existing Template, Criterion 3
+Verification:: Open an existing template. Modify the body text. Save. Close and reopen the application. Select the template. Confirm the modification is present.
+
+== TMPL-013
+The system shall provide a way to delete a template.
+
+Type:: Ubiquitous
+Source:: US-003: Edit Existing Template, Criterion 4
+Verification:: Save a template. Confirm a delete action is available for the template.
+
+== TMPL-014
+When the user deletes a template, the system shall ask for confirmation before proceeding.
+
+Type:: Event-driven
+Source:: US-003: Edit Existing Template, Criterion 5
+Verification:: Click delete on a template. Confirm a confirmation prompt is displayed before the template is removed.
+
+== TMPL-015
+The system shall provide a preview mode that renders the template with actual data for a selected apartment.
+
+Type:: Ubiquitous
+Source:: US-004: Preview Rendered Template, Criterion 1
+Verification:: Create a template with placeholders. Open the preview. Confirm the template is rendered with actual apartment data.
+
+== TMPL-016
+The system shall allow the user to select which apartment to preview.
+
+Type:: Ubiquitous
+Source:: US-004: Preview Rendered Template, Criterion 2
+Verification:: Open the preview mode. Confirm an apartment selector is visible. Select different apartments. Confirm the preview updates.
+
+== TMPL-017
+When the user selects an apartment for preview, the system shall replace all placeholders with the corresponding data for that apartment.
+
+Type:: Event-driven
+Source:: US-004: Preview Rendered Template, Criterion 3
+Verification:: Create a template with `{lagenhet}` mapped to apartment number. Select apartment 1001 in the preview. Confirm `{lagenhet}` is replaced with "1001".
+
+== TMPL-018
+If a placeholder has no mapped data field, then the system shall display the placeholder name in an error style in the preview.
+
+Type:: Unwanted behavior
+Source:: US-004: Preview Rendered Template, Criterion 4
+Verification:: Create a template with a placeholder that has no data field mapping. Open the preview. Confirm the unmapped placeholder is displayed in an error style (e.g., highlighted in red).
+
+== TMPL-019
+When the user creates a new template, the system shall offer a set of suggested placeholders.
+
+Type:: Event-driven
+Source:: US-005: Default Placeholders, Criterion 1
+Verification:: Create a new template. Confirm that suggested placeholders (e.g., apartment number, floor, inspection date, inspection time) are offered.
+
+== TMPL-020
+The system shall pre-map suggested placeholders to their corresponding data fields.
+
+Type:: Ubiquitous
+Source:: US-005: Default Placeholders, Criterion 2
+Verification:: Create a new template. Inspect the suggested placeholders. Confirm each one is pre-mapped to its corresponding data field (e.g., `{lagenhet}` mapped to apartment number).
+
+== TMPL-021
+The user shall be able to remove or modify any suggested placeholder.
+
+Type:: Ubiquitous
+Source:: US-005: Default Placeholders, Criterion 3
+Verification:: Create a new template. Remove a suggested placeholder. Confirm it is removed. Modify a suggested placeholder's mapping. Confirm the new mapping is saved.
+
+== TMPL-022
+When the application loads, the system shall restore all previously saved templates from browser storage.
+
+Type:: Event-driven
+Source:: US-006: Save Templates, Criterion 2
+Verification:: Create two templates. Close and reopen the application. Confirm both templates are present in the template list.
+
+== TMPL-023
+If no saved templates exist, then the system shall display an empty template list.
+
+Type:: Unwanted behavior
+Source:: US-006: Save Templates, Criterion 3
+Verification:: Clear all application data from browser storage. Open the application. Confirm the template list is empty (not an error state).
+
+== Traceability
+
+[cols="1,2,2", options="header"]
+|===
+| Requirement ID | Requirement Summary | Source
+
+| TMPL-001
+| Template text editor
+| US-001: Criterion 1
+
+| TMPL-002
+| Template name input
+| US-001: Criterion 2
+
+| TMPL-003
+| Persist template to storage
+| US-001: Criterion 3, US-006: Criterion 1
+
+| TMPL-004
+| Multiple saved templates
+| US-001: Criterion 4
+
+| TMPL-005
+| Placeholder syntax `{placeholder_name}`
+| US-002: Criterion 1
+
+| TMPL-006
+| Create custom placeholders
+| US-002: Criterion 2
+
+| TMPL-007
+| Map placeholder to data field
+| US-002: Criterion 3
+
+| TMPL-008
+| Display available data fields
+| US-002: Criterion 4
+
+| TMPL-009
+| Placeholders visually distinct in preview
+| US-002: Criterion 5
+
+| TMPL-010
+| Template list display
+| US-003: Criterion 1
+
+| TMPL-011
+| Load selected template into editor
+| US-003: Criterion 2
+
+| TMPL-012
+| Update stored template on save
+| US-003: Criterion 3
+
+| TMPL-013
+| Delete template action
+| US-003: Criterion 4
+
+| TMPL-014
+| Delete confirmation prompt
+| US-003: Criterion 5
+
+| TMPL-015
+| Preview with actual data
+| US-004: Criterion 1
+
+| TMPL-016
+| Apartment selector for preview
+| US-004: Criterion 2
+
+| TMPL-017
+| Replace placeholders with data
+| US-004: Criterion 3
+
+| TMPL-018
+| Error style for unmapped placeholders
+| US-004: Criterion 4
+
+| TMPL-019
+| Suggested placeholders on new template
+| US-005: Criterion 1
+
+| TMPL-020
+| Pre-mapped suggested placeholders
+| US-005: Criterion 2
+
+| TMPL-021
+| Remove or modify suggested placeholders
+| US-005: Criterion 3
+
+| TMPL-022
+| Restore templates on load
+| US-006: Criterion 2
+
+| TMPL-023
+| Empty template list when no data
+| US-006: Criterion 3
+|===

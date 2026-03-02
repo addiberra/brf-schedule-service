@@ -1,0 +1,63 @@
+= User Stories: Print Output
+:version: 1.1.0
+:last-updated: 2026-03-02
+:feature: print-output
+:toc:
+
+== US-001: Print Individual Apartment Letters
+As a BRF administrator,
+I want to print a personalized letter per apartment with inspection information,
+so that I can hand out the letters to residents.
+
+Acceptance Criteria:
+
+* [ ] The system shall generate one A4 page per apartment containing the rendered message template with that apartment's data.
+* [ ] When the user initiates print for individual letters, the system shall open the browser's print dialog with all apartment letters.
+* [ ] The system shall format each letter to fit on a single A4 page.
+* [ ] The system shall insert page breaks between each apartment's letter.
+
+== US-002: Print Schedule Overview
+As a BRF administrator,
+I want to print a summary of the entire inspection schedule,
+so that I have an overview to use during the inspection period.
+
+Acceptance Criteria:
+
+* [ ] The system shall generate a schedule overview document listing all apartments with their inspection date and time.
+* [ ] The system shall format the overview as a table organized by date.
+* [ ] When the user initiates print for the schedule overview, the system shall open the browser's print dialog.
+* [ ] The system shall format the overview to fit A4 pages with proper pagination.
+
+== US-003: Select Print Mode
+As a BRF administrator,
+I want to choose between printing individual letters or a schedule overview,
+so that I can pick the format that suits my needs.
+
+Acceptance Criteria:
+
+* [ ] The system shall provide a print section with two options: individual apartment letters and schedule overview.
+* [ ] When the user selects an option, the system shall prepare the corresponding print layout.
+* [ ] The system shall allow the user to preview the print layout before printing.
+
+== US-004: A4 Page Layout
+As a BRF administrator,
+I want the printouts to be correctly formatted for A4 paper,
+so that the documents look professional when printed.
+
+Acceptance Criteria:
+
+* [ ] The system shall use A4 paper dimensions (210mm x 297mm) for all print layouts.
+* [ ] The system shall apply appropriate margins for A4 printing (minimum 15mm on all sides).
+* [ ] While the print layout is active, the system shall hide all navigation and UI elements that are not part of the printed content.
+* [ ] The system shall use a print-friendly font and font size for readability.
+
+== US-005: PDF Export via System Print Dialog
+As a BRF administrator,
+I want to save the printout as a PDF via the operating system's print tool,
+so that I can send the documents digitally instead of printing them.
+
+Acceptance Criteria:
+
+* [ ] When the user opens the browser's print dialog, the system shall present a print-ready layout that produces correct output when saved as PDF.
+* [ ] The system shall ensure that page breaks, margins, and formatting are preserved in PDF output.
+* [ ] The system shall not require any additional PDF library or plugin.

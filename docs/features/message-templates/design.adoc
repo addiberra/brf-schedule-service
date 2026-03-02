@@ -1,0 +1,380 @@
+= Design: Message Templates
+:version: 1.0.0
+:status: Current
+:source-stories-version: 1.1.0
+:source-spec-version: 1.0.0
+:last-updated: 2026-03-02
+:feature: message-templates
+:toc:
+
+== Technical Context
+
+This is an existing project with the building-configuration and inspection-scheduling features already implemented. The message templates feature builds on both -- it uses building data (apartments, floors) and schedule data (appointment dates, times) to resolve template placeholders into personalized messages per apartment.
+
+The project is a Svelte 5 + Vite 6 + TypeScript static site with zero runtime dependencies. All persistence uses browser localStorage with the `brf-schedule:` namespace.
+
+== Decisions and Constraints
+
+* <<../../adrs/0001-svelte5-vite6-typescript-static-site.adoc#,ADR-0001>>: Svelte 5 with runes, Vite 6, TypeScript, Vitest.
+* <<../../adrs/0002-browser-localstorage-persistence.adoc#,ADR-0002>>: Browser localStorage with `brf-schedule:*` namespace.
+
+From `docs/constraints.adoc`:
+
+* Zero runtime dependencies
+* Static site deployable to GitHub Pages
+* All user-facing text in Swedish
+* TypeScript strict mode
+
+No new ADRs are needed. The template engine is a simple string replacement using built-in JavaScript string methods -- no library required.
+
+== Research and Unknowns
+
+No unknowns remain. The template engine is a straightforward find-and-replace of `{placeholder_name}` tokens. Available data fields are derived from the existing `Apartment` and `ScheduleAppointment` interfaces.
+
+== System Design
+
+The feature consists of four layers: a data model (TypeScript interfaces), a template engine (pure functions for placeholder parsing and rendering), a persistence extension (storage service), and Svelte UI components.
+
+=== Component Interaction Diagram
+
+[source,mermaid]
+----
+flowchart TD
+    subgraph UI ["Svelte Components"]
+        App["App.svelte"]
+        MTP["MessageTemplatePanel.svelte"]
+        TL["TemplateList.svelte"]
+        TE["TemplateEditor.svelte"]
+        TP["TemplatePreview.svelte"]
+    end
+
+    subgraph Logic ["Business Logic"]
+        BM["building-model.ts"]
+        SM["schedule-model.ts"]
+        TEM["template-model.ts<br/>(placeholder parsing,<br/>rendering, defaults)"]
+    end
+
+    subgraph Persistence ["Persistence Layer"]
+        PS["storage.ts<br/>(extended with template<br/>save/load/clear)"]
+    end
+
+    subgraph Browser ["Browser"]
+        LS["localStorage<br/>brf-schedule:templates"]
+    end
+
+    App --> MTP
+    MTP --> TL
+    MTP --> TE
+    MTP --> TP
+    MTP --> TEM
+    MTP --> PS
+    TEM --> BM
+    TEM --> SM
+    PS --> LS
+----
+
+=== Data Flow Diagram
+
+[source,mermaid]
+----
+flowchart LR
+    USER["User input"] -->|template name,<br/>body, placeholders| MTP["MessageTemplatePanel"]
+    BLDG["Apartment[]<br/>(from building config)"] --> TEM["template-model.ts"]
+    SCHED["ScheduleResult<br/>(from schedule)"] --> TEM
+    MTP -->|template data| TEM
+    TEM -->|rendered text| TP["TemplatePreview"]
+    MTP -->|templates| PS["storage.ts"]
+    PS -->|JSON| LS["localStorage"]
+    PS -->|load on startup| MTP
+----
+
+=== Sequence Diagram: Create and Preview Template
+
+[source,mermaid]
+----
+sequenceDiagram
+    actor User
+    participant MTP as MessageTemplatePanel
+    participant TEM as template-model
+    participant PS as storage
+    participant TP as TemplatePreview
+
+    User->>MTP: Creates new template
+    MTP->>TEM: getDefaultPlaceholders()
+    TEM-->>MTP: Default placeholder mappings
+    MTP->>MTP: Initialize editor with defaults
+
+    User->>MTP: Enters template name and body text
+    User->>MTP: Saves template
+    MTP->>PS: saveTemplates(templates)
+    PS->>PS: JSON.stringify → localStorage
+
+    User->>MTP: Selects apartment for preview
+    MTP->>TEM: renderTemplate(template, apartment, appointment)
+    TEM-->>MTP: Rendered text (placeholders replaced)
+    MTP->>TP: Pass rendered text
+    TP->>TP: Display rendered message
+----
+
+=== Sequence Diagram: Delete Template
+
+[source,mermaid]
+----
+sequenceDiagram
+    actor User
+    participant MTP as MessageTemplatePanel
+    participant PS as storage
+
+    User->>MTP: Clicks delete on a template
+    MTP->>MTP: Show confirm() dialog
+    alt User confirms
+        MTP->>MTP: Remove template from list
+        MTP->>PS: saveTemplates(updated list)
+    else User cancels
+        MTP->>MTP: No action
+    end
+----
+
+=== Data Model
+
+All types are defined in `src/lib/models/template.ts`.
+
+[source,typescript]
+----
+/** A mapping from a placeholder name to a data field */
+interface PlaceholderMapping {
+  /** User-defined placeholder name (e.g., "lagenhet") */
+  name: string;
+  /** The data field key this placeholder maps to */
+  field: DataField;
+}
+
+/** Available data fields that placeholders can map to */
+type DataField =
+  | 'apartmentId'
+  | 'floor'
+  | 'position'
+  | 'date'
+  | 'time'
+  | 'dateSwedish';
+
+/** A complete message template */
+interface MessageTemplate {
+  /** Unique identifier (UUID-like, generated via crypto.randomUUID()) */
+  id: string;
+  /** User-given template name */
+  name: string;
+  /** Template body text with {placeholder} tokens */
+  body: string;
+  /** Placeholder-to-field mappings */
+  placeholders: PlaceholderMapping[];
+}
+----
+
+The `DataField` type enumerates the available fields:
+
+* `apartmentId` -- apartment identifier string (e.g., "1001")
+* `floor` -- floor number as string (e.g., "1")
+* `position` -- position on floor as string (e.g., "2")
+* `date` -- scheduled date in YYYY-MM-DD format (e.g., "2026-03-10")
+* `time` -- scheduled start time as HH:MM (e.g., "09:00")
+* `dateSwedish` -- Swedish formatted date (e.g., "tisdag 10 mars 2026")
+
+=== Business Logic: `template-model.ts`
+
+Located at `src/lib/models/template-model.ts`. Pure functions with no side effects.
+
+* `createDefaultTemplate(): MessageTemplate` -- returns a new template with a generated ID, empty name, empty body, and default placeholders.
+* `getDefaultPlaceholders(): PlaceholderMapping[]` -- returns suggested placeholders pre-mapped to data fields: `{lagenhet}` → `apartmentId`, `{vaning}` → `floor`, `{datum}` → `dateSwedish`, `{tid}` → `time`.
+* `parsePlaceholders(body: string): string[]` -- extracts all `{...}` placeholder names from a template body string. Returns an array of unique names found.
+* `resolveDataField(field: DataField, apartment: Apartment, appointment: ScheduleAppointment | null): string` -- resolves a single data field to its string value given an apartment and optional appointment. Returns empty string if appointment is null and a schedule field is requested.
+* `renderTemplate(template: MessageTemplate, apartment: Apartment, appointment: ScheduleAppointment | null): string` -- replaces all `{placeholder_name}` tokens in the template body with resolved values. For each placeholder found in the body, looks up the mapping in `template.placeholders`. If mapped, resolves the data field. If unmapped, leaves the placeholder as-is (the UI will display unmapped ones in error style).
+* `getUnmappedPlaceholders(template: MessageTemplate): string[]` -- returns placeholder names found in the body that have no mapping in `template.placeholders`.
+* `generateTemplateId(): string` -- generates a unique ID using `crypto.randomUUID()`.
+* `getAvailableDataFields(): { field: DataField; label: string }[]` -- returns the list of all data fields with Swedish display labels for the UI.
+
+=== Persistence: `storage.ts` (extended)
+
+The existing `storage.ts` is extended with template-specific functions:
+
+* `const TEMPLATES_STORAGE_KEY = "brf-schedule:templates"`
+* `saveTemplates(templates: MessageTemplate[]): void` -- serializes all templates to JSON, writes to localStorage.
+* `loadTemplates(): MessageTemplate[]` -- reads and parses. Returns empty array if missing or parse fails.
+* `clearTemplates(): void` -- removes the key.
+
+=== UI Components
+
+==== `App.svelte` (modified)
+
+Updated to render `MessageTemplatePanel` alongside the building and schedule panels. Passes apartments and schedule result down so templates can resolve placeholders.
+
+==== `MessageTemplatePanel.svelte`
+
+The main orchestrating component for message templates.
+
+State management (Svelte 5 runes):
+
+* `let templates = $state<MessageTemplate[]>(...)` -- initialized from `loadTemplates()`.
+* `let selectedTemplateId = $state<string | null>(null)` -- the currently selected template.
+* `let editingTemplate = $state<MessageTemplate | null>(null)` -- the template being edited.
+* `let previewApartmentId = $state<string | null>(null)` -- the apartment selected for preview.
+* `$effect(() => { ... })` -- persists templates to localStorage whenever the list changes.
+
+Props:
+
+* `apartments: Apartment[]` -- apartment list from building config.
+* `scheduleResult: ScheduleResult` -- calculated schedule for resolving date/time fields.
+
+Behavior:
+
+* Renders `TemplateList` for the list of saved templates.
+* Renders `TemplateEditor` for creating/editing a template.
+* Renders `TemplatePreview` for previewing rendered output.
+* Provides "Ny mall" (New template) button that calls `createDefaultTemplate()`.
+* Handles save, delete (with `confirm()` dialog), and select operations.
+
+==== `TemplateList.svelte`
+
+Displays saved templates as a selectable list.
+
+Props:
+
+* `templates: MessageTemplate[]` -- all saved templates.
+* `selectedId: string | null` -- currently selected template ID.
+* `onselect: (id: string) => void` -- callback when a template is selected.
+* `ondelete: (id: string) => void` -- callback when delete is requested.
+
+Behavior:
+
+* Renders each template's name in a list.
+* Highlights the selected template.
+* Each list item has a delete button.
+
+==== `TemplateEditor.svelte`
+
+Edits a single template's name, body, and placeholder mappings.
+
+Props:
+
+* `template: MessageTemplate` -- the template being edited.
+* `onsave: (template: MessageTemplate) => void` -- callback on save.
+
+Behavior:
+
+* Renders a name input field.
+* Renders a textarea for the template body.
+* Renders a placeholder management section showing all placeholders with their field mappings.
+* Provides UI to add new custom placeholders and map them to data fields via a `<select>` dropdown.
+* Provides UI to remove placeholders.
+* Renders a save button.
+
+==== `TemplatePreview.svelte`
+
+Shows the rendered template for a selected apartment.
+
+Props:
+
+* `template: MessageTemplate` -- the template to preview.
+* `apartments: Apartment[]` -- available apartments.
+* `scheduleResult: ScheduleResult` -- for resolving schedule fields.
+* `selectedApartmentId: string | null` -- the apartment to preview.
+* `onselectapartment: (id: string) => void` -- callback for apartment selection.
+
+Behavior:
+
+* Renders an apartment selector dropdown.
+* Calls `renderTemplate()` with the selected apartment and its corresponding appointment.
+* Displays unmapped placeholders in error style (red text).
+* Displays the rendered text preserving whitespace/newlines.
+
+=== File Structure
+
+----
+src/
+├── App.svelte                    # Updated: passes schedule result to template panel
+├── lib/
+│   ├── models/
+│   │   ├── building.ts           # Existing (unchanged)
+│   │   ├── building-model.ts     # Existing (unchanged)
+│   │   ├── schedule.ts           # Existing (unchanged)
+│   │   ├── schedule-model.ts     # Existing (unchanged)
+│   │   ├── template.ts           # New: template TypeScript interfaces
+│   │   └── template-model.ts     # New: template engine + defaults
+│   ├── services/
+│   │   └── storage.ts            # Extended: template save/load/clear
+│   └── components/
+│       ├── BuildingConfigPanel.svelte   # Existing (unchanged)
+│       ├── FloorInputRow.svelte         # Existing (unchanged)
+│       ├── BuildingFacade.svelte        # Existing (unchanged)
+│       ├── ScheduleConfigPanel.svelte   # Existing (unchanged)
+│       ├── ScheduleView.svelte          # Existing (unchanged)
+│       ├── ScheduleAppointmentRow.svelte # Existing (unchanged)
+│       ├── MessageTemplatePanel.svelte  # New: template management UI
+│       ├── TemplateList.svelte          # New: template list
+│       ├── TemplateEditor.svelte        # New: template editor
+│       └── TemplatePreview.svelte       # New: template preview
+└── __tests__/
+    ├── building-model.test.ts    # Existing (unchanged)
+    ├── building-facade.test.ts   # Existing (unchanged)
+    ├── storage.test.ts           # Existing (unchanged)
+    ├── schedule-model.test.ts    # Existing (unchanged)
+    ├── schedule-storage.test.ts  # Existing (unchanged)
+    ├── template-model.test.ts    # New: template engine tests
+    └── template-storage.test.ts  # New: template persistence tests
+----
+
+== Story Resolution
+
+=== US-001: Create Message Template
+
+Components:: MessageTemplatePanel, TemplateEditor, template-model
+Criteria::
+* Text editor for composing -> TemplateEditor renders a textarea for the template body (TMPL-001)
+* Template name input -> TemplateEditor renders a name input field (TMPL-002)
+* Persist on save -> MessageTemplatePanel calls `saveTemplates()` on save (TMPL-003)
+* Multiple saved templates -> Templates stored as an array in localStorage (TMPL-004)
+
+=== US-002: Insert Placeholders in Template
+
+Components:: TemplateEditor, template-model
+Criteria::
+* `{placeholder_name}` syntax -> `parsePlaceholders()` extracts tokens matching `{...}` pattern (TMPL-005)
+* Create custom placeholder -> TemplateEditor provides add-placeholder UI with name input (TMPL-006)
+* Map to data field -> TemplateEditor provides `<select>` dropdown with data fields from `getAvailableDataFields()` (TMPL-007)
+* Display available fields -> `getAvailableDataFields()` returns all fields with Swedish labels (TMPL-008)
+* Visually distinct in preview -> TemplatePreview renders resolved values for mapped placeholders and error style for unmapped (TMPL-009)
+
+=== US-003: Edit Existing Template
+
+Components:: MessageTemplatePanel, TemplateList, TemplateEditor, storage
+Criteria::
+* List of saved templates -> TemplateList renders template names (TMPL-010)
+* Load into editor on select -> MessageTemplatePanel sets `editingTemplate` from selected template (TMPL-011)
+* Update stored template -> `saveTemplates()` writes updated array to localStorage (TMPL-012)
+* Delete action -> TemplateList renders delete button per template (TMPL-013)
+* Confirmation before delete -> MessageTemplatePanel calls `confirm()` before removing (TMPL-014)
+
+=== US-004: Preview Rendered Template
+
+Components:: TemplatePreview, template-model
+Criteria::
+* Preview mode with actual data -> TemplatePreview calls `renderTemplate()` with real apartment/appointment data (TMPL-015)
+* Apartment selector -> TemplatePreview renders a `<select>` dropdown of apartments (TMPL-016)
+* Replace placeholders -> `renderTemplate()` substitutes all mapped placeholders (TMPL-017)
+* Error style for unmapped -> `getUnmappedPlaceholders()` identifies unmapped tokens, displayed in red (TMPL-018)
+
+=== US-005: Default Placeholders
+
+Components:: template-model, MessageTemplatePanel
+Criteria::
+* Suggested placeholders on new template -> `createDefaultTemplate()` calls `getDefaultPlaceholders()` (TMPL-019)
+* Pre-mapped to fields -> Default placeholders include `{lagenhet}` → `apartmentId`, `{vaning}` → `floor`, `{datum}` → `dateSwedish`, `{tid}` → `time` (TMPL-020)
+* Remove or modify suggested -> TemplateEditor allows removing and re-mapping any placeholder (TMPL-021)
+
+=== US-006: Save Templates
+
+Components:: storage, MessageTemplatePanel
+Criteria::
+* Persist on create/modify -> `$effect` in MessageTemplatePanel calls `saveTemplates()` when templates change (TMPL-003)
+* Restore on load -> MessageTemplatePanel initialization calls `loadTemplates()` (TMPL-022)
+* Empty list when no data -> `loadTemplates()` returns `[]`, MessageTemplatePanel displays empty state (TMPL-023)

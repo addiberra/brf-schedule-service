@@ -1,0 +1,39 @@
+= Project Constraints
+:version: 1.0.0
+:last-updated: 2026-03-02
+
+== Dependencies
+
+* Only popular, well-known npm packages may be used as dependencies.
+* The number of direct dependencies shall be minimized -- prefer browser-native APIs and hand-written code over libraries.
+* Zero runtime (production) dependencies are permitted. All packages must be dev dependencies only.
+* All dependencies must be MIT, Apache-2.0, or BSD-licensed.
+
+== Hosting
+
+* The application shall be a static site deployable to GitHub Pages.
+* No server-side code, no backend services, no API endpoints.
+* The build output shall be vanilla HTML, CSS, and JavaScript files.
+
+== Data
+
+* All user data shall be stored exclusively in the browser's localStorage API.
+* No external storage, no cloud services, no user accounts, no authentication.
+* localStorage keys shall be namespaced to avoid collisions (prefix: `brf-schedule:`).
+
+== UI
+
+* All user-facing text shall be in Swedish.
+* The UI shall be modern, simple, and easy to understand.
+
+== Print
+
+* Print output shall target A4 paper size.
+* PDF generation shall rely on the browser's native print dialog (OS handles PDF export).
+* No PDF generation library shall be used.
+
+== Quality
+
+* All code shall pass TypeScript type checking with strict mode.
+* Test coverage shall not decrease per feature implementation.
+* All code shall be formatted consistently.

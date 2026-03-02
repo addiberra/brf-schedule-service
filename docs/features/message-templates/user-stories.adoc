@@ -1,0 +1,77 @@
+= User Stories: Message Templates
+:version: 1.1.0
+:last-updated: 2026-03-02
+:feature: message-templates
+:toc:
+
+== US-001: Create Message Template
+As a BRF administrator,
+I want to create a message template with free-form text,
+so that I can compose a message to send to all residents.
+
+Acceptance Criteria:
+
+* [ ] The system shall provide a text editor for composing a message template.
+* [ ] The system shall allow the user to give the template a name for identification.
+* [ ] When the user saves the template, the system shall persist it to localStorage.
+* [ ] The system shall support multiple saved templates.
+
+== US-002: Insert Placeholders in Template
+As a BRF administrator,
+I want to insert placeholders in the message that are automatically filled in per apartment,
+so that each resident receives personalized information about their inspection.
+
+Acceptance Criteria:
+
+* [ ] The system shall support user-defined placeholders using a consistent syntax (e.g., `{placeholder_name}`).
+* [ ] The system shall provide a way to create new custom placeholders with a name.
+* [ ] The system shall provide a way to map each placeholder to a data field from the building configuration or inspection schedule (e.g., apartment number, floor, date, time).
+* [ ] The system shall display a list of available data fields that placeholders can be mapped to.
+* [ ] When the user inserts a placeholder into the template, the system shall display it visually distinct from regular text.
+
+== US-003: Edit Existing Template
+As a BRF administrator,
+I want to edit an existing message template,
+so that I can update the message without starting over.
+
+Acceptance Criteria:
+
+* [ ] The system shall display a list of saved templates.
+* [ ] When the user selects a template, the system shall load it into the editor.
+* [ ] When the user saves changes to an existing template, the system shall update the stored template in localStorage.
+* [ ] The system shall provide a way to delete a template.
+* [ ] When the user deletes a template, the system shall ask for confirmation before proceeding.
+
+== US-004: Preview Rendered Template
+As a BRF administrator,
+I want to preview how the message looks for a specific apartment,
+so that I can verify that placeholders are filled in correctly.
+
+Acceptance Criteria:
+
+* [ ] The system shall provide a preview mode that renders the template with actual data for a selected apartment.
+* [ ] The system shall allow the user to select which apartment to preview.
+* [ ] When the user selects an apartment for preview, the system shall replace all placeholders with the corresponding data for that apartment.
+* [ ] If a placeholder has no mapped data field, then the system shall display the placeholder name in an error style in the preview.
+
+== US-005: Default Placeholders
+As a BRF administrator,
+I want the system to suggest common placeholders like date, time, and apartment number,
+so that I can get started quickly without configuring everything manually.
+
+Acceptance Criteria:
+
+* [ ] When the user creates a new template, the system shall offer a set of suggested placeholders (e.g., apartment number, floor, inspection date, inspection time).
+* [ ] The system shall pre-map suggested placeholders to their corresponding data fields.
+* [ ] The user shall be able to remove or modify any suggested placeholder.
+
+== US-006: Save Templates
+As a BRF administrator,
+I want my message templates to be saved automatically,
+so that I don't lose my work if I close the browser.
+
+Acceptance Criteria:
+
+* [ ] When the user creates or modifies a template, the system shall persist all templates to localStorage.
+* [ ] When the application loads, the system shall restore all previously saved templates from localStorage.
+* [ ] If no saved templates exist, then the system shall display an empty template list.

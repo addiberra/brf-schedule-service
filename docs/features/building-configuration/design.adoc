@@ -1,0 +1,314 @@
+= Design: Building Configuration
+:version: 1.0.0
+:status: Current
+:source-stories-version: 1.1.0
+:source-spec-version: 1.0.0
+:last-updated: 2026-03-02
+:feature: building-configuration
+:toc:
+
+== Technical Context
+
+This is a greenfield project. No code exists yet. The building configuration feature is the first feature to be implemented, so the project must be scaffolded as part of this work (Vite 6 + Svelte 5 + TypeScript + Vitest).
+
+The building configuration feature allows a BRF administrator to define the structure of a building (number of floors, apartments per floor) and see it represented as a front-facade SVG illustration. The configuration is persisted to localStorage so it survives browser sessions.
+
+== Decisions and Constraints
+
+* <<../../adrs/0001-svelte5-vite6-typescript-static-site.adoc#,ADR-0001>>: Svelte 5 with runes, Vite 6, TypeScript, Vitest. Five dev dependencies only.
+* <<../../adrs/0002-browser-localstorage-persistence.adoc#,ADR-0002>>: Browser localStorage for all persistence, namespaced `brf-schedule:*`.
+
+From `docs/constraints.adoc`:
+
+* Zero runtime dependencies -- all packages are dev dependencies
+* Static site deployable to GitHub Pages
+* All user-facing text in Swedish
+* TypeScript strict mode
+* A4 print layout (relevant for future features, not this one)
+
+== Research and Unknowns
+
+No unknowns remain. All technology decisions are covered by the two ADRs. The feature is self-contained with no external dependencies.
+
+The apartment identifier format (`floor * 1000 + position`) is specified in the user stories and needs no further research.
+
+== System Design
+
+The feature consists of four layers: a data model, a persistence service, business logic utilities, and Svelte UI components.
+
+=== Component Interaction Diagram
+
+[source,mermaid]
+----
+flowchart TD
+    subgraph UI ["Svelte Components"]
+        App["App.svelte"]
+        BCP["BuildingConfigPanel.svelte"]
+        FI["FloorInputRow.svelte"]
+        BFI["BuildingFacade.svelte"]
+    end
+
+    subgraph Logic ["Business Logic"]
+        BM["building-model.ts<br/>(validation, identifiers,<br/>default config)"]
+    end
+
+    subgraph Persistence ["Persistence Layer"]
+        PS["storage.ts<br/>(localStorage read/write)"]
+    end
+
+    subgraph Browser ["Browser"]
+        LS["localStorage<br/>brf-schedule:building"]
+    end
+
+    App --> BCP
+    BCP --> FI
+    BCP --> BFI
+    BCP --> BM
+    BCP --> PS
+    BFI --> BM
+    PS --> LS
+----
+
+=== Data Flow Diagram
+
+[source,mermaid]
+----
+flowchart LR
+    USER["User input"] -->|floor count,<br/>apt counts| BCP["BuildingConfigPanel"]
+    BCP -->|validate| BM["building-model.ts"]
+    BM -->|validation result| BCP
+    BCP -->|valid config| PS["storage.ts"]
+    PS -->|JSON| LS["localStorage"]
+    BCP -->|config data| BFI["BuildingFacade"]
+    BFI -->|renders| SVG["SVG illustration"]
+    PS -->|load on startup| BCP
+----
+
+=== Sequence Diagram: User Modifies Configuration
+
+[source,mermaid]
+----
+sequenceDiagram
+    actor User
+    participant BCP as BuildingConfigPanel
+    participant BM as building-model
+    participant PS as storage
+    participant BFI as BuildingFacade
+
+    User->>BCP: Changes floor count or apartment count
+    BCP->>BM: validateFloorCount(value) / validateApartmentCount(value)
+    BM-->>BCP: ValidationResult (valid/invalid + error message)
+    alt Valid input
+        BCP->>BCP: Update $state (reactive)
+        BCP->>BM: generateApartmentIds(config)
+        BM-->>BCP: Apartment identifiers
+        BCP->>PS: saveBuilding(config)
+        PS->>PS: JSON.stringify → localStorage
+        BCP->>BFI: Pass updated config (reactive prop)
+        BFI->>BFI: Re-render SVG facade
+    else Invalid input
+        BCP->>BCP: Display validation error
+    end
+----
+
+=== Data Model
+
+All types are defined in `src/lib/models/building.ts`.
+
+[source,typescript]
+----
+/** Configuration for a single floor */
+interface FloorConfig {
+  /** 1-based floor number */
+  floorNumber: number;
+  /** Number of apartments on this floor (1–20) */
+  apartmentCount: number;
+}
+
+/** Complete building configuration */
+interface BuildingConfig {
+  /** Number of floors (1–30) */
+  floorCount: number;
+  /** Per-floor configuration, indexed from 0 (floor 1 is index 0) */
+  floors: FloorConfig[];
+}
+
+/** An apartment with its computed identifier */
+interface Apartment {
+  /** Unique identifier: floorNumber * 1000 + position (e.g., 1001) */
+  id: string;
+  /** 1-based floor number */
+  floor: number;
+  /** 1-based position on floor */
+  position: number;
+}
+
+/** Validation result for a single field */
+interface ValidationResult {
+  valid: boolean;
+  error?: string;
+}
+----
+
+=== Business Logic: `building-model.ts`
+
+Located at `src/lib/models/building-model.ts`. Pure functions with no side effects.
+
+* `createDefaultConfig(): BuildingConfig` -- returns a default building with 1 floor, 2 apartments.
+* `validateFloorCount(value: number): ValidationResult` -- validates floor count is integer in [1, 30].
+* `validateApartmentCount(value: number): ValidationResult` -- validates apartment count is integer in [1, 20].
+* `generateApartmentId(floor: number, position: number): string` -- computes `floor * 1000 + position`, returned as a string.
+* `generateAllApartments(config: BuildingConfig): Apartment[]` -- generates all apartment objects for the building.
+* `totalApartments(config: BuildingConfig): number` -- sums apartment counts across floors.
+* `adjustFloors(config: BuildingConfig, newFloorCount: number): BuildingConfig` -- adds or removes floors when floor count changes, preserving existing floor data. New floors default to 2 apartments.
+
+=== Persistence: `storage.ts`
+
+Located at `src/lib/services/storage.ts`.
+
+* `const STORAGE_KEY = "brf-schedule:building"`
+* `saveBuilding(config: BuildingConfig): void` -- serializes to JSON, writes to localStorage.
+* `loadBuilding(): BuildingConfig | null` -- reads from localStorage, parses JSON. Returns null if key missing or parse fails.
+* `clearBuilding(): void` -- removes the key from localStorage.
+
+Uses `try/catch` around all localStorage operations for robustness (private browsing, quota exceeded).
+
+=== UI Components
+
+==== `App.svelte`
+
+Root component. Renders `BuildingConfigPanel` as the main (and currently only) view.
+
+==== `BuildingConfigPanel.svelte`
+
+The main orchestrating component for building configuration.
+
+State management (Svelte 5 runes):
+
+* `let config = $state<BuildingConfig>(...)` -- initialized from `loadBuilding()` or `createDefaultConfig()`.
+* `let validationErrors = $state<Map<string, string>>(new Map())` -- keyed by field identifier (e.g., `"floorCount"`, `"floor-1-apartments"`).
+* `let apartments = $derived(generateAllApartments(config))` -- recalculated reactively.
+* `let totalCount = $derived(totalApartments(config))` -- recalculated reactively.
+* `$effect(() => { ... })` -- persists valid configuration to localStorage whenever config changes.
+
+Behavior:
+
+* Renders a floor count input field at the top.
+* Renders a `FloorInputRow` for each floor.
+* Displays total apartment count.
+* Renders a `BuildingFacade` component with the current config and apartments.
+* Provides a reset button. On click, shows a `confirm()` dialog (browser native). On confirm, calls `clearBuilding()` and resets config to `createDefaultConfig()`.
+
+==== `FloorInputRow.svelte`
+
+Props:
+
+* `floorNumber: number` -- the floor being configured.
+* `apartmentCount: number` -- current apartment count for this floor (bindable).
+* `error: string | undefined` -- validation error for this floor.
+
+Renders a labeled input for the apartment count on a specific floor. Emits changes via Svelte's `bind:` or callback prop pattern.
+
+==== `BuildingFacade.svelte`
+
+Props:
+
+* `config: BuildingConfig` -- the building configuration.
+* `apartments: Apartment[]` -- computed apartment objects.
+
+Renders an inline SVG element representing the building front facade:
+
+* The SVG is a calculated viewBox based on the maximum apartments per floor and the floor count.
+* Each floor is a horizontal row of rectangles (apartment windows/doors).
+* Each rectangle is labeled with the apartment identifier using SVG `<text>`.
+* Floors are rendered bottom-up (floor 1 at the bottom).
+* A roof triangle is drawn at the top.
+* The building has a simple outline (walls).
+
+The SVG dimensions are computed reactively:
+
+* `const APARTMENT_WIDTH = 60`
+* `const APARTMENT_HEIGHT = 50`
+* `const FLOOR_PADDING = 10`
+* `const WALL_PADDING = 20`
+* ViewBox width = `max apartments per floor * APARTMENT_WIDTH + 2 * WALL_PADDING`
+* ViewBox height = `floor count * (APARTMENT_HEIGHT + FLOOR_PADDING) + roof height + WALL_PADDING`
+
+=== File Structure
+
+----
+src/
+├── app.html                    # HTML shell
+├── main.ts                     # Entry point, mounts App.svelte
+├── App.svelte                  # Root component
+├── lib/
+│   ├── models/
+│   │   ├── building.ts         # TypeScript interfaces
+│   │   └── building-model.ts   # Pure business logic functions
+│   ├── services/
+│   │   └── storage.ts          # localStorage persistence
+│   └── components/
+│       ├── BuildingConfigPanel.svelte
+│       ├── FloorInputRow.svelte
+│       └── BuildingFacade.svelte
+└── __tests__/
+    ├── building-model.test.ts  # Unit tests for business logic
+    └── storage.test.ts         # Unit tests for persistence
+----
+
+== Story Resolution
+
+=== US-001: Configure Number of Floors
+
+Components:: BuildingConfigPanel, building-model
+Criteria::
+* Provides an input field for floor count -> BuildingConfigPanel renders a numeric input for `config.floorCount` (BCFG-001)
+* Accepts floor count 1-30 -> `validateFloorCount()` enforces [1, 30] range (BCFG-002)
+* Displays validation error for out-of-range -> BuildingConfigPanel shows error from `validationErrors` when `validateFloorCount()` returns invalid (BCFG-003)
+* Updates illustration on change -> `$state` reactivity propagates changed config to BuildingFacade (BCFG-004)
+
+=== US-002: Configure Apartments per Floor
+
+Components:: BuildingConfigPanel, FloorInputRow, building-model
+Criteria::
+* Per-floor input field -> One FloorInputRow rendered per floor (BCFG-005)
+* Variable apartments per floor -> Each FloorInputRow binds to its own `floors[i].apartmentCount` (BCFG-006)
+* Accepts apartment count 1-20 -> `validateApartmentCount()` enforces [1, 20] range (BCFG-007)
+* Per-floor validation error -> FloorInputRow receives and displays the error for its specific floor (BCFG-008)
+* Illustration updates on change -> Reactive config propagation to BuildingFacade (BCFG-009)
+* Displays total apartments -> `totalCount = $derived(totalApartments(config))` rendered in BuildingConfigPanel (BCFG-010)
+
+=== US-003: Apartment Numbering
+
+Components:: building-model, BuildingConfigPanel, BuildingFacade
+Criteria::
+* Unique identifier per apartment -> `generateApartmentId(floor, position)` produces unique IDs (BCFG-011)
+* Identifier format floor*1000+position -> `generateApartmentId()` computes e.g., "1001", "2003" (BCFG-012)
+* Recalculate on config change -> `apartments = $derived(generateAllApartments(config))` recalculates reactively (BCFG-013)
+
+=== US-004: Building Facade Illustration
+
+Components:: BuildingFacade, building-model
+Criteria::
+* Display front-facade illustration -> BuildingFacade renders inline SVG (BCFG-014)
+* Dynamic based on config -> SVG viewBox and elements computed from config props (BCFG-015)
+* Each apartment as distinct visual element -> SVG rectangles per apartment (BCFG-016)
+* Labels with apartment identifier -> SVG `<text>` elements with apartment ID inside each rectangle (BCFG-017)
+* Real-time update -> Svelte reactivity re-renders SVG when config props change (BCFG-018)
+
+=== US-005: Save Building Configuration
+
+Components:: storage, BuildingConfigPanel
+Criteria::
+* Persist on modification -> `$effect` in BuildingConfigPanel calls `saveBuilding(config)` when config changes (BCFG-019)
+* Restore on load -> BuildingConfigPanel initialization calls `loadBuilding()` (BCFG-020)
+* Default when no saved data -> `loadBuilding()` returns null, BuildingConfigPanel uses `createDefaultConfig()` (BCFG-021)
+
+=== US-006: Reset Building Configuration
+
+Components:: BuildingConfigPanel, storage
+Criteria::
+* Reset button present -> BuildingConfigPanel renders a reset button (BCFG-022)
+* Confirmation before reset -> Button click triggers `confirm()` dialog (BCFG-023)
+* Clear and restore defaults on confirm -> Calls `clearBuilding()` + `createDefaultConfig()` (BCFG-024)
+* Cancel preserves configuration -> `confirm()` returns false, no action taken (BCFG-025)

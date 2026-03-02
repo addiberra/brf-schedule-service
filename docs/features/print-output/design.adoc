@@ -1,0 +1,341 @@
+= Design: Print Output
+:version: 1.0.0
+:status: Current
+:source-stories-version: 1.1.0
+:source-spec-version: 1.0.0
+:last-updated: 2026-03-02
+:feature: print-output
+:toc:
+
+== Technical Context
+
+This is an existing project with building-configuration, inspection-scheduling, and message-templates features already implemented. The print output feature composes data from all three previous features to produce two types of printable documents:
+
+1. Individual apartment letters -- one A4 page per apartment with a rendered message template
+2. Schedule overview -- a table of all appointments organized by date
+
+The feature relies entirely on browser-native `window.print()` and `@media print` CSS for print output. No PDF library is used. The operating system's print dialog handles PDF export.
+
+== Decisions and Constraints
+
+* <<../../adrs/0001-svelte5-vite6-typescript-static-site.adoc#,ADR-0001>>: Svelte 5 with runes, Vite 6, TypeScript, Vitest.
+* <<../../adrs/0002-browser-localstorage-persistence.adoc#,ADR-0002>>: Browser localStorage with `brf-schedule:*` namespace.
+
+From `docs/constraints.adoc`:
+
+* Zero runtime dependencies
+* Static site deployable to GitHub Pages
+* All user-facing text in Swedish
+* TypeScript strict mode
+* Print output targets A4 paper size
+* PDF generation relies on browser's native print dialog
+* No PDF generation library
+
+No new ADRs are needed. The print feature uses only built-in browser APIs (`window.print()`, CSS `@media print`, CSS `@page`).
+
+== Research and Unknowns
+
+No unknowns remain. The feature uses standard CSS print capabilities:
+
+* `@media print` -- hides screen-only elements and applies print-specific styles
+* `@page` -- sets A4 dimensions and margins
+* `page-break-after: always` / `break-after: page` -- inserts page breaks between apartment letters
+* `window.print()` -- triggers the browser's print dialog
+
+All of these are well-supported in modern browsers.
+
+== System Design
+
+The feature consists of three layers: a data composition module (pure functions), Svelte UI components for print layout and mode selection, and print-specific CSS.
+
+=== Component Interaction Diagram
+
+[source,mermaid]
+----
+flowchart TD
+    subgraph UI ["Svelte Components"]
+        App["App.svelte"]
+        PP["PrintPanel.svelte"]
+        PLP["PrintLetterPage.svelte"]
+        PSO["PrintScheduleOverview.svelte"]
+    end
+
+    subgraph Logic ["Business Logic"]
+        BM["building-model.ts"]
+        SM["schedule-model.ts"]
+        TEM["template-model.ts"]
+        PM["print-model.ts<br/>(data composition,<br/>print data generation)"]
+    end
+
+    App --> PP
+    PP --> PLP
+    PP --> PSO
+    PP --> PM
+    PM --> TEM
+    PM --> SM
+----
+
+=== Data Flow Diagram
+
+[source,mermaid]
+----
+flowchart LR
+    APTS["Apartment[]<br/>(from building)"] --> PM["print-model.ts"]
+    SCHED["ScheduleResult<br/>(from schedule)"] --> PM
+    TMPL["MessageTemplate<br/>(selected template)"] --> PM
+    PM -->|"ApartmentLetterData[]"| PLP["PrintLetterPage"]
+    PM -->|"ScheduleOverviewData"| PSO["PrintScheduleOverview"]
+    USER["User"] -->|selects mode,<br/>clicks print| PP["PrintPanel"]
+    PP -->|"window.print()"| BROWSER["Browser print dialog"]
+----
+
+=== Sequence Diagram: Print Individual Letters
+
+[source,mermaid]
+----
+sequenceDiagram
+    actor User
+    participant PP as PrintPanel
+    participant PM as print-model
+    participant TEM as template-model
+    participant PLP as PrintLetterPage
+    participant Browser as Browser
+
+    User->>PP: Selects "Individual letters" mode
+    User->>PP: Selects template
+    PP->>PM: generateLetterData(apartments, scheduleResult, template)
+    PM->>TEM: renderTemplate(template, apartment, appointment) [for each apartment]
+    TEM-->>PM: Rendered text per apartment
+    PM-->>PP: ApartmentLetterData[]
+    PP->>PLP: Pass letter data (reactive prop)
+    PLP->>PLP: Render one page per letter
+    User->>PP: Clicks "Skriv ut" (print)
+    PP->>Browser: window.print()
+    Browser->>Browser: Print dialog with @media print CSS applied
+----
+
+=== Data Model
+
+All types are defined in `src/lib/models/print.ts`.
+
+[source,typescript]
+----
+/** Data for a single apartment letter */
+interface ApartmentLetterData {
+  /** Apartment identifier */
+  apartmentId: string;
+  /** Floor number */
+  floor: number;
+  /** Position on floor */
+  position: number;
+  /** Rendered template text (placeholders replaced) */
+  renderedContent: string;
+  /** Scheduled date in YYYY-MM-DD format (empty if not scheduled) */
+  date: string;
+  /** Scheduled time as HH:MM (empty if not scheduled) */
+  time: string;
+}
+
+/** A group of appointments for a single date */
+interface ScheduleDateGroup {
+  /** Date in YYYY-MM-DD format */
+  date: string;
+  /** Swedish formatted date */
+  dateSwedish: string;
+  /** Appointments on this date, ordered by time */
+  appointments: ScheduleOverviewRow[];
+}
+
+/** A single row in the schedule overview table */
+interface ScheduleOverviewRow {
+  /** Apartment identifier */
+  apartmentId: string;
+  /** Floor number */
+  floor: number;
+  /** Scheduled time as HH:MM */
+  time: string;
+}
+
+/** Complete data for the schedule overview printout */
+interface ScheduleOverviewData {
+  /** Groups of appointments organized by date */
+  dateGroups: ScheduleDateGroup[];
+  /** Total number of apartments in the schedule */
+  totalApartments: number;
+}
+
+/** Print mode selection */
+type PrintMode = 'letters' | 'overview';
+----
+
+=== Business Logic: `print-model.ts`
+
+Located at `src/lib/models/print-model.ts`. Pure functions with no side effects.
+
+* `generateLetterData(apartments: Apartment[], scheduleResult: ScheduleResult, template: MessageTemplate): ApartmentLetterData[]` -- for each apartment, finds its corresponding appointment in the schedule result and renders the template. Returns an array of letter data objects with rendered content. Apartments are returned in floor-then-position order (same order as the apartments array).
+
+* `generateScheduleOverviewData(scheduleResult: ScheduleResult): ScheduleOverviewData` -- groups all appointments by date, sorts each group by start time, and formats times as HH:MM strings. Returns the overview data structure.
+
+* `getAppointmentForApartment(apartmentId: string, scheduleResult: ScheduleResult): ScheduleAppointment | null` -- looks up the appointment for a specific apartment from the schedule result. Returns null if not found.
+
+=== UI Components
+
+==== `App.svelte` (modified)
+
+Updated to render `PrintPanel` alongside the existing panels. Passes apartments, schedule result, and templates down.
+
+==== `PrintPanel.svelte`
+
+The main orchestrating component for print output.
+
+State management (Svelte 5 runes):
+
+* `let printMode = $state<PrintMode>('letters')` -- the selected print mode.
+* `let selectedTemplateId = $state<string | null>(null)` -- the template selected for letter printing.
+* `let letterData = $derived(...)` -- letter data generated from apartments, schedule, and selected template.
+* `let overviewData = $derived(...)` -- overview data generated from schedule result.
+
+Props:
+
+* `apartments: Apartment[]` -- apartment list from building config.
+* `scheduleResult: ScheduleResult` -- calculated schedule.
+* `templates: MessageTemplate[]` -- saved templates.
+
+Behavior:
+
+* Renders a mode selector with two options: "Individuella brev" (individual letters) and "Schemaöversikt" (schedule overview).
+* When letters mode is selected, renders a template selector dropdown.
+* Renders either `PrintLetterPage` or `PrintScheduleOverview` based on mode.
+* Provides a "Skriv ut" (print) button that calls `window.print()`.
+* The preview area uses a CSS class that is styled to approximate A4 proportions on screen.
+
+==== `PrintLetterPage.svelte`
+
+Renders a single apartment letter within the print layout.
+
+Props:
+
+* `letter: ApartmentLetterData` -- the letter data.
+* `isLast: boolean` -- whether this is the last letter (controls page break).
+
+Behavior:
+
+* Renders the apartment letter content within an A4-sized container.
+* Uses `page-break-after: always` (except for the last letter).
+* Preserves whitespace/newlines from the rendered template content.
+
+==== `PrintScheduleOverview.svelte`
+
+Renders the schedule overview as a table organized by date.
+
+Props:
+
+* `data: ScheduleOverviewData` -- the overview data.
+
+Behavior:
+
+* Renders a heading "Besiktningsschema" (Inspection Schedule).
+* For each date group, renders a date sub-heading and a table of appointments.
+* Each table row shows apartment ID, floor, and scheduled time.
+* Uses CSS to ensure proper pagination across multiple A4 pages.
+
+=== Print CSS
+
+Print-specific CSS is applied via `@media print` in a global stylesheet or component-level styles.
+
+Key rules:
+
+* `@page { size: A4; margin: 15mm; }` -- sets A4 dimensions and minimum margins.
+* `@media print { .no-print { display: none; } }` -- hides all non-print UI elements (navigation, buttons, mode selector, headers).
+* `.print-letter-page { page-break-after: always; }` -- forces page breaks between letters.
+* `.print-letter-page:last-child { page-break-after: auto; }` -- no page break after the last letter.
+* Print-friendly font: `font-family: 'Georgia', 'Times New Roman', serif; font-size: 12pt;` in print media.
+* Screen preview: the preview area uses scaled-down A4 proportions with a paper-like appearance (white background, subtle shadow).
+
+=== File Structure
+
+----
+src/
+├── App.svelte                    # Updated: passes templates to print panel
+├── lib/
+│   ├── models/
+│   │   ├── building.ts           # Existing (unchanged)
+│   │   ├── building-model.ts     # Existing (unchanged)
+│   │   ├── schedule.ts           # Existing (unchanged)
+│   │   ├── schedule-model.ts     # Existing (unchanged)
+│   │   ├── template.ts           # Existing (unchanged)
+│   │   ├── template-model.ts     # Existing (unchanged)
+│   │   ├── print.ts              # New: print TypeScript interfaces
+│   │   └── print-model.ts        # New: print data composition
+│   ├── services/
+│   │   └── storage.ts            # Existing (unchanged -- print has no persistence)
+│   └── components/
+│       ├── BuildingConfigPanel.svelte   # Existing (unchanged)
+│       ├── FloorInputRow.svelte         # Existing (unchanged)
+│       ├── BuildingFacade.svelte        # Existing (unchanged)
+│       ├── ScheduleConfigPanel.svelte   # Existing (unchanged)
+│       ├── ScheduleView.svelte          # Existing (unchanged)
+│       ├── ScheduleAppointmentRow.svelte # Existing (unchanged)
+│       ├── MessageTemplatePanel.svelte  # Existing (unchanged)
+│       ├── TemplateList.svelte          # Existing (unchanged)
+│       ├── TemplateEditor.svelte        # Existing (unchanged)
+│       ├── TemplatePreview.svelte       # Existing (unchanged)
+│       ├── PrintPanel.svelte            # New: print mode selection + orchestration
+│       ├── PrintLetterPage.svelte       # New: single apartment letter layout
+│       └── PrintScheduleOverview.svelte # New: schedule overview table layout
+└── __tests__/
+    ├── building-model.test.ts    # Existing (unchanged)
+    ├── building-facade.test.ts   # Existing (unchanged)
+    ├── storage.test.ts           # Existing (unchanged)
+    ├── schedule-model.test.ts    # Existing (unchanged)
+    ├── schedule-storage.test.ts  # Existing (unchanged)
+    ├── template-model.test.ts    # Existing (unchanged)
+    ├── template-storage.test.ts  # Existing (unchanged)
+    └── print-model.test.ts       # New: print data composition tests
+----
+
+== Story Resolution
+
+=== US-001: Print Individual Apartment Letters
+
+Components:: PrintPanel, PrintLetterPage, print-model, template-model
+Criteria::
+* One A4 page per apartment with rendered template -> `generateLetterData()` produces one `ApartmentLetterData` per apartment with rendered content; `PrintLetterPage` renders each in an A4 container (PRNT-001)
+* Open print dialog for individual letters -> PrintPanel calls `window.print()` when user clicks print button in letters mode (PRNT-002)
+* Letter fits single A4 page -> `PrintLetterPage` uses A4 CSS sizing with `@page` rules and margins (PRNT-003)
+* Page breaks between letters -> `PrintLetterPage` applies `page-break-after: always` between letters (PRNT-004)
+
+=== US-002: Print Schedule Overview
+
+Components:: PrintPanel, PrintScheduleOverview, print-model
+Criteria::
+* Schedule overview listing all apartments -> `generateScheduleOverviewData()` creates date groups with all appointments (PRNT-005)
+* Overview formatted as table by date -> `PrintScheduleOverview` renders a table per date group (PRNT-006)
+* Open print dialog for schedule overview -> PrintPanel calls `window.print()` in overview mode (PRNT-007)
+* Overview fits A4 with pagination -> `PrintScheduleOverview` uses A4 CSS with proper pagination rules (PRNT-008)
+
+=== US-003: Select Print Mode
+
+Components:: PrintPanel
+Criteria::
+* Print section with two options -> PrintPanel renders radio/button selector with "Individuella brev" and "Schemaöversikt" (PRNT-009)
+* Prepare selected print layout -> PrintPanel conditionally renders `PrintLetterPage` or `PrintScheduleOverview` based on `printMode` state (PRNT-010)
+* Preview before printing -> PrintPanel renders the print layout on screen in a preview area before user initiates print (PRNT-011)
+
+=== US-004: A4 Page Layout
+
+Components:: PrintPanel, PrintLetterPage, PrintScheduleOverview (CSS)
+Criteria::
+* Hide UI during print -> `@media print { .no-print { display: none; } }` hides navigation, buttons, and non-print UI (PRNT-012)
+* Print-friendly font and size -> `@media print` sets serif font at 12pt size (PRNT-013)
+
+NOTE: A4 dimensions (210mm x 297mm) and minimum 15mm margins are covered by project constraints.
+
+=== US-005: PDF Export via System Print Dialog
+
+Components:: PrintPanel (CSS, `window.print()`)
+Criteria::
+* Print-ready layout for PDF export -> The `@media print` and `@page` CSS ensure the layout is correct when saved as PDF (PRNT-014)
+* Preserve formatting in PDF -> CSS page breaks, margins, and print styles are preserved by the browser's PDF export (PRNT-015)
+
+NOTE: No PDF library constraint is covered by project constraints.

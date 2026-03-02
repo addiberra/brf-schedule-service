@@ -1,0 +1,291 @@
+= Specification: Building Configuration
+:version: 1.0.0
+:source-stories-version: 1.1.0
+:last-updated: 2026-03-02
+:feature: building-configuration
+:prefix: BCFG
+:toc:
+
+== BCFG-001
+The system shall provide an input field for the number of floors in the building.
+
+Type:: Ubiquitous
+Source:: US-001: Configure Number of Floors, Criterion 1
+Verification:: Open the building configuration view. Confirm that an input field for the number of floors is visible.
+
+== BCFG-002
+The system shall accept a floor count between 1 and 30 inclusive.
+
+Type:: Ubiquitous
+Source:: US-001: Configure Number of Floors, Criterion 2
+Verification:: Enter floor counts of 1, 15, and 30. Confirm all are accepted without error.
+
+== BCFG-003
+If the user enters a floor count less than 1 or greater than 30, then the system shall display a validation error and prevent saving.
+
+Type:: Unwanted behavior
+Source:: US-001: Configure Number of Floors, Criterion 3
+Verification:: Enter 0 as the floor count. Confirm a validation error is displayed and the value is not saved. Enter 31. Confirm the same behavior.
+
+== BCFG-004
+When the user changes the floor count, the system shall update the building illustration to reflect the new number of floors.
+
+Type:: Event-driven
+Source:: US-001: Configure Number of Floors, Criterion 4
+Verification:: Set the floor count to 3. Confirm the building illustration shows 3 floors. Change to 5. Confirm the illustration updates to show 5 floors.
+
+== BCFG-005
+The system shall provide an input field for the number of apartments on each floor.
+
+Type:: Ubiquitous
+Source:: US-002: Configure Apartments per Floor, Criterion 1
+Verification:: Configure a building with 3 floors. Confirm that each floor has its own input field for the number of apartments.
+
+== BCFG-006
+The system shall allow a different number of apartments per floor.
+
+Type:: Ubiquitous
+Source:: US-002: Configure Apartments per Floor, Criterion 2
+Verification:: Configure a 3-floor building. Set floor 1 to 2 apartments, floor 2 to 3 apartments, floor 3 to 4 apartments. Confirm all values are accepted and reflected independently.
+
+== BCFG-007
+The system shall accept an apartment count between 1 and 20 per floor.
+
+Type:: Ubiquitous
+Source:: US-002: Configure Apartments per Floor, Criterion 3
+Verification:: Enter apartment counts of 1, 10, and 20 for a floor. Confirm all are accepted without error.
+
+== BCFG-008
+If the user enters an apartment count less than 1 or greater than 20 for any floor, then the system shall display a validation error for that floor.
+
+Type:: Unwanted behavior
+Source:: US-002: Configure Apartments per Floor, Criterion 4
+Verification:: Enter 0 as the apartment count for floor 2. Confirm a validation error is displayed for floor 2 specifically. Enter 21. Confirm the same behavior. Confirm other floors are unaffected.
+
+== BCFG-009
+When the user changes the apartment count for a floor, the system shall update the building illustration for that floor.
+
+Type:: Event-driven
+Source:: US-002: Configure Apartments per Floor, Criterion 5
+Verification:: Set floor 1 to 2 apartments. Confirm the illustration shows 2 apartment elements on floor 1. Change floor 1 to 4 apartments. Confirm the illustration updates to show 4 elements on floor 1.
+
+== BCFG-010
+The system shall display the total number of apartments across all floors.
+
+Type:: Ubiquitous
+Source:: US-002: Configure Apartments per Floor, Criterion 6
+Verification:: Configure a 2-floor building with 3 apartments on floor 1 and 4 apartments on floor 2. Confirm the displayed total is 7.
+
+== BCFG-011
+The system shall automatically assign a unique identifier to each apartment based on floor and position.
+
+Type:: Ubiquitous
+Source:: US-003: Apartment Numbering, Criterion 1
+Verification:: Configure a building with 2 floors and 2 apartments per floor. Confirm each apartment has a distinct identifier.
+
+== BCFG-012
+The system shall display apartment identifiers in a format that combines floor number and apartment position (e.g., "1001", "1002" for floor 1, apartments 1 and 2).
+
+Type:: Ubiquitous
+Source:: US-003: Apartment Numbering, Criterion 2
+Verification:: Configure a building with floor 1 having 2 apartments. Confirm identifiers are displayed as "1001" and "1002". Configure floor 2 with 3 apartments. Confirm identifiers are "2001", "2002", and "2003".
+
+== BCFG-013
+When the building configuration changes, the system shall recalculate all apartment identifiers.
+
+Type:: Event-driven
+Source:: US-003: Apartment Numbering, Criterion 3
+Verification:: Configure a 2-floor building with 2 apartments each. Note the identifiers. Change floor 1 to 3 apartments. Confirm all identifiers are recalculated to reflect the new configuration.
+
+== BCFG-014
+The system shall display a front-facade illustration of the building.
+
+Type:: Ubiquitous
+Source:: US-004: Building Facade Illustration, Criterion 1
+Verification:: Open the building configuration view with a valid configuration. Confirm a front-facade illustration of the building is visible.
+
+== BCFG-015
+The system shall generate the illustration dynamically based on the configured number of floors and apartments per floor.
+
+Type:: Ubiquitous
+Source:: US-004: Building Facade Illustration, Criterion 2
+Verification:: Configure a 2-floor building with 3 apartments on each floor. Confirm the illustration shows 2 floors with 3 apartment elements each. Change to 4 floors with 2 apartments each. Confirm the illustration updates accordingly.
+
+== BCFG-016
+The system shall display each apartment as a distinct visual element on the facade.
+
+Type:: Ubiquitous
+Source:: US-004: Building Facade Illustration, Criterion 3
+Verification:: Configure a building with 2 floors and 3 apartments per floor. Confirm that 6 distinct apartment elements are visible in the illustration.
+
+== BCFG-017
+The system shall label each apartment element in the illustration with its apartment identifier.
+
+Type:: Ubiquitous
+Source:: US-004: Building Facade Illustration, Criterion 4
+Verification:: Configure a building with 1 floor and 2 apartments. Confirm that each apartment element in the illustration displays its identifier ("1001", "1002").
+
+== BCFG-018
+When the building configuration changes, the system shall update the illustration in real time.
+
+Type:: Event-driven
+Source:: US-004: Building Facade Illustration, Criterion 5
+Verification:: Change the floor count or apartment count. Confirm the illustration updates immediately without a page reload or explicit save action.
+
+== BCFG-019
+When the user modifies the building configuration, the system shall persist the configuration to browser storage.
+
+Type:: Event-driven
+Source:: US-005: Save Building Configuration, Criterion 1
+Verification:: Modify the floor count. Close the browser tab. Reopen the application. Confirm the modified floor count is still present.
+
+NOTE: The storage mechanism (localStorage with `brf-schedule:` namespace) is enforced by project constraint (Data: "All user data shall be stored exclusively in the browser's localStorage API" and "localStorage keys shall be namespaced"). Not duplicated here.
+
+== BCFG-020
+When the application loads, the system shall restore the previously saved building configuration.
+
+Type:: Event-driven
+Source:: US-005: Save Building Configuration, Criterion 2
+Verification:: Configure a building with 5 floors and varying apartments per floor. Close and reopen the application. Confirm the same 5-floor configuration with all apartment counts is displayed.
+
+== BCFG-021
+If no saved configuration exists, then the system shall display a default configuration state.
+
+Type:: Unwanted behavior
+Source:: US-005: Save Building Configuration, Criterion 3
+Verification:: Clear all application data from browser storage. Open the application. Confirm the system displays a default configuration (not an error state).
+
+== BCFG-022
+The system shall provide a reset button for the building configuration.
+
+Type:: Ubiquitous
+Source:: US-006: Reset Building Configuration, Criterion 1
+Verification:: Open the building configuration view. Confirm a reset button is visible.
+
+== BCFG-023
+When the user activates the reset function, the system shall ask for confirmation before proceeding.
+
+Type:: Event-driven
+Source:: US-006: Reset Building Configuration, Criterion 2
+Verification:: Click the reset button. Confirm a confirmation prompt is displayed before any changes are made.
+
+== BCFG-024
+When the user confirms the reset, the system shall clear the saved configuration and restore default values.
+
+Type:: Event-driven
+Source:: US-006: Reset Building Configuration, Criterion 3
+Verification:: Configure a building with 10 floors. Click reset. Confirm the reset. Confirm the configuration returns to default values and the saved data is cleared.
+
+== BCFG-025
+If the user cancels the reset, then the system shall leave the configuration unchanged.
+
+Type:: Unwanted behavior
+Source:: US-006: Reset Building Configuration, Criterion 4
+Verification:: Configure a building with 10 floors. Click reset. Cancel the reset. Confirm the configuration remains at 10 floors with all previous values intact.
+
+== Traceability
+
+[cols="1,2,2", options="header"]
+|===
+| Requirement ID | Requirement Summary | Source
+
+| BCFG-001
+| Floor count input field
+| US-001: Criterion 1
+
+| BCFG-002
+| Floor count valid range 1-30
+| US-001: Criterion 2
+
+| BCFG-003
+| Floor count validation error
+| US-001: Criterion 3
+
+| BCFG-004
+| Illustration updates on floor count change
+| US-001: Criterion 4
+
+| BCFG-005
+| Per-floor apartment count input
+| US-002: Criterion 1
+
+| BCFG-006
+| Variable apartments per floor
+| US-002: Criterion 2
+
+| BCFG-007
+| Apartment count valid range 1-20
+| US-002: Criterion 3
+
+| BCFG-008
+| Per-floor apartment validation error
+| US-002: Criterion 4
+
+| BCFG-009
+| Illustration updates on apartment count change
+| US-002: Criterion 5
+
+| BCFG-010
+| Total apartment count display
+| US-002: Criterion 6
+
+| BCFG-011
+| Unique apartment identifiers
+| US-003: Criterion 1
+
+| BCFG-012
+| Apartment identifier format (floor + position)
+| US-003: Criterion 2
+
+| BCFG-013
+| Identifier recalculation on config change
+| US-003: Criterion 3
+
+| BCFG-014
+| Front-facade illustration display
+| US-004: Criterion 1
+
+| BCFG-015
+| Dynamic illustration generation
+| US-004: Criterion 2
+
+| BCFG-016
+| Distinct apartment visual elements
+| US-004: Criterion 3
+
+| BCFG-017
+| Apartment labels in illustration
+| US-004: Criterion 4
+
+| BCFG-018
+| Real-time illustration update
+| US-004: Criterion 5
+
+| BCFG-019
+| Auto-persist configuration on change
+| US-005: Criterion 1
+
+| BCFG-020
+| Restore configuration on load
+| US-005: Criterion 2
+
+| BCFG-021
+| Default configuration when no saved data
+| US-005: Criterion 3
+
+| BCFG-022
+| Reset button present
+| US-006: Criterion 1
+
+| BCFG-023
+| Reset confirmation prompt
+| US-006: Criterion 2
+
+| BCFG-024
+| Reset clears data and restores defaults
+| US-006: Criterion 3
+
+| BCFG-025
+| Cancel reset preserves configuration
+| US-006: Criterion 4
+|===

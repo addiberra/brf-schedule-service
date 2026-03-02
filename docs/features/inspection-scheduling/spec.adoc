@@ -1,0 +1,401 @@
+= Specification: Inspection Scheduling
+:version: 1.0.0
+:source-stories-version: 1.1.0
+:last-updated: 2026-03-02
+:feature: inspection-scheduling
+:prefix: SCHED
+:toc:
+
+== SCHED-001
+The system shall provide date picker inputs for inspection start date and end date.
+
+Type:: Ubiquitous
+Source:: US-001: Configure Inspection Period, Criterion 1
+Verification:: Open the inspection scheduling view. Confirm that date picker inputs for start date and end date are visible.
+
+== SCHED-002
+The system shall accept dates in the format YYYY-MM-DD.
+
+Type:: Ubiquitous
+Source:: US-001: Configure Inspection Period, Criterion 2
+Verification:: Enter dates in YYYY-MM-DD format for both start and end date. Confirm the dates are accepted.
+
+== SCHED-003
+If the end date is before the start date, then the system shall display a validation error.
+
+Type:: Unwanted behavior
+Source:: US-001: Configure Inspection Period, Criterion 3
+Verification:: Set the start date to 2026-04-10 and the end date to 2026-04-05. Confirm that a validation error is displayed.
+
+== SCHED-004
+When the user changes the inspection period, the system shall recalculate the inspection schedule.
+
+Type:: Event-driven
+Source:: US-001: Configure Inspection Period, Criterion 4
+Verification:: Configure a schedule with apartments. Change the start date. Confirm that all auto-calculated appointment times are updated to reflect the new period.
+
+== SCHED-005
+The system shall provide an input for the daily inspection start time.
+
+Type:: Ubiquitous
+Source:: US-002: Configure Daily Inspection Time, Criterion 1
+Verification:: Open the inspection scheduling view. Confirm that an input for daily start time is visible.
+
+== SCHED-006
+The system shall provide an input for inspection duration per apartment in minutes.
+
+Type:: Ubiquitous
+Source:: US-002: Configure Daily Inspection Time, Criterion 2
+Verification:: Open the inspection scheduling view. Confirm that an input for inspection duration per apartment is visible.
+
+== SCHED-007
+The system shall accept an inspection duration between 5 and 120 minutes.
+
+Type:: Ubiquitous
+Source:: US-002: Configure Daily Inspection Time, Criterion 3
+Verification:: Enter durations of 5, 60, and 120 minutes. Confirm all are accepted without error.
+
+== SCHED-008
+If the user enters a duration outside the range 5 to 120 minutes, then the system shall display a validation error.
+
+Type:: Unwanted behavior
+Source:: US-002: Configure Daily Inspection Time, Criterion 4
+Verification:: Enter a duration of 4. Confirm a validation error is displayed. Enter 121. Confirm the same behavior.
+
+== SCHED-009
+When the user changes the daily start time or duration, the system shall recalculate the schedule.
+
+Type:: Event-driven
+Source:: US-002: Configure Daily Inspection Time, Criterion 5
+Verification:: Configure a schedule. Change the daily start time. Confirm the appointment times update. Change the duration. Confirm the appointment times update again.
+
+== SCHED-010
+The system shall provide inputs for lunch break start time and end time.
+
+Type:: Ubiquitous
+Source:: US-003: Configure Lunch Break, Criterion 1
+Verification:: Open the inspection scheduling view. Confirm that inputs for lunch break start time and end time are visible.
+
+== SCHED-011
+When a lunch break is configured, the system shall skip the lunch break window when scheduling inspections.
+
+Type:: Event-driven
+Source:: US-003: Configure Lunch Break, Criterion 2
+Verification:: Configure a lunch break from 12:00 to 13:00 and inspections starting at 09:00 with 30-minute durations. Confirm that no inspection is scheduled between 12:00 and 13:00.
+
+== SCHED-012
+If an inspection would overlap with the lunch break, then the system shall move that inspection to after the lunch break.
+
+Type:: Unwanted behavior
+Source:: US-003: Configure Lunch Break, Criterion 3
+Verification:: Configure inspections so that one would start at 11:45 with a 30-minute duration and a lunch break from 12:00 to 13:00. Confirm the overlapping inspection is moved to 13:00.
+
+== SCHED-013
+The system shall allow the lunch break to be disabled.
+
+Type:: Ubiquitous
+Source:: US-003: Configure Lunch Break, Criterion 4
+Verification:: Disable the lunch break. Confirm that inspections are scheduled continuously without a gap.
+
+== SCHED-014
+The system shall provide a toggle to exclude weekends from the schedule.
+
+Type:: Ubiquitous
+Source:: US-004: Exclude Weekends and Specific Dates, Criterion 1
+Verification:: Open the inspection scheduling view. Confirm that a toggle to exclude weekends is visible.
+
+== SCHED-015
+The system shall provide a way to add specific dates to exclude from the schedule.
+
+Type:: Ubiquitous
+Source:: US-004: Exclude Weekends and Specific Dates, Criterion 2
+Verification:: Open the inspection scheduling view. Confirm that a mechanism to add specific excluded dates is available.
+
+== SCHED-016
+When weekends are excluded, the system shall skip Saturday and Sunday when scheduling inspections.
+
+Type:: Event-driven
+Source:: US-004: Exclude Weekends and Specific Dates, Criterion 3
+Verification:: Enable weekend exclusion. Configure a schedule that spans a weekend. Confirm that no inspections are scheduled on Saturday or Sunday.
+
+== SCHED-017
+When specific dates are excluded, the system shall skip those dates when scheduling inspections.
+
+Type:: Event-driven
+Source:: US-004: Exclude Weekends and Specific Dates, Criterion 4
+Verification:: Add a specific date to the exclusion list. Configure a schedule that includes that date. Confirm no inspections are scheduled on the excluded date.
+
+== SCHED-018
+When the user adds or removes excluded dates, the system shall recalculate the schedule.
+
+Type:: Event-driven
+Source:: US-004: Exclude Weekends and Specific Dates, Criterion 5
+Verification:: Configure a schedule. Add an excluded date. Confirm the schedule updates. Remove the excluded date. Confirm the schedule updates again.
+
+== SCHED-019
+While the user has configured the building, inspection period, daily start time, and duration, the system shall automatically calculate inspection times for all apartments.
+
+Type:: State-driven
+Source:: US-005: Automatic Schedule Calculation, Criterion 1
+Verification:: Configure a building with apartments, set inspection period, daily start time, and duration. Confirm the system displays calculated inspection times for all apartments without requiring a manual trigger.
+
+== SCHED-020
+The system shall schedule apartments sequentially, floor by floor, starting from the first floor.
+
+Type:: Ubiquitous
+Source:: US-005: Automatic Schedule Calculation, Criterion 2
+Verification:: Configure a 3-floor building with 2 apartments per floor. Generate the schedule. Confirm that floor 1 apartments are scheduled first, then floor 2, then floor 3, in sequential order.
+
+== SCHED-021
+The system shall respect the configured daily start time, lunch break, and excluded dates when calculating the schedule.
+
+Type:: Ubiquitous
+Source:: US-005: Automatic Schedule Calculation, Criterion 3
+Verification:: Configure a schedule with daily start time 09:00, lunch break 12:00-13:00, and a specific excluded date. Confirm no inspections start before 09:00, none overlap with lunch, and none are on the excluded date.
+
+== SCHED-022
+The system shall display the calculated schedule as a list showing each apartment's date and time.
+
+Type:: Ubiquitous
+Source:: US-005: Automatic Schedule Calculation, Criterion 4
+Verification:: Generate a schedule. Confirm a list is displayed with each apartment's identifier, scheduled date, and scheduled time.
+
+== SCHED-023
+If the inspection period is too short to fit all apartments, then the system shall display a warning indicating how many apartments cannot be scheduled.
+
+Type:: Unwanted behavior
+Source:: US-005: Automatic Schedule Calculation, Criterion 5
+Verification:: Configure a building with 100 apartments but an inspection period of only 1 day with a maximum of 5 per day. Confirm a warning is displayed indicating how many apartments remain unscheduled.
+
+== SCHED-024
+The system shall allow the user to edit the scheduled date and time for any individual apartment.
+
+Type:: Ubiquitous
+Source:: US-006: Manual Override of Individual Times, Criterion 1
+Verification:: Generate a schedule. Click on an apartment's scheduled time. Confirm the date and time become editable.
+
+== SCHED-025
+When the user edits an apartment's time, the system shall mark that apartment as manually overridden.
+
+Type:: Event-driven
+Source:: US-006: Manual Override of Individual Times, Criterion 2
+Verification:: Edit an apartment's scheduled time. Confirm the appointment is marked as manually overridden.
+
+== SCHED-026
+The system shall visually distinguish manually overridden appointments from auto-calculated ones.
+
+Type:: Ubiquitous
+Source:: US-006: Manual Override of Individual Times, Criterion 3
+Verification:: Generate a schedule. Manually override one apartment's time. Confirm the overridden appointment is visually distinct (different styling or indicator) from auto-calculated appointments.
+
+== SCHED-027
+When the user recalculates the schedule, the system shall preserve manually overridden appointments.
+
+Type:: Event-driven
+Source:: US-006: Manual Override of Individual Times, Criterion 4
+Verification:: Generate a schedule. Override one apartment's time. Trigger a recalculation by changing the daily start time. Confirm the manually overridden appointment retains its custom date and time.
+
+== SCHED-028
+The system shall provide a way to remove a manual override and revert to the auto-calculated time.
+
+Type:: Ubiquitous
+Source:: US-006: Manual Override of Individual Times, Criterion 5
+Verification:: Manually override an apartment's time. Use the revert mechanism. Confirm the apartment reverts to its auto-calculated time and is no longer marked as overridden.
+
+== SCHED-029
+The system shall provide an input for the maximum number of apartments to inspect per day.
+
+Type:: Ubiquitous
+Source:: US-007: Configure Maximum Apartments per Day, Criterion 1
+Verification:: Open the inspection scheduling view. Confirm that an input for maximum apartments per day is visible.
+
+== SCHED-030
+When calculating the schedule, the system shall not schedule more than the configured maximum per day.
+
+Type:: Event-driven
+Source:: US-007: Configure Maximum Apartments per Day, Criterion 2
+Verification:: Set the maximum to 3 per day. Generate a schedule for 10 apartments. Confirm no day has more than 3 appointments.
+
+== SCHED-031
+If the configured maximum conflicts with the available time, then the system shall use the lower of the two limits.
+
+Type:: Unwanted behavior
+Source:: US-007: Configure Maximum Apartments per Day, Criterion 3
+Verification:: Set daily start time to 09:00, duration to 60 minutes, lunch break 12:00-13:00, and maximum to 10 per day. The available time allows only about 7 inspections. Confirm no more than 7 are scheduled per day.
+
+== SCHED-032
+When the user changes the maximum per day, the system shall recalculate the schedule.
+
+Type:: Event-driven
+Source:: US-007: Configure Maximum Apartments per Day, Criterion 4
+Verification:: Generate a schedule with max 5 per day. Change to max 3 per day. Confirm the schedule recalculates with no more than 3 per day.
+
+== SCHED-033
+When the schedule is calculated or modified, the system shall persist the schedule to browser storage.
+
+Type:: Event-driven
+Source:: US-008: Save Inspection Schedule, Criterion 1
+Verification:: Generate a schedule. Close and reopen the application. Confirm the schedule is still present.
+
+NOTE: The storage mechanism (localStorage with `brf-schedule:` namespace) is enforced by project constraint. Not duplicated here.
+
+== SCHED-034
+When the application loads, the system shall restore the previously saved schedule.
+
+Type:: Event-driven
+Source:: US-008: Save Inspection Schedule, Criterion 2
+Verification:: Generate a schedule with specific configuration values. Close and reopen the application. Confirm the same schedule configuration and appointment times are displayed.
+
+== SCHED-035
+If no saved schedule exists, then the system shall display an empty schedule state.
+
+Type:: Unwanted behavior
+Source:: US-008: Save Inspection Schedule, Criterion 3
+Verification:: Clear all application data from browser storage. Open the application. Confirm the system displays an empty schedule state (not an error state) with default configuration values.
+
+== Traceability
+
+[cols="1,2,2", options="header"]
+|===
+| Requirement ID | Requirement Summary | Source
+
+| SCHED-001
+| Date picker inputs for inspection period
+| US-001: Criterion 1
+
+| SCHED-002
+| Date format YYYY-MM-DD
+| US-001: Criterion 2
+
+| SCHED-003
+| Validation error for end before start
+| US-001: Criterion 3
+
+| SCHED-004
+| Recalculate on period change
+| US-001: Criterion 4
+
+| SCHED-005
+| Daily start time input
+| US-002: Criterion 1
+
+| SCHED-006
+| Duration per apartment input
+| US-002: Criterion 2
+
+| SCHED-007
+| Duration valid range 5-120
+| US-002: Criterion 3
+
+| SCHED-008
+| Duration validation error
+| US-002: Criterion 4
+
+| SCHED-009
+| Recalculate on time/duration change
+| US-002: Criterion 5
+
+| SCHED-010
+| Lunch break time inputs
+| US-003: Criterion 1
+
+| SCHED-011
+| Skip lunch break window
+| US-003: Criterion 2
+
+| SCHED-012
+| Move overlapping inspection past lunch
+| US-003: Criterion 3
+
+| SCHED-013
+| Lunch break can be disabled
+| US-003: Criterion 4
+
+| SCHED-014
+| Weekend exclusion toggle
+| US-004: Criterion 1
+
+| SCHED-015
+| Specific date exclusion mechanism
+| US-004: Criterion 2
+
+| SCHED-016
+| Skip weekends when excluded
+| US-004: Criterion 3
+
+| SCHED-017
+| Skip specific excluded dates
+| US-004: Criterion 4
+
+| SCHED-018
+| Recalculate on exclusion change
+| US-004: Criterion 5
+
+| SCHED-019
+| Auto-calculate inspection times
+| US-005: Criterion 1
+
+| SCHED-020
+| Sequential floor-by-floor scheduling
+| US-005: Criterion 2
+
+| SCHED-021
+| Respect start time, lunch, exclusions
+| US-005: Criterion 3
+
+| SCHED-022
+| Display schedule as list
+| US-005: Criterion 4
+
+| SCHED-023
+| Warning for unschedulable apartments
+| US-005: Criterion 5
+
+| SCHED-024
+| Edit individual apartment times
+| US-006: Criterion 1
+
+| SCHED-025
+| Mark manually overridden appointments
+| US-006: Criterion 2
+
+| SCHED-026
+| Visual distinction for overrides
+| US-006: Criterion 3
+
+| SCHED-027
+| Preserve overrides on recalculation
+| US-006: Criterion 4
+
+| SCHED-028
+| Revert manual override
+| US-006: Criterion 5
+
+| SCHED-029
+| Max apartments per day input
+| US-007: Criterion 1
+
+| SCHED-030
+| Enforce max per day limit
+| US-007: Criterion 2
+
+| SCHED-031
+| Use lower of configured and time-based limits
+| US-007: Criterion 3
+
+| SCHED-032
+| Recalculate on max per day change
+| US-007: Criterion 4
+
+| SCHED-033
+| Persist schedule to storage
+| US-008: Criterion 1
+
+| SCHED-034
+| Restore schedule on load
+| US-008: Criterion 2
+
+| SCHED-035
+| Empty state when no saved schedule
+| US-008: Criterion 3
+|===

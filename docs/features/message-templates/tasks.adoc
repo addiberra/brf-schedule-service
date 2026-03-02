@@ -1,0 +1,119 @@
+= Implementation Tasks: Message Templates
+:version: 1.0.0
+:status: Implemented
+:source-design-version: 1.0.0
+:source-stories-version: 1.1.0
+:source-spec-version: 1.0.0
+:last-updated: 2026-03-02
+:feature: message-templates
+:toc:
+
+== Overview
+
+Implement the message templates feature for BRF inspection schedules. The feature allows administrators to create, edit, preview, and manage message templates with user-defined placeholders that map to building and schedule data fields. 3 phases, 9 tasks.
+
+== Phase 1: Foundation
+
+Data model and template engine -- pure TypeScript functions with no UI.
+
+* [x] TASK-001: Create template data model interfaces [parallel]
++
+Components:: template.ts
+Stories:: US-001, US-002, US-005
+Specs:: TMPL-002, TMPL-004, TMPL-005, TMPL-007, TMPL-020
+Description:: Create `src/lib/models/template.ts` with `PlaceholderMapping`, `DataField`, and `MessageTemplate` interfaces as specified in the design.
+
+* [x] TASK-002: Implement template engine business logic [sequential]
++
+Components:: template-model.ts
+Stories:: US-001, US-002, US-004, US-005
+Specs:: TMPL-005, TMPL-006, TMPL-007, TMPL-008, TMPL-017, TMPL-018, TMPL-019, TMPL-020
+Description:: Create `src/lib/models/template-model.ts` with pure functions: `createDefaultTemplate()`, `getDefaultPlaceholders()`, `parsePlaceholders()`, `resolveDataField()`, `renderTemplate()`, `getUnmappedPlaceholders()`, `generateTemplateId()`, and `getAvailableDataFields()`.
+
+* [x] TASK-003: Extend storage service with template persistence [parallel]
++
+Components:: storage.ts
+Stories:: US-001, US-003, US-006
+Specs:: TMPL-003, TMPL-012, TMPL-022, TMPL-023
+Description:: Extend `src/lib/services/storage.ts` with `saveTemplates()`, `loadTemplates()`, and `clearTemplates()` functions using the `brf-schedule:templates` localStorage key.
+
+== Phase 2: UI Components
+
+Svelte 5 components for template management.
+
+* [x] TASK-004: Create TemplateList component [parallel]
++
+Components:: TemplateList.svelte
+Stories:: US-003
+Specs:: TMPL-010, TMPL-011, TMPL-013
+Description:: Create `src/lib/components/TemplateList.svelte` that displays saved templates as a selectable list with delete buttons.
+
+* [x] TASK-005: Create TemplateEditor component [parallel]
++
+Components:: TemplateEditor.svelte
+Stories:: US-001, US-002, US-003, US-005
+Specs:: TMPL-001, TMPL-002, TMPL-006, TMPL-007, TMPL-008, TMPL-021
+Description:: Create `src/lib/components/TemplateEditor.svelte` with name input, body textarea, placeholder management (add/remove/map), and save button.
+
+* [x] TASK-006: Create TemplatePreview component [parallel]
++
+Components:: TemplatePreview.svelte
+Stories:: US-004
+Specs:: TMPL-009, TMPL-015, TMPL-016, TMPL-017, TMPL-018
+Description:: Create `src/lib/components/TemplatePreview.svelte` with apartment selector dropdown and rendered template display. Unmapped placeholders shown in error style.
+
+== Phase 3: Integration
+
+Wire up the orchestrating panel and integrate with App.
+
+* [x] TASK-007: Create MessageTemplatePanel component [sequential]
++
+Components:: MessageTemplatePanel.svelte
+Stories:: US-001, US-002, US-003, US-004, US-005, US-006
+Specs:: TMPL-003, TMPL-004, TMPL-010, TMPL-011, TMPL-012, TMPL-014, TMPL-019, TMPL-022, TMPL-023
+Description:: Create `src/lib/components/MessageTemplatePanel.svelte` that orchestrates TemplateList, TemplateEditor, and TemplatePreview. Manages template state, save/load/delete, and `confirm()` dialog for deletion.
+
+* [x] TASK-008: Integrate with App.svelte [sequential]
++
+Components:: App.svelte
+Stories:: US-001, US-004, US-006
+Specs:: TMPL-015, TMPL-022
+Description:: Update `src/App.svelte` to render `MessageTemplatePanel`, passing apartments and schedule result as props.
+
+* [x] TASK-009: Verify all tests and build [sequential]
++
+Components:: All
+Stories:: US-001, US-002, US-003, US-004, US-005, US-006
+Specs:: All TMPL specs
+Description:: Run all existing and new tests. Verify `npm run build` passes. Confirm no regressions in building-configuration or inspection-scheduling features.
+
+== Traceability
+
+[cols="1,1,1", options="header"]
+|===
+| Story | Spec IDs | Tasks
+
+| US-001: Create Message Template
+| TMPL-001, TMPL-002, TMPL-003, TMPL-004
+| TASK-001, TASK-002, TASK-003, TASK-005, TASK-007, TASK-008
+
+| US-002: Insert Placeholders in Template
+| TMPL-005, TMPL-006, TMPL-007, TMPL-008, TMPL-009
+| TASK-001, TASK-002, TASK-005, TASK-006, TASK-007
+
+| US-003: Edit Existing Template
+| TMPL-010, TMPL-011, TMPL-012, TMPL-013, TMPL-014
+| TASK-003, TASK-004, TASK-005, TASK-007
+
+| US-004: Preview Rendered Template
+| TMPL-015, TMPL-016, TMPL-017, TMPL-018
+| TASK-002, TASK-006, TASK-007, TASK-008
+
+| US-005: Default Placeholders
+| TMPL-019, TMPL-020, TMPL-021
+| TASK-001, TASK-002, TASK-005, TASK-007
+
+| US-006: Save Templates
+| TMPL-003, TMPL-022, TMPL-023
+| TASK-003, TASK-007, TASK-008
+|===

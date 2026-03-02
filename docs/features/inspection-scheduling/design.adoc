@@ -1,0 +1,427 @@
+= Design: Inspection Scheduling
+:version: 1.0.0
+:status: Current
+:source-stories-version: 1.1.0
+:source-spec-version: 1.0.0
+:last-updated: 2026-03-02
+:feature: inspection-scheduling
+:toc:
+
+== Technical Context
+
+This is an existing project with the building-configuration feature already implemented. The inspection scheduling feature builds on top of the building configuration data model -- it uses the building's apartments (generated from `BuildingConfig`) as the list of items to schedule.
+
+The project is a Svelte 5 + Vite 6 + TypeScript static site with zero runtime dependencies. All persistence uses browser localStorage with the `brf-schedule:` namespace.
+
+== Decisions and Constraints
+
+* <<../../adrs/0001-svelte5-vite6-typescript-static-site.adoc#,ADR-0001>>: Svelte 5 with runes, Vite 6, TypeScript, Vitest.
+* <<../../adrs/0002-browser-localstorage-persistence.adoc#,ADR-0002>>: Browser localStorage with `brf-schedule:*` namespace.
+
+From `docs/constraints.adoc`:
+
+* Zero runtime dependencies
+* Static site deployable to GitHub Pages
+* All user-facing text in Swedish
+* TypeScript strict mode
+
+No new ADRs are needed. The scheduling algorithm is a pure function operating on dates and times, using only the built-in `Date` API.
+
+== Research and Unknowns
+
+No unknowns remain. The scheduling algorithm uses standard date arithmetic. Time-of-day is represented as minutes since midnight (e.g., 09:00 = 540) to keep arithmetic simple and avoid timezone issues.
+
+== System Design
+
+The feature consists of four layers: a data model (TypeScript interfaces), a scheduling algorithm (pure functions), a persistence extension (storage service), and Svelte UI components.
+
+=== Component Interaction Diagram
+
+[source,mermaid]
+----
+flowchart TD
+    subgraph UI ["Svelte Components"]
+        App["App.svelte"]
+        SCP["ScheduleConfigPanel.svelte"]
+        SCH["ScheduleView.svelte"]
+        SAR["ScheduleAppointmentRow.svelte"]
+    end
+
+    subgraph Logic ["Business Logic"]
+        BM["building-model.ts"]
+        SM["schedule-model.ts<br/>(validation, scheduling<br/>algorithm, defaults)"]
+    end
+
+    subgraph Persistence ["Persistence Layer"]
+        PS["storage.ts<br/>(extended with schedule<br/>save/load/clear)"]
+    end
+
+    subgraph Browser ["Browser"]
+        LS["localStorage<br/>brf-schedule:schedule"]
+    end
+
+    App --> SCP
+    App --> SCH
+    SCP --> SM
+    SCH --> SAR
+    SCH --> SM
+    SCP --> PS
+    SCH --> PS
+    SM --> BM
+    PS --> LS
+----
+
+=== Data Flow Diagram
+
+[source,mermaid]
+----
+flowchart LR
+    USER["User input"] -->|schedule config<br/>date range, times,<br/>exclusions| SCP["ScheduleConfigPanel"]
+    BLDG["BuildingConfig<br/>(from building-config)"] --> SM
+    SCP -->|validate| SM["schedule-model.ts"]
+    SM -->|validation result| SCP
+    SCP -->|valid config| CALC["calculateSchedule()"]
+    CALC -->|ScheduleResult| SCH["ScheduleView"]
+    SCH -->|renders| LIST["Appointment list"]
+    SCP -->|config| PS["storage.ts"]
+    PS -->|JSON| LS["localStorage"]
+    PS -->|load on startup| SCP
+    USER -->|manual override| SCH
+    SCH -->|overrides| SM
+----
+
+=== Sequence Diagram: Schedule Calculation
+
+[source,mermaid]
+----
+sequenceDiagram
+    actor User
+    participant SCP as ScheduleConfigPanel
+    participant SM as schedule-model
+    participant BM as building-model
+    participant PS as storage
+    participant SCH as ScheduleView
+
+    User->>SCP: Changes schedule config (dates, times, etc.)
+    SCP->>SM: validateScheduleConfig(config)
+    SM-->>SCP: ValidationResult (valid/invalid)
+    alt Valid input
+        SCP->>BM: generateAllApartments(buildingConfig)
+        BM-->>SCP: Apartment[]
+        SCP->>SM: calculateSchedule(config, apartments)
+        SM-->>SCP: ScheduleResult (appointments + warnings)
+        SCP->>PS: saveSchedule(scheduleConfig)
+        SCP->>SCH: Pass schedule result (reactive prop)
+        SCH->>SCH: Render appointment list
+    else Invalid input
+        SCP->>SCP: Display validation error
+    end
+----
+
+=== Sequence Diagram: Manual Override
+
+[source,mermaid]
+----
+sequenceDiagram
+    actor User
+    participant SCH as ScheduleView
+    participant SAR as ScheduleAppointmentRow
+    participant SM as schedule-model
+    participant PS as storage
+
+    User->>SAR: Edits date/time for apartment
+    SAR->>SCH: onoverride(apartmentId, date, time)
+    SCH->>SCH: Update overrides map
+    SCH->>SM: calculateSchedule(config, apartments, overrides)
+    SM-->>SCH: ScheduleResult (preserves override)
+    SCH->>PS: saveSchedule(config with overrides)
+    User->>SAR: Clicks revert
+    SAR->>SCH: onrevert(apartmentId)
+    SCH->>SCH: Remove from overrides map
+    SCH->>SM: calculateSchedule(config, apartments, overrides)
+    SM-->>SCH: ScheduleResult (recalculated)
+----
+
+=== Data Model
+
+All types are defined in `src/lib/models/schedule.ts`.
+
+[source,typescript]
+----
+/** Schedule configuration set by the user */
+interface ScheduleConfig {
+  /** Inspection period start date (YYYY-MM-DD) */
+  startDate: string;
+  /** Inspection period end date (YYYY-MM-DD) */
+  endDate: string;
+  /** Daily inspection start time in minutes since midnight (e.g., 540 = 09:00) */
+  dailyStartTime: number;
+  /** Inspection duration per apartment in minutes (5-120) */
+  durationMinutes: number;
+  /** Whether lunch break is enabled */
+  lunchBreakEnabled: boolean;
+  /** Lunch break start time in minutes since midnight */
+  lunchStartTime: number;
+  /** Lunch break end time in minutes since midnight */
+  lunchEndTime: number;
+  /** Whether to exclude weekends (Saturday and Sunday) */
+  excludeWeekends: boolean;
+  /** Specific dates to exclude (YYYY-MM-DD format) */
+  excludedDates: string[];
+  /** Maximum apartments to inspect per day */
+  maxPerDay: number;
+}
+
+/** A single scheduled appointment */
+interface ScheduleAppointment {
+  /** Apartment identifier (from building config) */
+  apartmentId: string;
+  /** Floor number */
+  floor: number;
+  /** Position on floor */
+  position: number;
+  /** Scheduled date (YYYY-MM-DD) */
+  date: string;
+  /** Scheduled start time in minutes since midnight */
+  startTime: number;
+  /** Whether this appointment was manually overridden */
+  manualOverride: boolean;
+}
+
+/** Manual override for an apartment */
+interface ManualOverride {
+  /** Overridden date (YYYY-MM-DD) */
+  date: string;
+  /** Overridden start time in minutes since midnight */
+  startTime: number;
+}
+
+/** Result of schedule calculation */
+interface ScheduleResult {
+  /** Scheduled appointments */
+  appointments: ScheduleAppointment[];
+  /** Number of apartments that could not be scheduled */
+  unscheduledCount: number;
+  /** Warning message if apartments could not be scheduled */
+  warning: string | null;
+}
+----
+
+=== Business Logic: `schedule-model.ts`
+
+Located at `src/lib/models/schedule-model.ts`. Pure functions with no side effects.
+
+* `createDefaultScheduleConfig(): ScheduleConfig` -- returns a default schedule config. Start date = today, end date = today + 14 days, daily start time = 09:00 (540), duration = 30 minutes, lunch break 12:00-13:00 enabled, exclude weekends = true, no excluded dates, max per day = 10.
+* `validateScheduleConfig(config: ScheduleConfig): Map<string, string>` -- validates all fields. Returns a map of field name to error message. Empty map means valid.
+* `validateDuration(minutes: number): ValidationResult` -- validates duration is integer in [5, 120].
+* `validateDateRange(startDate: string, endDate: string): ValidationResult` -- validates end date is not before start date.
+* `formatTime(minutes: number): string` -- converts minutes since midnight to "HH:MM" string.
+* `parseTime(timeStr: string): number` -- converts "HH:MM" string to minutes since midnight.
+* `isWeekend(dateStr: string): boolean` -- checks if a YYYY-MM-DD string falls on a Saturday or Sunday.
+* `getAvailableDates(config: ScheduleConfig): string[]` -- returns all available dates within the period, excluding weekends (if configured) and excluded dates.
+* `getMaxAppointmentsPerDay(config: ScheduleConfig): number` -- calculates the effective maximum appointments per day based on available time (start time, duration, lunch break) and the configured max per day. Returns the lower of the two.
+* `calculateSchedule(config: ScheduleConfig, apartments: Apartment[], overrides: Map<string, ManualOverride>): ScheduleResult` -- the core scheduling algorithm. Assigns each apartment (in order: floor by floor, position by position) to the next available slot. Manual overrides are preserved. Returns the full schedule result with any warnings.
+* `addDays(dateStr: string, days: number): string` -- adds days to a YYYY-MM-DD date string.
+* `formatDateSwedish(dateStr: string): string` -- formats a YYYY-MM-DD date as a Swedish-friendly display string.
+
+==== Scheduling Algorithm
+
+The `calculateSchedule` function operates as follows:
+
+1. Get available dates from config (respecting weekend exclusion and excluded dates).
+2. Calculate the effective max per day (min of configured max and time-based max).
+3. For each apartment (floor by floor, position ascending):
+   a. If the apartment has a manual override, use the override date and time. Mark as `manualOverride: true`.
+   b. Otherwise, find the next available slot:
+      * Start from the current date at the current time cursor.
+      * If the time cursor + duration would overlap with lunch break, advance to after lunch.
+      * If the time cursor + duration exceeds end of day (configurable, but implicitly the time after which no new inspections should start, governed by max per day), move to the next available date and reset to daily start time.
+      * If no more available dates, the apartment is unscheduled.
+4. Return `ScheduleResult` with all appointments and unscheduled count.
+
+The "end of day" is not a fixed time; it is derived from the daily schedule. The algorithm tracks how many apartments have been scheduled on the current day and respects the effective max per day.
+
+=== Persistence: `storage.ts` (extended)
+
+The existing `storage.ts` is extended with schedule-specific functions:
+
+* `const SCHEDULE_STORAGE_KEY = "brf-schedule:schedule"`
+* `saveSchedule(config: ScheduleConfig, overrides: Map<string, ManualOverride>): void` -- serializes schedule config and overrides to JSON, writes to localStorage.
+* `loadSchedule(): { config: ScheduleConfig; overrides: Map<string, ManualOverride> } | null` -- reads and parses. Returns null if missing or parse fails.
+* `clearSchedule(): void` -- removes the key.
+
+The overrides map is serialized as an array of `[key, value]` tuples since `Map` does not natively JSON-serialize.
+
+=== UI Components
+
+==== `App.svelte` (modified)
+
+Updated to render both `BuildingConfigPanel` and `ScheduleConfigPanel`. The building config is passed down so the schedule can use the apartment list.
+
+==== `ScheduleConfigPanel.svelte`
+
+The main orchestrating component for inspection scheduling.
+
+State management (Svelte 5 runes):
+
+* `let scheduleConfig = $state<ScheduleConfig>(...)` -- initialized from `loadSchedule()` or `createDefaultScheduleConfig()`.
+* `let overrides = $state<Map<string, ManualOverride>>(...)` -- initialized from storage.
+* `let validationErrors = $state<Map<string, string>>(new Map())` -- keyed by field name.
+* `let scheduleResult = $derived(calculateSchedule(scheduleConfig, apartments, overrides))` -- recalculated reactively whenever config, apartments, or overrides change.
+* `$effect(() => { ... })` -- persists valid configuration and overrides to localStorage.
+
+Props:
+
+* `apartments: Apartment[]` -- apartment list from building config (passed from App).
+* `buildingConfigured: boolean` -- whether the building has been configured (at least 1 apartment).
+
+Behavior:
+
+* Renders date inputs for start date and end date.
+* Renders time input for daily start time.
+* Renders number input for duration per apartment.
+* Renders lunch break toggle, and start/end time inputs when enabled.
+* Renders weekend exclusion toggle.
+* Renders excluded dates list with add/remove.
+* Renders max per day input.
+* Displays validation errors.
+* Renders `ScheduleView` with the calculated schedule result.
+
+==== `ScheduleView.svelte`
+
+Displays the calculated schedule as a list of appointments.
+
+Props:
+
+* `result: ScheduleResult` -- the calculated schedule.
+* `overrides: Map<string, ManualOverride>` -- current manual overrides.
+* `onoverride: (apartmentId: string, date: string, startTime: number) => void` -- callback for manual override.
+* `onrevert: (apartmentId: string) => void` -- callback to revert override.
+
+Behavior:
+
+* Renders a table/list of appointments grouped by date.
+* Each row shows apartment ID, date, time, and override status.
+* Overridden rows are visually marked.
+* Displays warning if there are unscheduled apartments.
+
+==== `ScheduleAppointmentRow.svelte`
+
+Renders a single appointment in the schedule list.
+
+Props:
+
+* `appointment: ScheduleAppointment` -- the appointment data.
+* `onoverride: (apartmentId: string, date: string, startTime: number) => void`
+* `onrevert: (apartmentId: string) => void`
+
+Behavior:
+
+* Displays apartment ID, date, and time.
+* If not overridden: shows an edit button to enter override mode.
+* If overridden: shows the custom time with a "revert" button and visual indicator.
+* In edit mode: shows date and time inputs for the override.
+
+=== File Structure
+
+----
+src/
+├── App.svelte                    # Updated: passes apartments to schedule panel
+├── lib/
+│   ├── models/
+│   │   ├── building.ts           # Existing (unchanged)
+│   │   ├── building-model.ts     # Existing (unchanged)
+│   │   ├── schedule.ts           # New: schedule TypeScript interfaces
+│   │   └── schedule-model.ts     # New: scheduling algorithm + validation
+│   ├── services/
+│   │   └── storage.ts            # Extended: schedule save/load/clear
+│   └── components/
+│       ├── BuildingConfigPanel.svelte   # Existing (unchanged)
+│       ├── FloorInputRow.svelte         # Existing (unchanged)
+│       ├── BuildingFacade.svelte        # Existing (unchanged)
+│       ├── ScheduleConfigPanel.svelte   # New: schedule configuration UI
+│       ├── ScheduleView.svelte          # New: schedule display
+│       └── ScheduleAppointmentRow.svelte # New: single appointment row
+└── __tests__/
+    ├── building-model.test.ts    # Existing (unchanged)
+    ├── building-facade.test.ts   # Existing (unchanged)
+    ├── storage.test.ts           # Existing (unchanged)
+    ├── schedule-model.test.ts    # New: scheduling algorithm tests
+    └── schedule-storage.test.ts  # New: schedule persistence tests
+----
+
+== Story Resolution
+
+=== US-001: Configure Inspection Period
+
+Components:: ScheduleConfigPanel, schedule-model
+Criteria::
+* Date picker inputs for start and end date -> ScheduleConfigPanel renders date inputs for `startDate` and `endDate` (SCHED-001, SCHED-002)
+* Validation error for end before start -> `validateDateRange()` returns error, displayed in ScheduleConfigPanel (SCHED-003)
+* Recalculate on period change -> `scheduleResult = $derived(calculateSchedule(...))` reacts to config changes (SCHED-004)
+
+=== US-002: Configure Daily Inspection Time
+
+Components:: ScheduleConfigPanel, schedule-model
+Criteria::
+* Daily start time input -> ScheduleConfigPanel renders time input for `dailyStartTime` (SCHED-005)
+* Duration input -> ScheduleConfigPanel renders number input for `durationMinutes` (SCHED-006)
+* Duration valid range 5-120 -> `validateDuration()` enforces [5, 120] (SCHED-007)
+* Duration validation error -> ScheduleConfigPanel shows error from validation (SCHED-008)
+* Recalculate on change -> Reactive `$derived` recalculates schedule (SCHED-009)
+
+=== US-003: Configure Lunch Break
+
+Components:: ScheduleConfigPanel, schedule-model
+Criteria::
+* Lunch break start/end inputs -> ScheduleConfigPanel renders time inputs when lunch enabled (SCHED-010)
+* Skip lunch window -> `calculateSchedule()` skips slots overlapping with lunch (SCHED-011)
+* Move overlapping inspection -> Algorithm advances past lunch break (SCHED-012)
+* Disable lunch break -> `lunchBreakEnabled` toggle disables lunch logic (SCHED-013)
+
+=== US-004: Exclude Weekends and Specific Dates
+
+Components:: ScheduleConfigPanel, schedule-model
+Criteria::
+* Weekend exclusion toggle -> ScheduleConfigPanel renders checkbox for `excludeWeekends` (SCHED-014)
+* Specific date exclusion -> ScheduleConfigPanel renders date input + add/remove mechanism for `excludedDates` (SCHED-015)
+* Skip weekends -> `getAvailableDates()` filters out weekends when enabled (SCHED-016)
+* Skip specific dates -> `getAvailableDates()` filters out excluded dates (SCHED-017)
+* Recalculate on exclusion change -> Reactive `$derived` recalculates (SCHED-018)
+
+=== US-005: Automatic Schedule Calculation
+
+Components:: schedule-model, ScheduleConfigPanel, ScheduleView
+Criteria::
+* Auto-calculate -> `scheduleResult = $derived(calculateSchedule(...))` runs when config is valid and apartments exist (SCHED-019)
+* Sequential floor by floor -> Algorithm iterates apartments in floor/position order (SCHED-020)
+* Respect constraints -> Algorithm uses `getAvailableDates()` and `getMaxAppointmentsPerDay()` (SCHED-021)
+* Display as list -> ScheduleView renders appointments as a list with date and time (SCHED-022)
+* Warning for unschedulable -> `ScheduleResult.warning` is displayed by ScheduleView (SCHED-023)
+
+=== US-006: Manual Override of Individual Times
+
+Components:: ScheduleView, ScheduleAppointmentRow, schedule-model
+Criteria::
+* Edit individual apartment times -> ScheduleAppointmentRow provides edit mode with date/time inputs (SCHED-024)
+* Mark as overridden -> `ScheduleAppointment.manualOverride = true` (SCHED-025)
+* Visual distinction -> ScheduleAppointmentRow applies different styling for overridden rows (SCHED-026)
+* Preserve overrides on recalculation -> `calculateSchedule()` reads overrides map and preserves them (SCHED-027)
+* Revert override -> ScheduleAppointmentRow revert button removes from overrides map (SCHED-028)
+
+=== US-007: Configure Maximum Apartments per Day
+
+Components:: ScheduleConfigPanel, schedule-model
+Criteria::
+* Max per day input -> ScheduleConfigPanel renders number input for `maxPerDay` (SCHED-029)
+* Enforce max per day -> `calculateSchedule()` tracks per-day count and advances to next day at limit (SCHED-030)
+* Use lower of two limits -> `getMaxAppointmentsPerDay()` returns `Math.min(configuredMax, timeBasedMax)` (SCHED-031)
+* Recalculate on change -> Reactive `$derived` recalculates (SCHED-032)
+
+=== US-008: Save Inspection Schedule
+
+Components:: storage, ScheduleConfigPanel
+Criteria::
+* Persist on change -> `$effect` in ScheduleConfigPanel calls `saveSchedule(config, overrides)` (SCHED-033)
+* Restore on load -> ScheduleConfigPanel initialization calls `loadSchedule()` (SCHED-034)
+* Empty state when no saved data -> `loadSchedule()` returns null, ScheduleConfigPanel uses `createDefaultScheduleConfig()` (SCHED-035)

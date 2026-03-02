@@ -1,0 +1,36 @@
+= ADR-0002: Use Browser localStorage for All Data Persistence
+:status: Accepted
+:date: 2026-03-02
+:deciders: Andreas Bergsten
+
+== Context
+
+The application is a static site hosted on GitHub Pages. There is no backend server, no database, and no user accounts. The tool needs to persist building configuration, inspection schedules, and message templates between browser sessions so users don't lose their work.
+
+== Decision
+
+We will use the browser's `localStorage` API as the sole persistence mechanism.
+
+* All application data (building configuration, schedules, templates) is serialized to JSON and stored in `localStorage`.
+* Each data domain uses a namespaced key (e.g., `brf-schedule:building`, `brf-schedule:schedule`, `brf-schedule:templates`) to avoid collisions with other applications on the same origin.
+* Data is read on application startup and written on each meaningful user action (not on every keystroke -- debounced or on explicit save).
+* No external storage, no cloud sync, no authentication.
+
+== Consequences
+
+* **Positive:** Zero infrastructure cost. No backend to maintain. No privacy concerns -- data never leaves the user's browser. Works offline after initial page load.
+* **Positive:** Simple implementation -- `localStorage` is a synchronous, well-supported browser API available in all modern browsers.
+* **Negative:** Data is tied to a single browser on a single device. If the user clears browser data or switches devices, their data is lost. This is acceptable for the use case -- BRF inspection schedules are created infrequently and the tool is used by one administrator at a time.
+* **Negative:** `localStorage` has a ~5MB limit per origin. This is sufficient for our data (JSON configuration, schedules, and templates are small).
+* **Negative:** No collaboration -- only one person can work on a schedule at a time, in one browser.
+
+== Alternatives Considered
+
+=== IndexedDB
+More powerful than `localStorage` (async, larger storage, structured data). Rejected because our data model is simple (a few JSON objects), and `localStorage`'s synchronous API is simpler to work with. IndexedDB's async API adds complexity without meaningful benefit for this use case.
+
+=== File-based export/import (JSON files)
+Users save/load data as files on disk. Rejected as the primary persistence mechanism because it adds friction to every session. However, this could be added later as a secondary feature for backup/transfer between devices.
+
+=== Backend with database
+A server with PostgreSQL or similar. Rejected because it contradicts the core requirement of a static site on GitHub Pages with no infrastructure cost. The use case doesn't justify the complexity.

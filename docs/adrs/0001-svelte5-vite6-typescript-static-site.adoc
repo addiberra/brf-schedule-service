@@ -1,0 +1,45 @@
+= ADR-0001: Use Svelte 5, Vite 6, and TypeScript for a Static Site
+:status: Accepted
+:date: 2026-03-02
+:deciders: Andreas Bergsten
+
+== Context
+
+We need to build a tool for BRF administrators to create and print inspection schedules. The tool must be a static website hosted on GitHub Pages with no backend. It needs a modern, simple UI with reactive components for building configuration, schedule generation, template editing, and print output.
+
+The project must use a minimal number of dependencies -- only popular, well-known packages -- with zero runtime dependencies.
+
+== Decision
+
+We will use:
+
+* **Svelte 5** (`^5.0.0`) -- UI framework. Svelte 5 introduces runes for fine-grained reactivity, compiles to vanilla JS with no runtime overhead, and produces small bundles ideal for a static site.
+* **Vite 6** (`^6.0.0`) -- Build tool and dev server. Fast HMR, native ESM, minimal configuration.
+* **@sveltejs/vite-plugin-svelte** (`^5.0.3`) -- Official Svelte plugin for Vite 6. Requires `svelte ^5.0.0` and `vite ^6.0.0`.
+* **TypeScript** (`^5.5.0`) -- Type safety across the codebase.
+* **Vitest** (`^4.0.0`) -- Test framework, native Vite integration, supports `vite ^6.0.0`.
+
+All five packages are dev dependencies only. The compiled output is vanilla HTML/CSS/JS with zero runtime dependencies.
+
+The UI language is Swedish throughout.
+
+== Consequences
+
+* **Positive:** Zero runtime dependencies means tiny bundle size and fast load times. Svelte 5 runes provide clear, predictable reactivity. Vite 6 is stable and widely tested. TypeScript catches errors at build time. Vitest integrates natively with Vite configuration.
+* **Positive:** All dependencies are popular, well-maintained, and MIT-licensed.
+* **Negative:** Svelte has a smaller ecosystem than React/Vue, so fewer third-party component libraries are available. This is acceptable since we intend to write components by hand to minimize dependencies.
+* **Negative:** Contributors must know Svelte 5 syntax (runes), which differs from Svelte 4.
+
+== Alternatives Considered
+
+=== Vanilla HTML/CSS/JS (no framework)
+No build step, zero dependencies. Rejected because managing reactive UI state (building config, schedule generation, template editing) without a framework would result in complex, error-prone DOM manipulation code. Svelte compiles away, giving us the developer experience of a framework with near-vanilla output.
+
+=== Vite + React
+Larger ecosystem and more contributors familiar with it. Rejected because React has a runtime dependency (~40KB), which conflicts with the zero-runtime-dependency constraint. React also requires more boilerplate for the same UI complexity.
+
+=== Vite 7 (bleeding edge)
+Vite 7 just released and is supported by `@sveltejs/vite-plugin-svelte ^6.2.4`. Rejected in favor of Vite 6 for stability -- Vite 6 is battle-tested and the plugin v5.0.3 is a stable pairing with Svelte 5.
+
+=== Vite + Svelte (without TypeScript)
+Simpler setup, one fewer dev dependency. Rejected because TypeScript provides meaningful safety for the scheduling algorithm, template placeholder parsing, and data model definitions.

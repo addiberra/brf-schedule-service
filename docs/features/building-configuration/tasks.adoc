@@ -1,0 +1,130 @@
+= Implementation Tasks: Building Configuration
+:version: 1.0.0
+:status: Implemented
+:source-design-version: 1.0.0
+:source-stories-version: 1.1.0
+:source-spec-version: 1.0.0
+:last-updated: 2026-03-02
+:feature: building-configuration
+:toc:
+
+== Overview
+
+Implementation of the building configuration feature -- the first feature in the project. Includes project scaffolding (Vite 6 + Svelte 5 + TypeScript + Vitest), data model, persistence layer, business logic, and UI components with SVG facade illustration. 4 phases, 10 tasks.
+
+== Phase 1: Foundation
+
+Set up the project toolchain and define the data model and persistence layer.
+
+* [x] TASK-001: Scaffold Vite + Svelte 5 + TypeScript project [sequential]
++
+Components:: Project root (package.json, vite.config.ts, tsconfig.json, index.html, src/main.ts, src/App.svelte, src/app.html)
+Stories:: All (project infrastructure)
+Specs:: n/a (infrastructure)
+Description:: Create the project skeleton: `package.json` with the 5 dev dependencies (svelte ^5.0.0, vite ^6.0.0, @sveltejs/vite-plugin-svelte ^5.0.3, typescript ^5.5.0, vitest ^4.0.0), `vite.config.ts` with svelte plugin, `tsconfig.json` with strict mode, `index.html` entry, `src/main.ts` mounting App.svelte, a minimal `src/App.svelte`, and `src/app.html` template. Run `npm install` to verify dependencies resolve. Run `npm run build` to verify the toolchain works.
+
+* [x] TASK-002: Define TypeScript interfaces for building data model [parallel]
++
+Components:: src/lib/models/building.ts
+Stories:: US-001, US-002, US-003
+Specs:: BCFG-002, BCFG-007, BCFG-011, BCFG-012
+Description:: Create the `FloorConfig`, `BuildingConfig`, `Apartment`, and `ValidationResult` interfaces as specified in the design. Export all types.
+
+* [x] TASK-003: Implement building model business logic [parallel]
++
+Components:: src/lib/models/building-model.ts
+Stories:: US-001, US-002, US-003
+Specs:: BCFG-002, BCFG-003, BCFG-007, BCFG-008, BCFG-011, BCFG-012, BCFG-013
+Description:: Implement pure functions: `createDefaultConfig()`, `validateFloorCount()`, `validateApartmentCount()`, `generateApartmentId()`, `generateAllApartments()`, `totalApartments()`, `adjustFloors()`. All functions are pure with no side effects.
+
+* [x] TASK-004: Implement localStorage persistence service [parallel]
++
+Components:: src/lib/services/storage.ts
+Stories:: US-005, US-006
+Specs:: BCFG-019, BCFG-020, BCFG-021, BCFG-024
+Description:: Implement `saveBuilding()`, `loadBuilding()`, and `clearBuilding()` functions using the `brf-schedule:building` localStorage key. Wrap all operations in try/catch for robustness.
+
+== Phase 2: Core UI Components
+
+Build the input components for building configuration.
+
+* [x] TASK-005: Implement FloorInputRow component [parallel]
++
+Components:: src/lib/components/FloorInputRow.svelte
+Stories:: US-002
+Specs:: BCFG-005, BCFG-006, BCFG-008
+Description:: Create the FloorInputRow Svelte 5 component. Accept props: `floorNumber`, `apartmentCount` (bindable), `error`. Render a labeled numeric input for the apartment count. Display validation error when present. Use Svelte 5 runes (`$props`).
+
+* [x] TASK-006: Implement BuildingConfigPanel component [sequential]
++
+Components:: src/lib/components/BuildingConfigPanel.svelte
+Stories:: US-001, US-002, US-003, US-005, US-006
+Specs:: BCFG-001, BCFG-002, BCFG-003, BCFG-004, BCFG-005, BCFG-006, BCFG-007, BCFG-008, BCFG-009, BCFG-010, BCFG-013, BCFG-019, BCFG-020, BCFG-021, BCFG-022, BCFG-023, BCFG-024, BCFG-025
+Description:: Main orchestrating component. Uses `$state` for `config` (initialized from `loadBuilding()` or `createDefaultConfig()`), `$state` for `validationErrors` map, `$derived` for `apartments` and `totalCount`. Uses `$effect` to auto-save valid config to localStorage. Renders floor count input, FloorInputRow per floor, total count, reset button (with `confirm()` dialog), and placeholder for BuildingFacade. All UI text in Swedish.
+
+== Phase 3: Building Facade Illustration
+
+Implement the SVG front-facade visualization.
+
+* [x] TASK-007: Implement BuildingFacade SVG component [sequential]
++
+Components:: src/lib/components/BuildingFacade.svelte
+Stories:: US-004
+Specs:: BCFG-014, BCFG-015, BCFG-016, BCFG-017, BCFG-018
+Description:: Create the BuildingFacade Svelte 5 component. Accept props: `config` (BuildingConfig), `apartments` (Apartment[]). Render an inline SVG with a computed viewBox. Draw floor rows with apartment rectangles, each labeled with the apartment identifier. Draw walls and roof. Floors rendered bottom-up (floor 1 at bottom). Use design constants: APARTMENT_WIDTH=60, APARTMENT_HEIGHT=50, FLOOR_PADDING=10, WALL_PADDING=20.
+
+== Phase 4: Integration and Polish
+
+Wire everything together and finalize the application entry point.
+
+* [x] TASK-008: Wire App.svelte to render BuildingConfigPanel [sequential]
++
+Components:: src/App.svelte
+Stories:: All
+Specs:: All (integration)
+Description:: Update App.svelte to import and render BuildingConfigPanel. Add basic page layout and Swedish title/heading. Ensure the full flow works end-to-end: configuration input, validation, facade illustration, persistence, and reset.
+
+* [x] TASK-009: Add global styles [parallel]
++
+Components:: src/App.svelte or src/app.css
+Stories:: All (UI quality)
+Specs:: n/a (quality constraint)
+Description:: Add minimal global CSS for consistent typography, form styling, and layout. Ensure the UI is clean and readable. Style validation error messages distinctly (e.g., red text). Style the reset button with appropriate emphasis.
+
+* [x] TASK-010: Configure Vitest and verify all tests pass [sequential]
++
+Components:: vite.config.ts, package.json
+Stories:: All (quality)
+Specs:: All (test verification)
+Description:: Ensure `vitest` is configured correctly in `vite.config.ts` (inline config or vitest.config.ts). Add a `"test"` script to package.json. Run `npm run test` and verify all spec-derived tests pass. Fix any issues.
+
+== Traceability
+
+[cols="1,1,1", options="header"]
+|===
+| Story | Spec IDs | Tasks
+
+| US-001: Configure Number of Floors
+| BCFG-001, BCFG-002, BCFG-003, BCFG-004
+| TASK-002, TASK-003, TASK-006, TASK-008
+
+| US-002: Configure Apartments per Floor
+| BCFG-005, BCFG-006, BCFG-007, BCFG-008, BCFG-009, BCFG-010
+| TASK-002, TASK-003, TASK-005, TASK-006, TASK-008
+
+| US-003: Apartment Numbering
+| BCFG-011, BCFG-012, BCFG-013
+| TASK-002, TASK-003, TASK-006, TASK-008
+
+| US-004: Building Facade Illustration
+| BCFG-014, BCFG-015, BCFG-016, BCFG-017, BCFG-018
+| TASK-007, TASK-008
+
+| US-005: Save Building Configuration
+| BCFG-019, BCFG-020, BCFG-021
+| TASK-004, TASK-006, TASK-008
+
+| US-006: Reset Building Configuration
+| BCFG-022, BCFG-023, BCFG-024, BCFG-025
+| TASK-004, TASK-006, TASK-008
+|===

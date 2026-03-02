@@ -1,0 +1,78 @@
+= User Stories: Building Configuration
+:version: 1.1.0
+:last-updated: 2026-03-02
+:feature: building-configuration
+:toc:
+
+== US-001: Configure Number of Floors
+As a BRF administrator,
+I want to specify how many floors the building has,
+so that the system knows the building's structure.
+
+Acceptance Criteria:
+
+* [ ] The system shall provide an input field for the number of floors in the building.
+* [ ] The system shall accept a floor count between 1 and 30.
+* [ ] If the user enters a floor count less than 1 or greater than 30, then the system shall display a validation error and prevent saving.
+* [ ] When the user changes the floor count, the system shall update the building illustration to reflect the new number of floors.
+
+== US-002: Configure Apartments per Floor
+As a BRF administrator,
+I want to specify how many apartments there are on each floor,
+so that the system has a complete picture of all apartments in the building.
+
+Acceptance Criteria:
+
+* [ ] The system shall provide an input field for the number of apartments on each floor.
+* [ ] The system shall allow a different number of apartments per floor (variable configuration).
+* [ ] The system shall accept an apartment count between 1 and 20 per floor.
+* [ ] If the user enters an apartment count less than 1 or greater than 20 for any floor, then the system shall display a validation error for that floor.
+* [ ] When the user changes the apartment count for a floor, the system shall update the building illustration for that floor.
+* [ ] The system shall display the total number of apartments across all floors.
+
+== US-003: Apartment Numbering
+As a BRF administrator,
+I want to see automatically generated apartment numbers for each apartment,
+so that each apartment can be uniquely identified in the schedule.
+
+Acceptance Criteria:
+
+* [ ] The system shall automatically assign a unique identifier to each apartment based on floor and position.
+* [ ] The system shall display apartment identifiers in a format that combines floor number and apartment position (e.g., "1001", "1002" for floor 1, apartments 1 and 2).
+* [ ] When the building configuration changes, the system shall recalculate all apartment identifiers.
+
+== US-004: Building Facade Illustration
+As a BRF administrator,
+I want to see a simple front-facade illustration of the building based on my configuration,
+so that I can visually verify that the configuration is correct.
+
+Acceptance Criteria:
+
+* [ ] The system shall display a front-facade illustration of the building.
+* [ ] The system shall generate the illustration dynamically based on the configured number of floors and apartments per floor.
+* [ ] The system shall display each apartment as a distinct visual element (window/door) on the facade.
+* [ ] The system shall label each apartment element with its apartment identifier.
+* [ ] When the building configuration changes, the system shall update the illustration in real time.
+
+== US-005: Save Building Configuration
+As a BRF administrator,
+I want my building configuration to be saved automatically,
+so that I don't lose my work if I close the browser.
+
+Acceptance Criteria:
+
+* [ ] When the user modifies the building configuration, the system shall persist the configuration to localStorage.
+* [ ] When the application loads, the system shall restore the previously saved building configuration from localStorage.
+* [ ] If no saved configuration exists, then the system shall display an empty/default configuration state.
+
+== US-006: Reset Building Configuration
+As a BRF administrator,
+I want to reset the building configuration to default values,
+so that I can start over if I've made mistakes.
+
+Acceptance Criteria:
+
+* [ ] The system shall provide a reset button for the building configuration.
+* [ ] When the user activates the reset function, the system shall ask for confirmation before proceeding.
+* [ ] When the user confirms the reset, the system shall clear the saved configuration and restore default values.
+* [ ] If the user cancels the reset, then the system shall leave the configuration unchanged.

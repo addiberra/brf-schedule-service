@@ -1,0 +1,138 @@
+= Implementation Tasks: Inspection Scheduling
+:version: 1.0.0
+:status: Implemented
+:source-design-version: 1.0.0
+:source-stories-version: 1.1.0
+:source-spec-version: 1.0.0
+:last-updated: 2026-03-02
+:feature: inspection-scheduling
+:toc:
+
+== Overview
+
+Implement the inspection scheduling feature in 4 phases with 10 tasks total. This feature allows BRF administrators to configure and auto-generate inspection schedules for all apartments in a building.
+
+== Phase 1: Data Model and Core Logic
+
+Create the schedule data model interfaces and implement the pure scheduling algorithm.
+
+* [x] TASK-001: Create schedule data model interfaces [parallel]
++
+Components:: schedule.ts
+Stories:: US-001, US-002, US-003, US-005, US-006, US-007
+Specs:: SCHED-001, SCHED-002, SCHED-005, SCHED-006, SCHED-010, SCHED-024, SCHED-029
+Description:: Create `src/lib/models/schedule.ts` with TypeScript interfaces: `ScheduleConfig`, `ScheduleAppointment`, `ManualOverride`, `ScheduleResult`. All types as specified in the design.
+
+* [x] TASK-002: Implement schedule validation functions [parallel]
++
+Components:: schedule-model.ts
+Stories:: US-001, US-002
+Specs:: SCHED-003, SCHED-007, SCHED-008
+Description:: Create `src/lib/models/schedule-model.ts` with: `createDefaultScheduleConfig()`, `validateDuration()`, `validateDateRange()`, `validateScheduleConfig()`. Include time utility functions: `formatTime()`, `parseTime()`, `isWeekend()`, `addDays()`, `formatDateSwedish()`.
+
+* [x] TASK-003: Implement scheduling algorithm [sequential]
++
+Components:: schedule-model.ts
+Stories:: US-003, US-004, US-005, US-006, US-007
+Specs:: SCHED-011, SCHED-012, SCHED-013, SCHED-016, SCHED-017, SCHED-019, SCHED-020, SCHED-021, SCHED-023, SCHED-027, SCHED-030, SCHED-031
+Description:: Implement `getAvailableDates()`, `getMaxAppointmentsPerDay()`, and `calculateSchedule()` in `schedule-model.ts`. The algorithm schedules apartments sequentially floor by floor, respects lunch breaks, excluded dates, weekends, and max per day. Preserves manual overrides. Returns unscheduled count and warning.
+
+== Phase 2: Persistence
+
+Extend the storage service to support schedule data.
+
+* [x] TASK-004: Extend storage service for schedule data [parallel]
++
+Components:: storage.ts
+Stories:: US-008
+Specs:: SCHED-033, SCHED-034, SCHED-035
+Description:: Add `saveSchedule()`, `loadSchedule()`, and `clearSchedule()` to `src/lib/services/storage.ts`. Serialize overrides Map as array of tuples. Use key `brf-schedule:schedule`. Follow existing error handling pattern (try/catch, silent fail).
+
+== Phase 3: UI Components
+
+Create the Svelte components for schedule configuration and display.
+
+* [x] TASK-005: Create ScheduleAppointmentRow component [parallel]
++
+Components:: ScheduleAppointmentRow.svelte
+Stories:: US-006
+Specs:: SCHED-024, SCHED-025, SCHED-026, SCHED-028
+Description:: Create `src/lib/components/ScheduleAppointmentRow.svelte`. Displays apartment ID, date, time. Provides edit mode for manual override with date and time inputs. Shows revert button when overridden. Visually distinguishes overridden appointments.
+
+* [x] TASK-006: Create ScheduleView component [parallel]
++
+Components:: ScheduleView.svelte
+Stories:: US-005, US-006
+Specs:: SCHED-022, SCHED-023, SCHED-026
+Description:: Create `src/lib/components/ScheduleView.svelte`. Renders appointment list grouped by date. Displays warning for unscheduled apartments. Uses ScheduleAppointmentRow for each appointment.
+
+* [x] TASK-007: Create ScheduleConfigPanel component [sequential]
++
+Components:: ScheduleConfigPanel.svelte
+Stories:: US-001, US-002, US-003, US-004, US-005, US-007, US-008
+Specs:: SCHED-001, SCHED-002, SCHED-004, SCHED-005, SCHED-006, SCHED-007, SCHED-008, SCHED-009, SCHED-010, SCHED-013, SCHED-014, SCHED-015, SCHED-018, SCHED-019, SCHED-029, SCHED-032, SCHED-033, SCHED-034, SCHED-035
+Description:: Create `src/lib/components/ScheduleConfigPanel.svelte`. Orchestrating component with all schedule configuration inputs. Uses Svelte 5 runes for state. Loads/saves from storage. Passes config to `calculateSchedule()` via `$derived`. Renders `ScheduleView`. Swedish labels.
+
+== Phase 4: Integration
+
+Wire everything together in App.svelte.
+
+* [x] TASK-008: Update App.svelte to integrate schedule feature [parallel]
++
+Components:: App.svelte
+Stories:: US-001, US-005
+Specs:: SCHED-019
+Description:: Update `src/App.svelte` to import and render `ScheduleConfigPanel`. Pass building apartments list and building-configured flag. Add a section heading for the schedule panel.
+
+* [x] TASK-009: Write schedule model tests [parallel]
++
+Components:: schedule-model.test.ts
+Stories:: US-001, US-002, US-003, US-004, US-005, US-006, US-007
+Specs:: SCHED-003, SCHED-007, SCHED-008, SCHED-011, SCHED-012, SCHED-013, SCHED-016, SCHED-017, SCHED-019, SCHED-020, SCHED-021, SCHED-023, SCHED-027, SCHED-030, SCHED-031
+Description:: Create `src/__tests__/schedule-model.test.ts` with comprehensive tests for all pure functions in schedule-model.ts. Follow the existing test patterns.
+
+* [x] TASK-010: Write schedule storage tests [parallel]
++
+Components:: schedule-storage.test.ts
+Stories:: US-008
+Specs:: SCHED-033, SCHED-034, SCHED-035
+Description:: Create `src/__tests__/schedule-storage.test.ts` with tests for `saveSchedule()`, `loadSchedule()`, `clearSchedule()`. Follow existing storage.test.ts patterns with localStorage mock.
+
+== Traceability
+
+[cols="1,1,1", options="header"]
+|===
+| Story | Spec IDs | Tasks
+
+| US-001: Configure Inspection Period
+| SCHED-001, SCHED-002, SCHED-003, SCHED-004
+| TASK-001, TASK-002, TASK-007, TASK-008
+
+| US-002: Configure Daily Inspection Time
+| SCHED-005, SCHED-006, SCHED-007, SCHED-008, SCHED-009
+| TASK-001, TASK-002, TASK-007
+
+| US-003: Configure Lunch Break
+| SCHED-010, SCHED-011, SCHED-012, SCHED-013
+| TASK-001, TASK-003, TASK-007
+
+| US-004: Exclude Weekends and Specific Dates
+| SCHED-014, SCHED-015, SCHED-016, SCHED-017, SCHED-018
+| TASK-003, TASK-007
+
+| US-005: Automatic Schedule Calculation
+| SCHED-019, SCHED-020, SCHED-021, SCHED-022, SCHED-023
+| TASK-003, TASK-006, TASK-007, TASK-008
+
+| US-006: Manual Override of Individual Times
+| SCHED-024, SCHED-025, SCHED-026, SCHED-027, SCHED-028
+| TASK-003, TASK-005, TASK-006
+
+| US-007: Configure Maximum Apartments per Day
+| SCHED-029, SCHED-030, SCHED-031, SCHED-032
+| TASK-001, TASK-003, TASK-007
+
+| US-008: Save Inspection Schedule
+| SCHED-033, SCHED-034, SCHED-035
+| TASK-004, TASK-007, TASK-010
+|===

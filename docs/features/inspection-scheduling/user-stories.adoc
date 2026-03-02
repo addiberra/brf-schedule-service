@@ -1,0 +1,104 @@
+= User Stories: Inspection Scheduling
+:version: 1.1.0
+:last-updated: 2026-03-02
+:feature: inspection-scheduling
+:toc:
+
+== US-001: Configure Inspection Period
+As a BRF administrator,
+I want to specify start and end dates for the inspection period,
+so that the system knows within which timeframe all apartments must be inspected.
+
+Acceptance Criteria:
+
+* [ ] The system shall provide date picker inputs for inspection start date and end date.
+* [ ] The system shall accept dates in the format YYYY-MM-DD.
+* [ ] If the end date is before the start date, then the system shall display a validation error.
+* [ ] When the user changes the inspection period, the system shall recalculate the inspection schedule.
+
+== US-002: Configure Daily Inspection Time
+As a BRF administrator,
+I want to specify the daily start time and inspection duration per apartment,
+so that the system can calculate a time schedule for each apartment.
+
+Acceptance Criteria:
+
+* [ ] The system shall provide an input for the daily inspection start time.
+* [ ] The system shall provide an input for inspection duration per apartment (in minutes).
+* [ ] The system shall accept an inspection duration between 5 and 120 minutes.
+* [ ] If the user enters a duration outside the valid range, then the system shall display a validation error.
+* [ ] When the user changes the daily start time or duration, the system shall recalculate the schedule.
+
+== US-003: Configure Lunch Break
+As a BRF administrator,
+I want to specify a lunch break that is skipped in the schedule,
+so that inspectors have a break during the day.
+
+Acceptance Criteria:
+
+* [ ] The system shall provide inputs for lunch break start time and end time.
+* [ ] When a lunch break is configured, the system shall skip the lunch break window when scheduling inspections.
+* [ ] If an inspection would overlap with the lunch break, then the system shall move that inspection to after the lunch break.
+* [ ] The system shall allow the lunch break to be disabled (no break).
+
+== US-004: Exclude Weekends and Specific Dates
+As a BRF administrator,
+I want to exclude weekends and specific dates from the schedule,
+so that inspections are not scheduled on days when it's not possible.
+
+Acceptance Criteria:
+
+* [ ] The system shall provide a toggle to exclude weekends (Saturdays and Sundays) from the schedule.
+* [ ] The system shall provide a way to add specific dates to exclude from the schedule.
+* [ ] When weekends are excluded, the system shall skip Saturday and Sunday when scheduling inspections.
+* [ ] When specific dates are excluded, the system shall skip those dates when scheduling inspections.
+* [ ] When the user adds or removes excluded dates, the system shall recalculate the schedule.
+
+== US-005: Automatic Schedule Calculation
+As a BRF administrator,
+I want the system to automatically calculate inspection times for all apartments,
+so that I don't have to manually schedule each apartment.
+
+Acceptance Criteria:
+
+* [ ] When the user has configured the building, inspection period, daily start time, and duration, the system shall automatically calculate inspection times for all apartments.
+* [ ] The system shall schedule apartments sequentially, floor by floor, starting from the first floor.
+* [ ] The system shall respect the configured daily start time, lunch break, and excluded dates.
+* [ ] The system shall display the calculated schedule as a list showing each apartment's date and time.
+* [ ] If the inspection period is too short to fit all apartments, then the system shall display a warning indicating how many apartments cannot be scheduled.
+
+== US-006: Manual Override of Individual Times
+As a BRF administrator,
+I want to manually change the date and time for individual apartments,
+so that I can handle special cases and exceptions.
+
+Acceptance Criteria:
+
+* [ ] The system shall allow the user to edit the scheduled date and time for any individual apartment.
+* [ ] When the user edits an apartment's time, the system shall mark that apartment as manually overridden.
+* [ ] The system shall visually distinguish manually overridden appointments from auto-calculated ones.
+* [ ] When the user recalculates the schedule, the system shall preserve manually overridden appointments.
+* [ ] The system shall provide a way to remove a manual override and revert to the auto-calculated time.
+
+== US-007: Configure Maximum Apartments per Day
+As a BRF administrator,
+I want to specify how many apartments can be visited per day,
+so that the inspection schedule is limited to a reasonable number per day.
+
+Acceptance Criteria:
+
+* [ ] The system shall provide an input for the maximum number of apartments to inspect per day.
+* [ ] When calculating the schedule, the system shall not schedule more than the configured maximum per day.
+* [ ] If the configured maximum conflicts with the available time (considering start time, duration, and lunch break), then the system shall use the lower of the two limits.
+* [ ] When the user changes the maximum per day, the system shall recalculate the schedule.
+
+== US-008: Save Inspection Schedule
+As a BRF administrator,
+I want my inspection schedule to be saved automatically,
+so that I don't lose my work if I close the browser.
+
+Acceptance Criteria:
+
+* [ ] When the schedule is calculated or modified, the system shall persist the schedule to localStorage.
+* [ ] When the application loads, the system shall restore the previously saved schedule from localStorage.
+* [ ] If no saved schedule exists, then the system shall display an empty schedule state.

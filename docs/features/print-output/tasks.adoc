@@ -1,0 +1,108 @@
+= Implementation Tasks: Print Output
+:version: 1.0.0
+:status: Implemented
+:source-design-version: 1.0.0
+:source-stories-version: 1.1.0
+:source-spec-version: 1.0.0
+:last-updated: 2026-03-02
+:feature: print-output
+:toc:
+
+== Overview
+
+This feature adds print output capability to the BRF inspection schedule application. It composes data from building configuration, inspection scheduling, and message templates to produce two printable documents: individual apartment letters and a schedule overview. Implementation is organized into 3 phases with 8 tasks total.
+
+== Phase 1: Data Model and Business Logic
+
+Define the print data model and implement the pure data composition functions.
+
+* [x] TASK-001: Create print data model interfaces [parallel]
++
+Components:: print.ts
+Stories:: US-001, US-002
+Specs:: PRNT-001, PRNT-005
+Description:: Create `src/lib/models/print.ts` with TypeScript interfaces: `ApartmentLetterData`, `ScheduleOverviewRow`, `ScheduleDateGroup`, `ScheduleOverviewData`, and `PrintMode` type. These define the data structures for both print modes.
+
+* [x] TASK-002: Implement print data composition functions [parallel]
++
+Components:: print-model.ts, template-model.ts, schedule-model.ts
+Stories:: US-001, US-002
+Specs:: PRNT-001, PRNT-005, PRNT-006
+Description:: Create `src/lib/models/print-model.ts` with three pure functions: `generateLetterData(apartments, scheduleResult, template)` that renders the template for each apartment and returns `ApartmentLetterData[]`; `generateScheduleOverviewData(scheduleResult)` that groups appointments by date and formats times; and `getAppointmentForApartment(apartmentId, scheduleResult)` that looks up an apartment's appointment. Uses `renderTemplate()` and `formatTime()` from existing modules.
+
+== Phase 2: UI Components
+
+Create the Svelte components for print layout, mode selection, and preview.
+
+* [x] TASK-003: Create PrintLetterPage component [parallel]
++
+Components:: PrintLetterPage.svelte
+Stories:: US-001, US-004
+Specs:: PRNT-001, PRNT-003, PRNT-004, PRNT-013
+Description:: Create `src/lib/components/PrintLetterPage.svelte`. Receives `ApartmentLetterData` and `isLast` boolean as props. Renders the letter content in an A4-sized container. Applies `page-break-after: always` except for the last letter. Preserves whitespace/newlines in the rendered content. Uses print-friendly typography.
+
+* [x] TASK-004: Create PrintScheduleOverview component [parallel]
++
+Components:: PrintScheduleOverview.svelte
+Stories:: US-002, US-004
+Specs:: PRNT-005, PRNT-006, PRNT-008, PRNT-013
+Description:: Create `src/lib/components/PrintScheduleOverview.svelte`. Receives `ScheduleOverviewData` as prop. Renders a heading "Besiktningsschema" followed by date-grouped tables. Each table shows apartment ID, floor, and time columns. Uses print-friendly typography and pagination CSS.
+
+* [x] TASK-005: Create PrintPanel component [sequential]
++
+Components:: PrintPanel.svelte, print-model.ts
+Stories:: US-001, US-002, US-003, US-005
+Specs:: PRNT-002, PRNT-007, PRNT-009, PRNT-010, PRNT-011, PRNT-014
+Description:: Create `src/lib/components/PrintPanel.svelte`. Orchestrates print output. State: `printMode` (letters/overview), `selectedTemplateId`. Props: `apartments`, `scheduleResult`, `templates`. Renders mode selector (radio buttons), template selector dropdown (when letters mode), preview area, and print button. Calls `window.print()` on print action. Uses `$derived` to compute `letterData` and `overviewData` from props and selected template.
+
+== Phase 3: Integration and Print CSS
+
+Wire up the print panel in App.svelte and add global print CSS.
+
+* [x] TASK-006: Add global print CSS [parallel]
++
+Components:: App.svelte (CSS)
+Stories:: US-004, US-005
+Specs:: PRNT-003, PRNT-004, PRNT-008, PRNT-012, PRNT-013, PRNT-014, PRNT-015
+Description:: Add `@media print` CSS rules in App.svelte: `@page { size: A4; margin: 15mm; }`, hide `.no-print` elements, set print-friendly font (serif, 12pt), force page breaks between letter pages, ensure schedule overview tables paginate properly. Add `no-print` class to all non-print UI elements in App.svelte.
+
+* [x] TASK-007: Integrate PrintPanel in App.svelte [sequential]
++
+Components:: App.svelte, PrintPanel.svelte
+Stories:: US-001, US-002, US-003
+Specs:: PRNT-009
+Description:: Update `App.svelte` to import and render `PrintPanel`. Pass `apartments`, `scheduleResult`, and `templates` as props. The templates array needs to be exposed from `MessageTemplatePanel` or loaded directly from storage. Add `no-print` class to the existing BuildingConfigPanel, ScheduleConfigPanel, and MessageTemplatePanel sections.
+
+* [x] TASK-008: Write print-model tests [parallel]
++
+Components:: print-model.test.ts
+Stories:: US-001, US-002
+Specs:: PRNT-001, PRNT-005, PRNT-006
+Description:: Create `src/__tests__/print-model.test.ts`. Test `generateLetterData()`: correct number of letters, rendered content, handling of apartments without appointments. Test `generateScheduleOverviewData()`: date grouping, time formatting, sorting, empty schedule. Test `getAppointmentForApartment()`: found and not found cases.
+
+== Traceability
+
+[cols="1,1,1", options="header"]
+|===
+| Story | Spec IDs | Tasks
+
+| US-001: Print Individual Apartment Letters
+| PRNT-001, PRNT-002, PRNT-003, PRNT-004
+| TASK-001, TASK-002, TASK-003, TASK-005, TASK-007
+
+| US-002: Print Schedule Overview
+| PRNT-005, PRNT-006, PRNT-007, PRNT-008
+| TASK-001, TASK-002, TASK-004, TASK-005, TASK-007
+
+| US-003: Select Print Mode
+| PRNT-009, PRNT-010, PRNT-011
+| TASK-005, TASK-007
+
+| US-004: A4 Page Layout
+| PRNT-012, PRNT-013
+| TASK-003, TASK-004, TASK-006
+
+| US-005: PDF Export via System Print Dialog
+| PRNT-014, PRNT-015
+| TASK-005, TASK-006
+|===

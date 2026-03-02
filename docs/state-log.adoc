@@ -1,0 +1,15 @@
+= State Transition Log
+:last-updated: 2026-03-02
+
+== TRANSITION-001
+:date: 2026-03-02
+:intent: BRF inspection schedule tool -- static website for creating printable inspection schedules for housing cooperatives
+:type: Feature evolution (greenfield)
+:risk: High
+:features: building-configuration (new), inspection-scheduling (new), message-templates (new), print-output (new)
+:desired-state: BRF administrators can configure an apartment building, auto-generate an inspection schedule with customizable time slots, compose personalized letters using templates with custom placeholders, preview a facade illustration of the building, and print individual apartment letters or a full schedule overview as A4 documents -- all from a static Svelte 5 website with localStorage persistence, in Swedish.
+:prior-state: Greenfield -- no code, no dependencies, no documentation artifacts
+:capabilities-invoked: needs-adr (x2), needs-stories (x4), needs-spec (x4), needs-design (x4), needs-tasks (x4), needs-tests (x4), needs-implementation (x4), needs-architecture
+:constraints-checked: Dependencies (pass -- 5 dev deps, 0 runtime), Hosting (pass -- static output), Data (pass -- localStorage only), UI (pass -- Swedish), Print (pass -- @media print, no PDF lib), Quality (pass -- TypeScript strict, 199 tests, build clean)
+:artifacts-modified: AGENTS.md, docs/constraints.adoc (v1.0.0), docs/adrs/index.adoc (v1.1.0), docs/adrs/0001-svelte5-vite6-typescript-static-site.adoc, docs/adrs/0002-browser-localstorage-persistence.adoc, docs/features/building-configuration/user-stories.adoc (v1.1.0), docs/features/building-configuration/spec.adoc, docs/features/building-configuration/design.adoc, docs/features/building-configuration/tasks.adoc, docs/features/inspection-scheduling/user-stories.adoc (v1.1.0), docs/features/inspection-scheduling/spec.adoc, docs/features/inspection-scheduling/design.adoc, docs/features/inspection-scheduling/tasks.adoc, docs/features/message-templates/user-stories.adoc (v1.1.0), docs/features/message-templates/spec.adoc, docs/features/message-templates/design.adoc, docs/features/message-templates/tasks.adoc, docs/features/print-output/user-stories.adoc (v1.1.0), docs/features/print-output/spec.adoc, docs/features/print-output/design.adoc, docs/features/print-output/tasks.adoc, docs/architecture.adoc (v1.0.0), package.json, vite.config.ts, tsconfig.json, svelte.config.js, index.html, src/**
+:result: Achieved
