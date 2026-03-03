@@ -1,7 +1,7 @@
 = Specification: Inspection Scheduling
-:version: 1.1.0
-:source-stories-version: 1.2.0
-:last-updated: 2026-03-02
+:version: 1.2.0
+:source-stories-version: 1.3.0
+:last-updated: 2026-03-03
 :feature: inspection-scheduling
 :prefix: SCHED
 :toc:
@@ -309,6 +309,34 @@ Type:: Ubiquitous
 Source:: US-010: Browser-Locale Date Formatting, Criterion 4
 Verification:: Confirm `formatDateSwedish()` is still exported and produces the same output as before (e.g., "torsdag 10 april 2026").
 
+== SCHED-044
+The system shall display schedule dates in the format YYYY-MM-DD.
+
+Type:: Ubiquitous
+Source:: US-011: ISO Date and 24-Hour Time Display, Criterion 1
+Verification:: Generate a schedule and inspect displayed appointment dates. Confirm each date is shown as YYYY-MM-DD.
+
+== SCHED-045
+The system shall display schedule times in 24-hour format HH:MM.
+
+Type:: Ubiquitous
+Source:: US-011: ISO Date and 24-Hour Time Display, Criterion 2
+Verification:: Generate a schedule and inspect displayed appointment times. Confirm each time is shown in HH:MM 24-hour format.
+
+== SCHED-046
+While the user edits a manual override, the system shall keep date and time values in YYYY-MM-DD and HH:MM format.
+
+Type:: State-driven
+Source:: US-011: ISO Date and 24-Hour Time Display, Criterion 3
+Verification:: Open manual edit for an appointment. Confirm date and time inputs use YYYY-MM-DD and HH:MM formats and saved values remain in those formats.
+
+== SCHED-047
+When the system groups appointments by day in the schedule view, the system shall display each group header in YYYY-MM-DD format.
+
+Type:: Event-driven
+Source:: US-011: ISO Date and 24-Hour Time Display, Criterion 4
+Verification:: Generate appointments on multiple dates. Confirm each group header is rendered as YYYY-MM-DD.
+
 == Traceability
 
 [cols="1,2,2", options="header"]
@@ -486,4 +514,20 @@ Verification:: Confirm `formatDateSwedish()` is still exported and produces the 
 | SCHED-043
 | Retain formatDateSwedish for compatibility
 | US-010: Criterion 4
+
+| SCHED-044
+| Display schedule dates in YYYY-MM-DD
+| US-011: Criterion 1
+
+| SCHED-045
+| Display schedule times in HH:MM 24-hour format
+| US-011: Criterion 2
+
+| SCHED-046
+| Keep manual override values in ISO formats
+| US-011: Criterion 3
+
+| SCHED-047
+| Group headers in YYYY-MM-DD
+| US-011: Criterion 4
 |===

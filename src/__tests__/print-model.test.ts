@@ -1,5 +1,5 @@
 // Feature: print-output
-// Spec version: 1.0.0
+// Spec version: 1.1.0
 // Generated from: spec.adoc
 //
 // Spec coverage:
@@ -18,6 +18,9 @@
 //   PRNT-013: Print-friendly font and size (CSS concern)
 //   PRNT-014: Print-ready layout for PDF export (CSS concern)
 //   PRNT-015: Preserve formatting in PDF (CSS concern)
+//   PRNT-016: ISO date headings in schedule overview
+//   PRNT-017: 24-hour HH:MM in schedule overview
+//   PRNT-018: Letter rendering follows template date/time field formatting
 
 import { describe, it, expect } from 'vitest';
 import {
@@ -244,7 +247,7 @@ describe('PRNT-006: Overview formatted as table by date', () => {
     expect(overview.dateGroups[0].appointments[2].time).toBe('10:00');
   });
 
-  it('should include Swedish formatted date for each group', () => {
+  it('PRNT-016: should keep ISO YYYY-MM-DD date heading data for each group', () => {
     const appointments = [
       makeAppointment('1001', 1, 1, '2026-03-10', 540),
     ];
@@ -252,12 +255,11 @@ describe('PRNT-006: Overview formatted as table by date', () => {
 
     const overview = generateScheduleOverviewData(result);
 
-    expect(overview.dateGroups[0].dateSwedish).toContain('mars');
-    expect(overview.dateGroups[0].dateSwedish).toContain('2026');
-    expect(overview.dateGroups[0].dateSwedish).toContain('10');
+    expect(overview.dateGroups[0].date).toBe('2026-03-10');
+    expect(overview.dateGroups[0].dateSwedish).toBe('2026-03-10');
   });
 
-  it('should format times as HH:MM', () => {
+  it('PRNT-017: should format times as HH:MM', () => {
     const appointments = [
       makeAppointment('1001', 1, 1, '2026-03-10', 540),
       makeAppointment('1002', 1, 2, '2026-03-10', 810),
@@ -280,6 +282,23 @@ describe('PRNT-006: Overview formatted as table by date', () => {
 
     expect(overview.dateGroups[0].appointments[0].apartmentId).toBe('2003');
     expect(overview.dateGroups[0].appointments[0].floor).toBe(2);
+  });
+});
+
+describe('PRNT-018: Letter rendering follows template-selected formatting', () => {
+  it('should render ISO date in letters when template maps {datum} to date field', () => {
+    const apartments = [makeApartment('1001', 1, 1)];
+    const appointments = [makeAppointment('1001', 1, 1, '2026-03-10', 540)];
+    const result = makeScheduleResult(appointments);
+    const template = makeTemplate('Datum: {datum}, Tid: {tid}', [
+      { name: 'datum', field: 'date' },
+      { name: 'tid', field: 'time' },
+    ]);
+
+    const letters = generateLetterData(apartments, result, template);
+
+    expect(letters[0].renderedContent).toContain('Datum: 2026-03-10');
+    expect(letters[0].renderedContent).toContain('Tid: 09:00');
   });
 });
 

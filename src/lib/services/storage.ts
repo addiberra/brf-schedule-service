@@ -27,7 +27,11 @@ export function loadBuilding(): BuildingConfig | null {
     if (data === null) {
       return null;
     }
-    return JSON.parse(data) as BuildingConfig;
+    const config = JSON.parse(data) as BuildingConfig;
+    if (config.apartmentNumberStart === undefined) {
+      config.apartmentNumberStart = 1001;
+    }
+    return config;
   } catch {
     return null;
   }

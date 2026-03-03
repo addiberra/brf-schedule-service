@@ -1,16 +1,16 @@
 = Implementation Tasks: Building Configuration
-:version: 2.0.0
+:version: 2.1.0
 :status: Current
-:source-design-version: 1.1.0
-:source-stories-version: 1.2.0
-:source-spec-version: 1.1.0
-:last-updated: 2026-03-02
+:source-design-version: 1.2.0
+:source-stories-version: 1.3.0
+:source-spec-version: 1.2.0
+:last-updated: 2026-03-03
 :feature: building-configuration
 :toc:
 
 == Overview
 
-Implementation of the building configuration feature -- the first feature in the project. Includes project scaffolding (Vite 6 + Svelte 5 + TypeScript + Vitest), data model, persistence layer, business logic, and UI components with SVG facade illustration. Phases 1-4 are complete (initial implementation). Phases 5-6 add uniform apartment count mode and enhanced SVG facade. 6 phases, 16 tasks.
+Implementation of the building configuration feature -- the first feature in the project. Includes project scaffolding (Vite 6 + Svelte 5 + TypeScript + Vitest), data model, persistence layer, business logic, and UI components with SVG facade illustration. Phases 1-6 are implemented. Phase 7 adds configurable apartment numbering start. 7 phases, 20 tasks.
 
 == Phase 1: Foundation
 
@@ -102,21 +102,21 @@ Description:: Ensure `vitest` is configured correctly in `vite.config.ts` (inlin
 
 Add the uniform apartment count mode to the model and UI.
 
-* [ ] TASK-011: Add `setUniformApartmentCount` to building-model.ts [parallel]
+* [x] TASK-011: Add `setUniformApartmentCount` to building-model.ts [parallel]
 +
 Components:: src/lib/models/building-model.ts
 Stories:: US-007
 Specs:: BCFG-028, BCFG-032
 Description:: Implement `setUniformApartmentCount(config: BuildingConfig, count: number): BuildingConfig`. Returns a new config with all floors set to the given apartment count. Pure function, no side effects.
 
-* [ ] TASK-012: Add unit tests for `setUniformApartmentCount` [parallel]
+* [x] TASK-012: Add unit tests for `setUniformApartmentCount` [parallel]
 +
 Components:: src/__tests__/building-model.test.ts
 Stories:: US-007
 Specs:: BCFG-028, BCFG-029, BCFG-030, BCFG-032
 Description:: Add test cases: applies count to all floors, preserves floor numbers, works with 1 floor, works with many floors. Verify the returned config has the correct structure.
 
-* [ ] TASK-013: Add uniform mode toggle and shared input to BuildingConfigPanel [sequential]
+* [x] TASK-013: Add uniform mode toggle and shared input to BuildingConfigPanel [sequential]
 +
 Components:: src/lib/components/BuildingConfigPanel.svelte
 Stories:: US-007
@@ -127,26 +127,58 @@ Description:: Add `uniformMode` state (boolean, default false). Add a labeled ch
 
 Rewrite the BuildingFacade SVG to be detailed and visually rich.
 
-* [ ] TASK-014: Rewrite BuildingFacade.svelte with enhanced SVG rendering [sequential]
+* [x] TASK-014: Rewrite BuildingFacade.svelte with enhanced SVG rendering [sequential]
 +
 Components:: src/lib/components/BuildingFacade.svelte
 Stories:: US-008
 Specs:: BCFG-033, BCFG-034, BCFG-035, BCFG-036, BCFG-037, BCFG-038, BCFG-039, BCFG-040, BCFG-041
 Description:: Replace the current SVG rendering with the enhanced design. Add `<defs>` section with gradients (wallGradient, skyGradient, glassGradient, groundGradient) and filter (buildingShadow with feDropShadow). Render layers back-to-front: sky background, ground area with bush ellipses, building body with wall gradient and drop shadow, floor separator lines, window groups (frame + glass + cross + sill + header + label), balconies on alternating apartments `(floorNumber + position) % 2 === 0`, entrance door on ground floor (double door with handles replacing center window), roof polygon with ridge line, chimney with smoke wisps. Update layout constants: APARTMENT_WIDTH=70, APARTMENT_HEIGHT=55, FLOOR_PADDING=12, WALL_PADDING=30, ROOF_HEIGHT=50, GROUND_HEIGHT=35. Preserve `role="img"` and `aria-label` for accessibility.
 
-* [ ] TASK-015: Verify enhanced facade renders correctly across configurations [sequential]
+* [x] TASK-015: Verify enhanced facade renders correctly across configurations [sequential]
 +
 Components:: src/lib/components/BuildingFacade.svelte
 Stories:: US-008, US-004
 Specs:: BCFG-015, BCFG-018, BCFG-041
 Description:: Manually verify the enhanced facade with various configurations: 1 floor / 1 apartment (minimal), 3 floors / 4 apartments (medium), 10 floors / 6 apartments (tall), variable apartments per floor. Confirm all visual elements render correctly, no SVG clipping or overlaps, labels are readable, and real-time updates work.
 
-* [ ] TASK-016: Run full test suite and verify build [sequential]
+* [x] TASK-016: Run full test suite and verify build [sequential]
 +
 Components:: All
 Stories:: All
 Specs:: All
 Description:: Run `npm run test` and `npm run build`. Verify all existing tests still pass (no regressions). Verify the build succeeds with no TypeScript errors. Fix any issues.
+
+== Phase 7: Configurable Apartment Numbering Start
+
+Add support for choosing the first apartment identifier series (for example 1001 or 1101).
+
+* [ ] TASK-017: Extend building model with apartment numbering start [sequential]
++
+Components:: src/lib/models/building.ts, src/lib/models/building-model.ts
+Stories:: US-009
+Specs:: BCFG-043, BCFG-045, BCFG-046
+Description:: Add an `apartmentNumberStart` field to the building config model and update apartment ID generation to derive IDs from the configured start value while preserving uniqueness across floors and positions.
+
+* [ ] TASK-018: Add numbering-start input and validation in BuildingConfigPanel [sequential]
++
+Components:: src/lib/components/BuildingConfigPanel.svelte
+Stories:: US-009
+Specs:: BCFG-042, BCFG-043, BCFG-044, BCFG-045
+Description:: Add a UI input for apartment numbering start, validate accepted values (1001..1901 step 100), show Swedish validation errors, and trigger apartment ID recalculation when the value changes.
+
+* [ ] TASK-019: Add storage migration for legacy building data [parallel]
++
+Components:: src/lib/services/storage.ts
+Stories:: US-009
+Specs:: BCFG-047
+Description:: Update building load logic so saved configurations without numbering-start metadata default to 1001 without breaking existing persisted data.
+
+* [ ] TASK-020: Add tests for configurable numbering start and migration [sequential]
++
+Components:: src/__tests__/building-model.test.ts, src/__tests__/storage.test.ts
+Stories:: US-009
+Specs:: BCFG-043, BCFG-044, BCFG-045, BCFG-046, BCFG-047
+Description:: Add unit tests for valid/invalid numbering start values, apartment ID recalculation behavior, uniqueness guarantees, and legacy storage fallback to 1001.
 
 == Traceability
 
@@ -185,4 +217,8 @@ Description:: Run `npm run test` and `npm run build`. Verify all existing tests 
 | US-008: Enhanced Building Facade Illustration
 | BCFG-033, BCFG-034, BCFG-035, BCFG-036, BCFG-037, BCFG-038, BCFG-039, BCFG-040, BCFG-041
 | TASK-014, TASK-015, TASK-016
+
+| US-009: Configurable Apartment Numbering Start
+| BCFG-042, BCFG-043, BCFG-044, BCFG-045, BCFG-046, BCFG-047
+| TASK-017, TASK-018, TASK-019, TASK-020
 |===

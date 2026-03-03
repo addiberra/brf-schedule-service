@@ -1,6 +1,19 @@
 = State Transition Log
 :last-updated: 2026-03-03
 
+== TRANSITION-003
+:date: 2026-03-03
+:intent: Make apartment starting number configurable, enforce ISO-style date/time display (YYYY-MM-DD and 24h HH:MM), and add GitHub Pages deployment workflow
+:type: Feature evolution + delivery automation
+:risk: High
+:features: building-configuration (extended), inspection-scheduling (extended), message-templates (extended), print-output (extended)
+:desired-state: BRF administrators can configure apartment numbering start (for example 1001 or 1101), all displayed dates/times use YYYY-MM-DD and HH:MM, and deployment to GitHub Pages runs automatically via GitHub Actions
+:prior-state: Apartment IDs always start with 1001 formula, several UI/print/template date displays use Swedish/locale long date format, and no GitHub workflow exists for Pages deployment
+:capabilities-invoked: needs-stories (x4), needs-spec (x4), needs-design (x4), needs-tasks (x4), needs-tests (x4), needs-implementation, needs-architecture
+:constraints-checked: Dependencies (pass -- no runtime dependencies added), Hosting (pass -- static site with GitHub Pages workflow), Data (pass -- localStorage-only retained), UI (pass -- Swedish UI retained), Print (pass -- browser-native print retained), Quality (pass -- TypeScript strict, 243 unit tests passing, build clean)
+:result: Achieved
+:artifacts-modified: docs/features/building-configuration/user-stories.adoc (v1.3.0), docs/features/building-configuration/spec.adoc (v1.2.0), docs/features/building-configuration/design.adoc (v1.2.0), docs/features/building-configuration/tasks.adoc (v2.1.0), docs/features/inspection-scheduling/user-stories.adoc (v1.3.0), docs/features/inspection-scheduling/spec.adoc (v1.2.0), docs/features/inspection-scheduling/design.adoc (v1.2.0), docs/features/inspection-scheduling/tasks.adoc (v2.1.0), docs/features/message-templates/user-stories.adoc (v1.3.0), docs/features/message-templates/spec.adoc (v1.2.0), docs/features/message-templates/design.adoc (v1.2.0), docs/features/message-templates/tasks.adoc (v2.1.0), docs/features/print-output/user-stories.adoc (v1.2.0), docs/features/print-output/spec.adoc (v1.1.0), docs/features/print-output/design.adoc (v1.1.0), docs/features/print-output/tasks.adoc (v1.1.0), docs/architecture.adoc (v1.1.0), src/lib/models/building.ts, src/lib/models/building-model.ts, src/lib/components/BuildingConfigPanel.svelte, src/lib/services/storage.ts, src/lib/components/ScheduleView.svelte, src/lib/models/template-model.ts, src/lib/models/print-model.ts, src/lib/components/PrintScheduleOverview.svelte, src/__tests__/building-model.test.ts, src/__tests__/storage.test.ts, src/__tests__/schedule-model.test.ts, src/__tests__/template-model.test.ts, src/__tests__/print-model.test.ts, src/__tests__/building-config-panel.contract.test.ts, vite.config.ts, .github/workflows/deploy-pages.yml
+
 == TRANSITION-002
 :date: 2026-03-03
 :intent: Fix template creation bug, add browser-locale date/time formatting, configurable end-of-day, uniform apartment count per level, enhanced building illustration, Playwright E2E tests, and README

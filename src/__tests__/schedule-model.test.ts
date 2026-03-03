@@ -1,5 +1,5 @@
 // Feature: inspection-scheduling
-// Spec version: 1.0.0
+// Spec version: 1.2.0
 // Generated from: spec.adoc
 //
 // Spec coverage:
@@ -19,6 +19,10 @@
 //   SCHED-030: Enforce max per day limit
 //   SCHED-031: Use lower of configured and time-based limits
 //   SCHED-035: Empty state when no saved schedule
+//   SCHED-044: Schedule dates displayed as YYYY-MM-DD
+//   SCHED-045: Schedule times displayed as HH:MM (24-hour)
+//   SCHED-046: Manual override values remain ISO/24-hour compatible
+//   SCHED-047: Grouping key compatibility with YYYY-MM-DD headers
 
 import { describe, it, expect } from 'vitest';
 import {
@@ -775,5 +779,67 @@ describe('dailyEndTime affects scheduling', () => {
       maxPerDay: 100,
     });
     expect(getMaxAppointmentsPerDay(config)).toBe(6);
+  });
+});
+
+describe('SCHED-044: Schedule dates displayed as YYYY-MM-DD', () => {
+  it('should produce appointment dates in ISO YYYY-MM-DD format', () => {
+    const apartments = makeApartments(3);
+    const config = makeConfig({
+      excludeWeekends: false,
+      lunchBreakEnabled: false,
+    });
+    const result = calculateSchedule(config, apartments, new Map());
+
+    expect(result.appointments.length).toBeGreaterThan(0);
+    for (const appointment of result.appointments) {
+      expect(appointment.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    }
+  });
+});
+
+describe('SCHED-045: Schedule times displayed as HH:MM (24-hour)', () => {
+  it('should format schedule times as two-digit 24-hour values', () => {
+    expect(formatTime(0)).toMatch(/^\d{2}:\d{2}$/);
+    expect(formatTime(9 * 60)).toBe('09:00');
+    expect(formatTime(13 * 60 + 30)).toBe('13:30');
+    expect(formatTime(23 * 60 + 59)).toBe('23:59');
+  });
+});
+
+describe('SCHED-046: Manual override values remain ISO/24-hour compatible', () => {
+  it('should preserve manual override date and time values as YYYY-MM-DD and minutes for HH:MM rendering', () => {
+    const apartments = makeApartments(1);
+    const config = makeConfig({ excludeWeekends: false });
+    const overrides = new Map<string, ManualOverride>([
+      ['1001', { date: '2026-03-10', startTime: parseTime('14:30') }],
+    ]);
+
+    const result = calculateSchedule(config, apartments, overrides);
+
+    expect(result.appointments[0].date).toBe('2026-03-10');
+    expect(formatTime(result.appointments[0].startTime)).toBe('14:30');
+  });
+});
+
+describe('SCHED-047: Grouping key compatibility with YYYY-MM-DD headers', () => {
+  it('should expose date keys suitable for direct YYYY-MM-DD group headings', () => {
+    const apartments = makeApartments(4);
+    const config = makeConfig({
+      startDate: '2026-03-10',
+      endDate: '2026-03-11',
+      maxPerDay: 2,
+      lunchBreakEnabled: false,
+      excludeWeekends: false,
+    });
+
+    const result = calculateSchedule(config, apartments, new Map());
+    const groupedKeys = Array.from(new Set(result.appointments.map((a) => a.date)));
+
+    expect(groupedKeys).toContain('2026-03-10');
+    expect(groupedKeys).toContain('2026-03-11');
+    for (const key of groupedKeys) {
+      expect(key).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    }
   });
 });

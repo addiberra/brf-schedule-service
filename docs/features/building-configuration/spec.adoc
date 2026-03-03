@@ -1,7 +1,7 @@
 = Specification: Building Configuration
-:version: 1.1.0
-:source-stories-version: 1.2.0
-:last-updated: 2026-03-02
+:version: 1.2.0
+:source-stories-version: 1.3.0
+:last-updated: 2026-03-03
 :feature: building-configuration
 :prefix: BCFG
 :toc:
@@ -295,6 +295,48 @@ Type:: Event-driven
 Source:: US-008: Enhanced Building Facade Illustration, Criterion 9
 Verification:: Change the floor count or apartment count. Confirm the enhanced facade (including all detail elements) updates immediately without page reload.
 
+== BCFG-042
+The system shall provide an input for apartment numbering start value for floor 1 apartment 1.
+
+Type:: Ubiquitous
+Source:: US-009: Configurable Apartment Numbering Start, Criterion 1
+Verification:: Open the building configuration view. Confirm there is an input control for selecting the starting apartment number.
+
+== BCFG-043
+The system shall accept apartment numbering start values 1001 through 1901 in increments of 100.
+
+Type:: Ubiquitous
+Source:: US-009: Configurable Apartment Numbering Start, Criterion 2
+Verification:: Enter 1001, 1101, and 1901 as start values and confirm they are accepted. Enter 1050 and confirm it is rejected.
+
+== BCFG-044
+If the user enters an apartment numbering start value outside the valid set, then the system shall display a validation error and prevent saving.
+
+Type:: Unwanted behavior
+Source:: US-009: Configurable Apartment Numbering Start, Criterion 3
+Verification:: Enter 999, 1950, or 2001 as start value. Confirm a validation error is shown and the invalid value is not persisted.
+
+== BCFG-045
+When the user changes the apartment numbering start value, the system shall recalculate apartment identifiers for all configured apartments.
+
+Type:: Event-driven
+Source:: US-009: Configurable Apartment Numbering Start, Criterion 4
+Verification:: Configure at least 2 floors and 2 apartments per floor. Change numbering start from 1001 to 1101 and confirm all apartment identifiers update accordingly.
+
+== BCFG-046
+While a building configuration contains multiple apartments, the system shall keep apartment identifiers unique across all floors and positions after numbering recalculation.
+
+Type:: State-driven
+Source:: US-009: Configurable Apartment Numbering Start, Criterion 5
+Verification:: Configure a building with multiple floors and apartments, set a valid numbering start value, and confirm no duplicate apartment identifiers are displayed or generated.
+
+== BCFG-047
+When the application loads saved building data that lacks apartment numbering start value, the system shall default the numbering start value to 1001.
+
+Type:: Event-driven
+Source:: US-009: Configurable Apartment Numbering Start, Criterion 6
+Verification:: Load legacy saved building data created before numbering start existed. Confirm the application sets the numbering start to 1001.
+
 == Traceability
 
 [cols="1,2,2", options="header"]
@@ -464,4 +506,28 @@ Verification:: Change the floor count or apartment count. Confirm the enhanced f
 | BCFG-041
 | Enhanced facade real-time update
 | US-008: Criterion 9
+
+| BCFG-042
+| Apartment numbering start input
+| US-009: Criterion 1
+
+| BCFG-043
+| Numbering start valid set
+| US-009: Criterion 2
+
+| BCFG-044
+| Validation error for invalid numbering start
+| US-009: Criterion 3
+
+| BCFG-045
+| Recalculate IDs on numbering start change
+| US-009: Criterion 4
+
+| BCFG-046
+| Preserve unique IDs after recalculation
+| US-009: Criterion 5
+
+| BCFG-047
+| Default numbering start for legacy saved data
+| US-009: Criterion 6
 |===

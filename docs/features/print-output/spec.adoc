@@ -1,7 +1,7 @@
 = Specification: Print Output
-:version: 1.0.0
-:source-stories-version: 1.1.0
-:last-updated: 2026-03-02
+:version: 1.1.0
+:source-stories-version: 1.2.0
+:last-updated: 2026-03-03
 :feature: print-output
 :prefix: PRNT
 :toc:
@@ -115,6 +115,27 @@ Verification:: Save the printout as a PDF. Open the PDF. Confirm page breaks occ
 
 NOTE: The constraint that no PDF library or plugin is required is enforced by project constraint (Print section and Dependencies section in constraints.adoc). Not duplicated here.
 
+== PRNT-016
+When the system renders schedule overview date headings, the system shall display each heading in YYYY-MM-DD format.
+
+Type:: Event-driven
+Source:: US-006: ISO Date/Time in Printed Schedule, Criterion 1
+Verification:: Generate a schedule overview with at least one date group. Open print preview and confirm each date heading is shown as YYYY-MM-DD.
+
+== PRNT-017
+The system shall display schedule overview times in 24-hour HH:MM format.
+
+Type:: Ubiquitous
+Source:: US-006: ISO Date/Time in Printed Schedule, Criterion 2
+Verification:: Generate schedule overview rows with multiple appointments. Open print preview and confirm each time is shown as HH:MM.
+
+== PRNT-018
+When the system renders apartment letters, the system shall use the selected template field formatting for date and time placeholders.
+
+Type:: Event-driven
+Source:: US-006: ISO Date/Time in Printed Schedule, Criterion 3
+Verification:: Configure a template with date/time placeholders and print apartment letters. Confirm the rendered date/time output matches the placeholder field formatting defined in the template.
+
 == Traceability
 
 [cols="1,2,2", options="header"]
@@ -180,4 +201,16 @@ NOTE: The constraint that no PDF library or plugin is required is enforced by pr
 | PRNT-015
 | Preserve formatting in PDF
 | US-005: Criterion 2
+
+| PRNT-016
+| ISO date headings in schedule overview
+| US-006: Criterion 1
+
+| PRNT-017
+| 24-hour HH:MM in schedule overview
+| US-006: Criterion 2
+
+| PRNT-018
+| Letter rendering follows template date/time field formatting
+| US-006: Criterion 3
 |===

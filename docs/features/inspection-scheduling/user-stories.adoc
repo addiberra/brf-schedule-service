@@ -1,6 +1,6 @@
 = User Stories: Inspection Scheduling
-:version: 1.2.0
-:last-updated: 2026-03-02
+:version: 1.3.0
+:last-updated: 2026-03-03
 :feature: inspection-scheduling
 :toc:
 
@@ -127,3 +127,15 @@ Acceptance Criteria:
 * [ ] The locale-aware format shall include weekday, day, month, and year.
 * [ ] If the browser's `Intl.DateTimeFormat` is unavailable or fails, then the system shall fall back to Swedish formatting.
 * [ ] The system shall retain the existing Swedish-only formatting function for backward compatibility.
+
+== US-011: ISO Date and 24-Hour Time Display
+As a BRF administrator,
+I want schedule dates and times to be shown in ISO style,
+so that I see consistent and unambiguous values in the format YYYY-MM-DD and HH:MM.
+
+Acceptance Criteria:
+
+* [ ] The system shall display schedule dates in the format YYYY-MM-DD.
+* [ ] The system shall display schedule times in 24-hour format HH:MM.
+* [ ] While the user edits a manual override, the system shall keep date/time input and display values in YYYY-MM-DD and HH:MM format.
+* [ ] When the system groups appointments by day in the schedule view, the group header shall use YYYY-MM-DD.

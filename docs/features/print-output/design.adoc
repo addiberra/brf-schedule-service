@@ -1,9 +1,9 @@
 = Design: Print Output
-:version: 1.0.0
+:version: 1.1.0
 :status: Current
-:source-stories-version: 1.1.0
-:source-spec-version: 1.0.0
-:last-updated: 2026-03-02
+:source-stories-version: 1.2.0
+:source-spec-version: 1.1.0
+:last-updated: 2026-03-03
 :feature: print-output
 :toc:
 
@@ -339,3 +339,11 @@ Criteria::
 * Preserve formatting in PDF -> CSS page breaks, margins, and print styles are preserved by the browser's PDF export (PRNT-015)
 
 NOTE: No PDF library constraint is covered by project constraints.
+
+=== US-006: ISO Date/Time in Printed Schedule
+
+Components:: print-model, PrintScheduleOverview, PrintLetterPage, template-model
+Criteria::
+* Date headings in YYYY-MM-DD -> `generateScheduleOverviewData()` exposes raw ISO `date` and `PrintScheduleOverview` renders that value in date headings (PRNT-016)
+* Times in HH:MM -> Overview rows continue to use `formatTime()` output and render 24-hour values (PRNT-017)
+* Letter output follows template field formatting -> Letter content is still produced by `renderTemplate()` so selected template mappings control date/time style in printed letters (PRNT-018)

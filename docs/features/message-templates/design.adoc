@@ -1,9 +1,9 @@
 = Design: Message Templates
-:version: 1.1.0
+:version: 1.2.0
 :status: Current
-:source-stories-version: 1.2.0
-:source-spec-version: 1.1.0
-:last-updated: 2026-03-02
+:source-stories-version: 1.3.0
+:source-spec-version: 1.2.0
+:last-updated: 2026-03-03
 :feature: message-templates
 :toc:
 
@@ -382,7 +382,7 @@ Criteria::
 Components:: template-model, MessageTemplatePanel
 Criteria::
 * Suggested placeholders on new template -> `createDefaultTemplate()` calls `getDefaultPlaceholders()` (TMPL-019)
-* Pre-mapped to fields -> Default placeholders include `{lagenhet}` → `apartmentId`, `{vaning}` → `floor`, `{datum}` → `dateSwedish`, `{tid}` → `time` (TMPL-020)
+* Pre-mapped to fields -> Default placeholders include `{lagenhet}` → `apartmentId`, `{vaning}` → `floor`, `{datum}` → `date`, `{tid}` → `time` (TMPL-020)
 * Remove or modify suggested -> TemplateEditor allows removing and re-mapping any placeholder (TMPL-021)
 
 === US-006: Save Templates
@@ -401,3 +401,12 @@ Criteria::
 * Locale-formatted date field option -> `getAvailableDataFields()` includes `{ field: 'dateFormatted', label: 'Datum (formaterat)' }` (TMPL-026)
 * Backward compatibility with dateSwedish -> `resolveDataField('dateSwedish', ...)` continues to call `formatDateSwedish()`. Templates saved with `dateSwedish` mappings still work (TMPL-027)
 * Swedish fallback -> `formatDateLocale()` wraps the `Intl.DateTimeFormat` call in a try-catch; on failure, delegates to `formatDateSwedish()` (TMPL-028)
+
+=== US-008: ISO Date/Time Placeholders
+
+Components:: template-model, TemplateEditor, MessageTemplatePanel, TemplatePreview
+Criteria::
+* ISO date placeholder option -> `getAvailableDataFields()` exposes an explicit ISO date field that renders YYYY-MM-DD values (TMPL-029)
+* 24-hour time placeholder option -> Existing `time` field remains HH:MM and is exposed in placeholder mappings (TMPL-030)
+* New template default `{datum}` mapping -> `createDefaultTemplate()` maps `{datum}` to the ISO date field by default (TMPL-031)
+* Backward compatibility -> `dateSwedish` mappings continue to resolve in `resolveDataField()` for older templates (TMPL-032)

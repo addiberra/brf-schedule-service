@@ -1,9 +1,9 @@
 = Design: Inspection Scheduling
-:version: 1.1.0
+:version: 1.2.0
 :status: Current
-:source-stories-version: 1.2.0
-:source-spec-version: 1.1.0
-:last-updated: 2026-03-02
+:source-stories-version: 1.3.0
+:source-spec-version: 1.2.0
+:last-updated: 2026-03-03
 :feature: inspection-scheduling
 :toc:
 
@@ -448,3 +448,12 @@ Criteria::
 * Locale-aware formatting -> `formatDateLocale()` uses `Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })` (SCHED-041)
 * Swedish fallback -> `formatDateLocale()` wraps call in try/catch and falls back to `formatDateSwedish()` on failure (SCHED-042)
 * Backward compatibility -> `formatDateSwedish()` remains exported and unchanged (SCHED-043)
+
+=== US-011: ISO Date and 24-Hour Time Display
+
+Components:: ScheduleView, ScheduleAppointmentRow, schedule-model
+Criteria::
+* Display dates as YYYY-MM-DD -> ScheduleView uses ISO date string values directly for group headers and row date columns (SCHED-044)
+* Display times as HH:MM -> Schedule rows render `formatTime()` output in 24-hour format (SCHED-045)
+* Manual override edit format remains ISO/24h -> Date/time edit controls keep `type="date"` and `type="time"` bindings, preserving YYYY-MM-DD and HH:MM values (SCHED-046)
+* Group headers in YYYY-MM-DD -> Grouped schedule sections render `date` key directly instead of locale-long label (SCHED-047)

@@ -1,7 +1,7 @@
 = Specification: Message Templates
-:version: 1.1.0
-:source-stories-version: 1.2.0
-:last-updated: 2026-03-02
+:version: 1.2.0
+:source-stories-version: 1.3.0
+:last-updated: 2026-03-03
 :feature: message-templates
 :prefix: TMPL
 :toc:
@@ -204,6 +204,34 @@ Type:: Unwanted behavior
 Source:: US-007: Locale-Aware Data Field Formatting, Criterion 4
 Verification:: Simulate an environment where `Intl.DateTimeFormat` locale detection fails or returns undefined. Confirm dates are formatted in Swedish (e.g., "torsdag 10 april 2026").
 
+== TMPL-029
+The system shall provide a date placeholder mapping option that renders dates in YYYY-MM-DD format.
+
+Type:: Ubiquitous
+Source:: US-008: ISO Date/Time Placeholders, Criterion 1
+Verification:: Open placeholder mapping options. Select the ISO date field for a placeholder. Preview rendered output and confirm the date appears as YYYY-MM-DD.
+
+== TMPL-030
+The system shall provide a time placeholder mapping option that renders times in 24-hour HH:MM format.
+
+Type:: Ubiquitous
+Source:: US-008: ISO Date/Time Placeholders, Criterion 2
+Verification:: Open placeholder mapping options. Select the time field for a placeholder. Preview rendered output and confirm the time appears as HH:MM.
+
+== TMPL-031
+When the user creates a new template, the system shall map the suggested `{datum}` placeholder to the ISO date field by default.
+
+Type:: Event-driven
+Source:: US-008: ISO Date/Time Placeholders, Criterion 3
+Verification:: Create a new template and inspect default placeholder mappings. Confirm `{datum}` is pre-mapped to the ISO date field.
+
+== TMPL-032
+While a saved template uses the Swedish-specific date field identifier, the system shall continue to resolve it correctly.
+
+Type:: State-driven
+Source:: US-008: ISO Date/Time Placeholders, Criterion 4
+Verification:: Load an existing template that uses the Swedish-specific date field. Confirm the placeholder still renders a date value.
+
 == Traceability
 
 [cols="1,2,2", options="header"]
@@ -321,4 +349,20 @@ Verification:: Simulate an environment where `Intl.DateTimeFormat` locale detect
 | TMPL-028
 | Swedish fallback for locale
 | US-007: Criterion 4
+
+| TMPL-029
+| ISO date placeholder mapping option
+| US-008: Criterion 1
+
+| TMPL-030
+| 24-hour time placeholder mapping option
+| US-008: Criterion 2
+
+| TMPL-031
+| Default `{datum}` mapping to ISO date field
+| US-008: Criterion 3
+
+| TMPL-032
+| Compatibility for Swedish-specific date field
+| US-008: Criterion 4
 |===

@@ -1,6 +1,6 @@
 = User Stories: Print Output
-:version: 1.1.0
-:last-updated: 2026-03-02
+:version: 1.2.0
+:last-updated: 2026-03-03
 :feature: print-output
 :toc:
 
@@ -61,3 +61,14 @@ Acceptance Criteria:
 * [ ] When the user opens the browser's print dialog, the system shall present a print-ready layout that produces correct output when saved as PDF.
 * [ ] The system shall ensure that page breaks, margins, and formatting are preserved in PDF output.
 * [ ] The system shall not require any additional PDF library or plugin.
+
+== US-006: ISO Date/Time in Printed Schedule
+As a BRF administrator,
+I want printed schedule dates and times to use ISO style,
+so that printed planning documents are consistent with the rest of the application.
+
+Acceptance Criteria:
+
+* [ ] The system shall display schedule overview date headings in YYYY-MM-DD format.
+* [ ] The system shall display schedule overview times in 24-hour HH:MM format.
+* [ ] The system shall keep apartment letter date/time placeholder output aligned with the template feature's selected field formatting.

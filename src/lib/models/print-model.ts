@@ -8,7 +8,7 @@ import type {
   ScheduleOverviewRow,
 } from './print.js';
 import { renderTemplate } from './template-model.js';
-import { formatTime, formatDateSwedish } from './schedule-model.js';
+import { formatTime } from './schedule-model.js';
 
 /**
  * Looks up the appointment for a specific apartment from the schedule result.
@@ -87,7 +87,7 @@ export function generateScheduleOverviewData(
 
     return {
       date,
-      dateSwedish: formatDateSwedish(date),
+      dateSwedish: date,
       appointments,
     };
   });

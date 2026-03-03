@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { ScheduleResult, ManualOverride } from '../models/schedule.js';
-  import { formatDateSwedish } from '../models/schedule-model.js';
   import ScheduleAppointmentRow from './ScheduleAppointmentRow.svelte';
 
   interface Props {
@@ -49,7 +48,7 @@
 
     {#each [...groupedByDate] as [date, appointments]}
       <div class="date-group">
-        <h4 class="date-header">{formatDateSwedish(date)}</h4>
+        <h4 class="date-header">{date}</h4>
         <table class="appointments-table">
           <thead>
             <tr>

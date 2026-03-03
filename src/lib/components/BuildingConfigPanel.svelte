@@ -5,6 +5,7 @@
     createDefaultConfig,
     validateFloorCount,
     validateApartmentCount,
+    validateApartmentNumberStart,
     generateAllApartments,
     totalApartments,
     adjustFloors,
@@ -83,6 +84,25 @@
     config = { ...config, floors: newFloors };
   }
 
+  function handleApartmentNumberStartChange(e: Event) {
+    const target = e.target as HTMLInputElement;
+    const value = parseInt(target.value, 10);
+    if (isNaN(value)) return;
+
+    const result = validateApartmentNumberStart(value);
+    const errors = new Map(validationErrors);
+
+    if (!result.valid) {
+      errors.set('apartmentNumberStart', result.error!);
+      validationErrors = errors;
+      return;
+    }
+
+    errors.delete('apartmentNumberStart');
+    validationErrors = errors;
+    config = { ...config, apartmentNumberStart: value };
+  }
+
   function handleReset() {
     if (confirm('Är du säker på att du vill återställa byggkonfigurationen?')) {
       clearBuilding();
@@ -113,6 +133,28 @@
       {#if validationErrors.has('floorCount')}
         <p class="error" id="floor-count-error" role="alert">
           {validationErrors.get('floorCount')}
+        </p>
+      {/if}
+    </div>
+
+    <div class="field-group">
+      <label for="apartment-number-start">Startnummer:</label>
+      <input
+        id="apartment-number-start"
+        type="number"
+        min="1001"
+        max="1901"
+        step="100"
+        value={config.apartmentNumberStart}
+        oninput={handleApartmentNumberStartChange}
+        aria-invalid={validationErrors.has('apartmentNumberStart')}
+        aria-describedby={validationErrors.has('apartmentNumberStart')
+          ? 'apartment-number-start-error'
+          : undefined}
+      />
+      {#if validationErrors.has('apartmentNumberStart')}
+        <p class="error" id="apartment-number-start-error" role="alert">
+          {validationErrors.get('apartmentNumberStart')}
         </p>
       {/if}
     </div>

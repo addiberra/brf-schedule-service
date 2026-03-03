@@ -12,6 +12,8 @@ export interface BuildingConfig {
   floorCount: number;
   /** Per-floor configuration, indexed from 0 (floor 1 is index 0) */
   floors: FloorConfig[];
+  /** Apartment number for floor 1, position 1 (1001-1901, step 100) */
+  apartmentNumberStart: number;
 }
 
 /** An apartment with its computed identifier */

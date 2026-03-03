@@ -1,5 +1,5 @@
 // Feature: message-templates
-// Spec version: 1.0.0
+// Spec version: 1.2.0
 // Generated from: spec.adoc
 //
 // Spec coverage:
@@ -18,6 +18,10 @@
 //   TMPL-019: Suggested placeholders on new template
 //   TMPL-020: Pre-mapped suggested placeholders
 //   TMPL-021: Remove or modify suggested placeholders
+//   TMPL-029: ISO date placeholder mapping option
+//   TMPL-030: 24-hour time placeholder mapping option
+//   TMPL-031: Default {datum} mapping to ISO date field
+//   TMPL-032: Compatibility for Swedish-specific date field
 
 import { describe, it, expect } from 'vitest';
 import {
@@ -375,7 +379,7 @@ describe('TMPL-020: Pre-mapped suggested placeholders', () => {
     // Verify specific default mappings
     expect(byName.get('lagenhet')).toBe('apartmentId');
     expect(byName.get('vaning')).toBe('floor');
-    expect(byName.get('datum')).toBe('dateSwedish');
+    expect(byName.get('datum')).toBe('date');
     expect(byName.get('tid')).toBe('time');
   });
 });
@@ -454,5 +458,43 @@ describe('TMPL-025 to TMPL-028: dateFormatted DataField', () => {
     const result = resolveDataField('dateSwedish', apartment, appointment);
     expect(result).toContain('mars');
     expect(result).toContain('2026');
+  });
+});
+
+describe('TMPL-029 to TMPL-032: ISO date/time placeholders', () => {
+  it('should expose an ISO date field option for placeholder mapping', () => {
+    const fields = getAvailableDataFields();
+    const fieldKeys = fields.map((f) => f.field);
+
+    expect(fieldKeys).toContain('date');
+  });
+
+  it('should render ISO date as YYYY-MM-DD when using date field mapping', () => {
+    const template = makeTemplate('Datum: {datum}', [
+      { name: 'datum', field: 'date' },
+    ]);
+    const apartment = makeApartment('1001', 1, 1);
+    const appointment = makeAppointment('1001', 1, 1, '2026-03-10', 540);
+
+    const rendered = renderTemplate(template, apartment, appointment);
+
+    expect(rendered).toContain('2026-03-10');
+  });
+
+  it('should default {datum} placeholder to ISO date field for new templates', () => {
+    const defaults = getDefaultPlaceholders();
+    const byName = new Map(defaults.map((p) => [p.name, p.field]));
+
+    expect(byName.get('datum')).toBe('date');
+  });
+
+  it('should keep supporting legacy dateSwedish mappings for saved templates', () => {
+    const apartment = makeApartment('1001', 1, 1);
+    const appointment = makeAppointment('1001', 1, 1, '2026-03-10', 540);
+
+    const result = resolveDataField('dateSwedish', apartment, appointment);
+
+    expect(result).toContain('2026');
+    expect(result.length).toBeGreaterThan(0);
   });
 });

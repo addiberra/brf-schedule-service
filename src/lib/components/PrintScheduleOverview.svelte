@@ -14,7 +14,7 @@
 
   {#each data.dateGroups as group}
     <div class="date-group">
-      <h3 class="date-heading">{group.dateSwedish}</h3>
+      <h3 class="date-heading">{group.date}</h3>
       <table class="schedule-table">
         <thead>
           <tr>

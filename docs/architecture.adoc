@@ -1,6 +1,6 @@
 = System Architecture
-:version: 1.0.0
-:last-updated: 2026-03-02
+:version: 1.1.0
+:last-updated: 2026-03-03
 :toc:
 
 == Feature Design Sources
@@ -9,10 +9,10 @@
 |===
 | Feature | Design Version
 
-| building-configuration | 1.0.0
-| inspection-scheduling | 1.0.0
-| message-templates | 1.0.0
-| print-output | 1.0.0
+| building-configuration | 1.2.0
+| inspection-scheduling | 1.2.0
+| message-templates | 1.2.0
+| print-output | 1.1.0
 |===
 
 == Overview
@@ -130,16 +130,16 @@ Pure TypeScript functions with no side effects. Each feature has a type definiti
 | Module | Responsibility
 
 | `building.ts` / `building-model.ts`
-| Building configuration types. Validation (floors 1-30, apartments 1-20), apartment ID generation (`floor * 1000 + position`), floor adjustment, default config.
+| Building configuration types. Validation (floors 1-30, apartments 1-20), configurable apartment numbering start (1001-1901 step 100), apartment ID generation from numbering start + floor + position, floor adjustment, default config.
 
 | `schedule.ts` / `schedule-model.ts`
-| Schedule types. Date arithmetic, time formatting (minutes since midnight), weekend/exclusion filtering, lunch break handling, scheduling algorithm (sequential floor-by-floor assignment with manual overrides), validation.
+| Schedule types. Date arithmetic, ISO date handling (`YYYY-MM-DD`), 24-hour time formatting (`HH:MM` via minutes since midnight), weekend/exclusion filtering, lunch break handling, scheduling algorithm (sequential floor-by-floor assignment with manual overrides), validation.
 
 | `template.ts` / `template-model.ts`
-| Template types. Placeholder parsing (`{...}` tokens), data field resolution (apartment + appointment data), template rendering (string substitution), default placeholder mappings with Swedish labels.
+| Template types. Placeholder parsing (`{...}` tokens), data field resolution (apartment + appointment data), template rendering (string substitution), default placeholder mappings where `{datum}` uses ISO date field while legacy Swedish date mapping remains supported.
 
 | `print.ts` / `print-model.ts`
-| Print data types. Composes data from all three upstream features: generates per-apartment letter data (rendered templates) and schedule overview data (date-grouped appointment tables).
+| Print data types. Composes data from all three upstream features: generates per-apartment letter data (rendered templates) and schedule overview data (date-grouped appointment tables with ISO date headings and 24-hour times).
 |===
 
 === Services (Persistence)
@@ -284,7 +284,8 @@ flowchart LR
 
 The application is deployed as static files on GitHub Pages:
 
-* `vite build` compiles Svelte components and TypeScript into optimized HTML, CSS, and JavaScript bundles.
-* The `dist/` output is published to GitHub Pages.
+* GitHub Actions workflow `.github/workflows/deploy-pages.yml` runs on pushes to `main` and manual dispatch.
+* The workflow runs `npm ci`, `npm test`, and `npm run build`, then uploads `dist/` via `actions/upload-pages-artifact` and deploys with `actions/deploy-pages`.
+* Build uses `BASE_PATH=/<repo>/` so Vite emits correct asset URLs for GitHub Pages project-site hosting.
 * No server-side code, no API endpoints, no backend infrastructure.
 * User data lives entirely in the browser's localStorage and never leaves the user's device.

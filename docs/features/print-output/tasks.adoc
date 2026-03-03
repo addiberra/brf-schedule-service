@@ -1,16 +1,16 @@
 = Implementation Tasks: Print Output
-:version: 1.0.0
-:status: Implemented
-:source-design-version: 1.0.0
-:source-stories-version: 1.1.0
-:source-spec-version: 1.0.0
-:last-updated: 2026-03-02
+:version: 1.1.0
+:status: Current
+:source-design-version: 1.1.0
+:source-stories-version: 1.2.0
+:source-spec-version: 1.1.0
+:last-updated: 2026-03-03
 :feature: print-output
 :toc:
 
 == Overview
 
-This feature adds print output capability to the BRF inspection schedule application. It composes data from building configuration, inspection scheduling, and message templates to produce two printable documents: individual apartment letters and a schedule overview. Implementation is organized into 3 phases with 8 tasks total.
+This feature adds print output capability to the BRF inspection schedule application. It composes data from building configuration, inspection scheduling, and message templates to produce two printable documents: individual apartment letters and a schedule overview. Phases 1-3 are implemented. Phase 4 adds ISO date/time presentation in print output. 4 phases, 11 tasks total.
 
 == Phase 1: Data Model and Business Logic
 
@@ -80,6 +80,31 @@ Stories:: US-001, US-002
 Specs:: PRNT-001, PRNT-005, PRNT-006
 Description:: Create `src/__tests__/print-model.test.ts`. Test `generateLetterData()`: correct number of letters, rendered content, handling of apartments without appointments. Test `generateScheduleOverviewData()`: date grouping, time formatting, sorting, empty schedule. Test `getAppointmentForApartment()`: found and not found cases.
 
+== Phase 4: ISO Date/Time Print Formatting
+
+Align printed schedule headings and time values with ISO-style display while keeping letter placeholder rendering driven by template mappings.
+
+* [ ] TASK-009: Update print overview model/view to use ISO date headings [sequential]
++
+Components:: src/lib/models/print.ts, src/lib/models/print-model.ts, src/lib/components/PrintScheduleOverview.svelte
+Stories:: US-006
+Specs:: PRNT-016
+Description:: Replace Swedish-specific date heading output with YYYY-MM-DD in schedule overview data and rendering.
+
+* [ ] TASK-010: Verify overview times remain 24-hour HH:MM [parallel]
++
+Components:: src/lib/models/print-model.ts, src/lib/components/PrintScheduleOverview.svelte
+Stories:: US-006
+Specs:: PRNT-017
+Description:: Confirm schedule overview rows consistently render 24-hour time values from `formatTime()` without locale transformation.
+
+* [ ] TASK-011: Add tests for ISO heading output and template-driven letter formatting [sequential]
++
+Components:: src/__tests__/print-model.test.ts
+Stories:: US-006
+Specs:: PRNT-016, PRNT-017, PRNT-018
+Description:: Add tests validating ISO date headings in overview output, 24-hour time values, and that letter rendering still follows template-selected date/time field formatting.
+
 == Traceability
 
 [cols="1,1,1", options="header"]
@@ -105,4 +130,8 @@ Description:: Create `src/__tests__/print-model.test.ts`. Test `generateLetterDa
 | US-005: PDF Export via System Print Dialog
 | PRNT-014, PRNT-015
 | TASK-005, TASK-006
+
+| US-006: ISO Date/Time in Printed Schedule
+| PRNT-016, PRNT-017, PRNT-018
+| TASK-009, TASK-010, TASK-011
 |===

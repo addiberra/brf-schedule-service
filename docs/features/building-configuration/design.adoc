@@ -1,9 +1,9 @@
 = Design: Building Configuration
-:version: 1.1.0
+:version: 1.2.0
 :status: Current
-:source-stories-version: 1.2.0
-:source-spec-version: 1.1.0
-:last-updated: 2026-03-02
+:source-stories-version: 1.3.0
+:source-spec-version: 1.2.0
+:last-updated: 2026-03-03
 :feature: building-configuration
 :toc:
 
@@ -485,3 +485,14 @@ Criteria::
 * Ground area with vegetation -> Green gradient strip + bush ellipses below building (BCFG-039)
 * Drop shadows -> SVG `<filter>` with `feDropShadow` on building body (BCFG-040)
 * Real-time update -> Svelte reactivity re-renders all SVG elements on config change (BCFG-041)
+
+=== US-009: Configurable Apartment Numbering Start
+
+Components:: BuildingConfigPanel, building-model, storage, BuildingFacade
+Criteria::
+* Numbering start input -> BuildingConfigPanel adds a numeric input for start value used by floor 1 apartment 1 (BCFG-042)
+* Valid set 1001..1901 step 100 -> `validateApartmentNumberStart()` enforces the accepted values (BCFG-043)
+* Validation error and prevent save -> Invalid start values are stored in `validationErrors`; autosave remains gated behind zero validation errors (BCFG-044)
+* Recalculate all apartment IDs on change -> `generateAllApartments()` uses numbering start and updates all derived apartment identifiers reactively (BCFG-045)
+* Preserve uniqueness -> ID generation uses floor+position offsets from the selected start value to ensure unique IDs in the generated apartment list (BCFG-046)
+* Legacy storage default -> `loadBuilding()` migration path sets missing numbering start to 1001 for previously saved configurations (BCFG-047)

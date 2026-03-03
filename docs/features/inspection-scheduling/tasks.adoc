@@ -1,10 +1,10 @@
 = Implementation Tasks: Inspection Scheduling
-:version: 2.0.0
+:version: 2.1.0
 :status: Current
-:source-design-version: 1.1.0
-:source-stories-version: 1.2.0
-:source-spec-version: 1.1.0
-:last-updated: 2026-03-02
+:source-design-version: 1.2.0
+:source-stories-version: 1.3.0
+:source-spec-version: 1.2.0
+:last-updated: 2026-03-03
 :feature: inspection-scheduling
 :toc:
 
@@ -102,40 +102,65 @@ Description:: Create `src/__tests__/schedule-storage.test.ts` with tests for `sa
 
 Add configurable daily end time and browser-locale date formatting to the existing implementation.
 
-* [ ] TASK-011: Add `dailyEndTime` to ScheduleConfig interface [parallel]
+* [x] TASK-011: Add `dailyEndTime` to ScheduleConfig interface [parallel]
 +
 Components:: schedule.ts
 Stories:: US-009
 Specs:: SCHED-036, SCHED-040
 Description:: Add `dailyEndTime: number` field to the `ScheduleConfig` interface in `src/lib/models/schedule.ts`. Document as "Daily inspection end time in minutes since midnight (e.g., 1080 = 18:00)".
 
-* [ ] TASK-012: Update schedule-model for configurable end time [sequential]
+* [x] TASK-012: Update schedule-model for configurable end time [sequential]
 +
 Components:: schedule-model.ts
 Stories:: US-009
 Specs:: SCHED-037, SCHED-038, SCHED-039, SCHED-040
 Description:: In `src/lib/models/schedule-model.ts`: (1) Remove the `const END_OF_DAY = 18 * 60` constant. (2) Add `dailyEndTime: 18 * 60` to `createDefaultScheduleConfig()`. (3) Add `dailyEndTime > dailyStartTime` validation to `validateScheduleConfig()` with Swedish error message. (4) Update `getMaxAppointmentsPerDay()` to use `config.dailyEndTime` instead of `END_OF_DAY`. (5) Update `calculateSchedule()` to use `config.dailyEndTime` instead of `END_OF_DAY`.
 
-* [ ] TASK-013: Add `formatDateLocale()` function [parallel]
+* [x] TASK-013: Add `formatDateLocale()` function [parallel]
 +
 Components:: schedule-model.ts
 Stories:: US-010
 Specs:: SCHED-041, SCHED-042, SCHED-043
 Description:: In `src/lib/models/schedule-model.ts`: (1) Add `formatDateLocale(dateStr: string): string` that uses `new Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(date)`. (2) Wrap in try/catch, falling back to `formatDateSwedish(dateStr)` on failure. (3) Export the function. (4) Keep `formatDateSwedish()` unchanged and exported.
 
-* [ ] TASK-014: Update UI for daily end time and locale dates [sequential]
+* [x] TASK-014: Update UI for daily end time and locale dates [sequential]
 +
 Components:: ScheduleConfigPanel.svelte, ScheduleView.svelte
 Stories:: US-009, US-010
 Specs:: SCHED-036, SCHED-038, SCHED-039, SCHED-041
 Description:: In `ScheduleConfigPanel.svelte`: (1) Add a time input for daily end time (`Sluttid:`) in the "Daglig tidsinställning" section next to the start time. (2) Add `handleDailyEndTimeChange` handler. (3) Display validation error for `dailyEndTime`. In `ScheduleView.svelte`: (1) Import `formatDateLocale`. (2) Use `formatDateLocale()` instead of `formatDateSwedish()` for date group headers.
 
-* [ ] TASK-015: Update tests for new functionality [parallel]
+* [x] TASK-015: Update tests for new functionality [parallel]
 +
 Components:: schedule-model.test.ts
 Stories:: US-009, US-010
 Specs:: SCHED-037, SCHED-038, SCHED-040, SCHED-041, SCHED-042, SCHED-043
 Description:: In `src/__tests__/schedule-model.test.ts`: (1) Add tests for `dailyEndTime` in `createDefaultScheduleConfig()` (defaults to 1080). (2) Add validation tests for `dailyEndTime <= dailyStartTime`. (3) Add tests for `getMaxAppointmentsPerDay()` using `config.dailyEndTime`. (4) Add tests for `calculateSchedule()` respecting `config.dailyEndTime`. (5) Add tests for `formatDateLocale()` returning a formatted string. (6) Add test for `formatDateLocale()` fallback to Swedish on Intl failure. (7) Confirm `formatDateSwedish()` still works unchanged. (8) Update any existing tests that create `ScheduleConfig` objects to include `dailyEndTime`.
+
+== Phase 6: ISO Date and 24-Hour Time Display
+
+Switch schedule display from locale-long date labels to ISO date and 24-hour time presentation.
+
+* [ ] TASK-016: Update schedule view date headers to ISO format [sequential]
++
+Components:: src/lib/components/ScheduleView.svelte
+Stories:: US-011
+Specs:: SCHED-044, SCHED-047
+Description:: Replace locale-formatted date group headers with raw YYYY-MM-DD values from grouped appointment date keys.
+
+* [ ] TASK-017: Ensure manual override editing and row display use ISO/24h consistently [parallel]
++
+Components:: src/lib/components/ScheduleAppointmentRow.svelte, src/lib/components/ScheduleConfigPanel.svelte
+Stories:: US-011
+Specs:: SCHED-045, SCHED-046
+Description:: Keep date/time edit controls and rendered row values aligned with YYYY-MM-DD and HH:MM by using native date/time input values and `formatTime()` output for all displayed times.
+
+* [ ] TASK-018: Add/adjust tests for ISO schedule display behavior [sequential]
++
+Components:: src/__tests__/schedule-model.test.ts, src/__tests__/schedule-view*.test.ts
+Stories:: US-011
+Specs:: SCHED-044, SCHED-045, SCHED-046, SCHED-047
+Description:: Add or update tests to verify grouped date headings and appointment display use YYYY-MM-DD and HH:MM, and that manual override editing preserves ISO/24-hour values.
 
 == Traceability
 
@@ -182,4 +207,8 @@ Description:: In `src/__tests__/schedule-model.test.ts`: (1) Add tests for `dail
 | US-010: Browser-Locale Date Formatting
 | SCHED-041, SCHED-042, SCHED-043
 | TASK-013, TASK-014, TASK-015
+
+| US-011: ISO Date and 24-Hour Time Display
+| SCHED-044, SCHED-045, SCHED-046, SCHED-047
+| TASK-016, TASK-017, TASK-018
 |===

@@ -17,7 +17,7 @@ export function getDefaultPlaceholders(): PlaceholderMapping[] {
   return [
     { name: 'lagenhet', field: 'apartmentId' },
     { name: 'vaning', field: 'floor' },
-    { name: 'datum', field: 'dateSwedish' },
+    { name: 'datum', field: 'date' },
     { name: 'tid', field: 'time' },
   ];
 }

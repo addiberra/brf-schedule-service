@@ -10,6 +10,10 @@ const MAX_FLOORS = 30;
 const MIN_APARTMENTS = 1;
 const MAX_APARTMENTS = 20;
 const DEFAULT_APARTMENTS_PER_FLOOR = 2;
+const DEFAULT_APARTMENT_NUMBER_START = 1001;
+const MIN_APARTMENT_NUMBER_START = 1001;
+const MAX_APARTMENT_NUMBER_START = 1901;
+const APARTMENT_NUMBER_START_STEP = 100;
 
 /**
  * Creates a default building configuration.
@@ -19,6 +23,7 @@ export function createDefaultConfig(): BuildingConfig {
   return {
     floorCount: 1,
     floors: [{ floorNumber: 1, apartmentCount: DEFAULT_APARTMENTS_PER_FLOOR }],
+    apartmentNumberStart: DEFAULT_APARTMENT_NUMBER_START,
   };
 }
 
@@ -58,14 +63,41 @@ export function validateApartmentCount(value: number): ValidationResult {
 }
 
 /**
+ * Validates apartment numbering start value (1001-1901, step 100).
+ */
+export function validateApartmentNumberStart(value: number): ValidationResult {
+  if (!Number.isInteger(value)) {
+    return {
+      valid: false,
+      error: 'Startnummer måste vara ett heltal.',
+    };
+  }
+
+  if (
+    value < MIN_APARTMENT_NUMBER_START ||
+    value > MAX_APARTMENT_NUMBER_START ||
+    (value - MIN_APARTMENT_NUMBER_START) % APARTMENT_NUMBER_START_STEP !== 0
+  ) {
+    return {
+      valid: false,
+      error: `Startnummer måste vara mellan ${MIN_APARTMENT_NUMBER_START} och ${MAX_APARTMENT_NUMBER_START} i steg om ${APARTMENT_NUMBER_START_STEP}.`,
+    };
+  }
+
+  return { valid: true };
+}
+
+/**
  * Generates an apartment identifier from floor number and position.
  * Format: floor * 1000 + position (e.g., floor 1, position 2 → "1002").
  */
 export function generateApartmentId(
   floor: number,
-  position: number
+  position: number,
+  apartmentNumberStart: number = DEFAULT_APARTMENT_NUMBER_START
 ): string {
-  return String(floor * 1000 + position);
+  const numberingOffset = apartmentNumberStart - DEFAULT_APARTMENT_NUMBER_START;
+  return String(floor * 1000 + numberingOffset + position);
 }
 
 /**
@@ -76,7 +108,11 @@ export function generateAllApartments(config: BuildingConfig): Apartment[] {
   for (const floor of config.floors) {
     for (let pos = 1; pos <= floor.apartmentCount; pos++) {
       apartments.push({
-        id: generateApartmentId(floor.floorNumber, pos),
+        id: generateApartmentId(
+          floor.floorNumber,
+          pos,
+          config.apartmentNumberStart ?? DEFAULT_APARTMENT_NUMBER_START
+        ),
         floor: floor.floorNumber,
         position: pos,
       });
@@ -111,7 +147,12 @@ export function adjustFloors(
       });
     }
   }
-  return { floorCount: newFloorCount, floors };
+  return {
+    floorCount: newFloorCount,
+    floors,
+    apartmentNumberStart:
+      config.apartmentNumberStart ?? DEFAULT_APARTMENT_NUMBER_START,
+  };
 }
 
 /**

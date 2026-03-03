@@ -1,5 +1,5 @@
 // Feature: building-configuration
-// Spec version: 1.0.0
+// Spec version: 1.2.0
 // Generated from: spec.adoc
 //
 // Spec coverage:
@@ -12,6 +12,9 @@
 //   BCFG-013: Identifier recalculation on config change
 //   BCFG-010: Total apartment count display
 //   BCFG-021: Default configuration when no saved data
+//   BCFG-043: Numbering start valid set
+//   BCFG-045: Recalculate IDs on numbering start change
+//   BCFG-046: Preserve unique IDs after recalculation
 
 import { describe, it, expect } from 'vitest';
 import {
@@ -395,5 +398,41 @@ describe('setUniformApartmentCount', () => {
     for (const floor of tooLow.floors) {
       expect(validateApartmentCount(floor.apartmentCount).valid).toBe(false);
     }
+  });
+});
+
+describe('BCFG-043 to BCFG-046: configurable apartment numbering start', () => {
+  it('should generate first apartment id from configured numbering start', () => {
+    const config = {
+      floorCount: 2,
+      floors: [
+        { floorNumber: 1, apartmentCount: 2 },
+        { floorNumber: 2, apartmentCount: 2 },
+      ],
+      apartmentNumberStart: 1101,
+    } as unknown as BuildingConfig;
+
+    const apartments = generateAllApartments(config);
+
+    expect(apartments[0].id).toBe('1101');
+    expect(apartments[1].id).toBe('1102');
+    expect(apartments[2].id).toBe('2101');
+  });
+
+  it('should keep apartment identifiers unique after numbering-start recalculation', () => {
+    const config = {
+      floorCount: 3,
+      floors: [
+        { floorNumber: 1, apartmentCount: 3 },
+        { floorNumber: 2, apartmentCount: 3 },
+        { floorNumber: 3, apartmentCount: 3 },
+      ],
+      apartmentNumberStart: 1201,
+    } as unknown as BuildingConfig;
+
+    const apartments = generateAllApartments(config);
+    const ids = apartments.map((a) => a.id);
+
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });
