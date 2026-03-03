@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Checkbox, Dialog, Label } from 'bits-ui';
+  import { AlertDialog, Button, Label, Switch } from 'bits-ui';
   import type { BuildingConfig } from '../models/building.js';
   import type { Apartment } from '../models/building.js';
   import {
@@ -189,15 +189,15 @@
         </div>
       </div>
 
-      <div class="flex items-center gap-2 rounded-lg border border-[var(--color-line-soft)] bg-white px-3 py-2">
-        <Checkbox.Root
+      <div class="flex items-center gap-3 rounded-lg border border-[var(--color-line-soft)] bg-white px-3 py-2">
+        <Switch.Root
           id="uniform-mode"
           checked={uniformMode}
           onCheckedChange={toggleUniformMode}
-          class="flex h-5 w-5 items-center justify-center rounded border border-[var(--color-line-soft)] bg-[var(--color-surface-1)] text-[var(--color-warm-700)]"
+          class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent bg-stone-300 transition-colors data-[state=checked]:bg-[var(--color-warm-600)]"
         >
-          {uniformMode ? '✓' : ''}
-        </Checkbox.Root>
+          <Switch.Thumb class="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-sm transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0" />
+        </Switch.Root>
         <Label.Root for="uniform-mode" class="text-sm font-medium text-stone-800">Samma antal lägenheter på alla våningar</Label.Root>
       </div>
 
@@ -248,28 +248,28 @@
         Återställ konfiguration
       </Button.Root>
 
-      <Dialog.Root bind:open={resetDialogOpen}>
-        <Dialog.Portal>
-          <Dialog.Overlay class="fixed inset-0 z-40 bg-black/50" />
-          <Dialog.Content class="fixed left-1/2 top-1/2 z-50 w-[min(92vw,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-[var(--color-line-soft)] bg-[var(--color-surface-0)] p-4 shadow-xl">
-            <Dialog.Title class="text-lg font-semibold text-stone-900">Återställ byggkonfiguration</Dialog.Title>
-            <Dialog.Description class="mt-2 text-sm text-[var(--color-text-muted)]">
+      <AlertDialog.Root bind:open={resetDialogOpen}>
+        <AlertDialog.Portal>
+          <AlertDialog.Overlay class="fixed inset-0 z-40 bg-black/50" />
+          <AlertDialog.Content class="fixed left-1/2 top-1/2 z-50 w-[min(92vw,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-[var(--color-line-soft)] bg-[var(--color-surface-0)] p-4 shadow-xl">
+            <AlertDialog.Title class="text-lg font-semibold text-stone-900">Återställ byggkonfiguration</AlertDialog.Title>
+            <AlertDialog.Description class="mt-2 text-sm text-[var(--color-text-muted)]">
               Är du säker på att du vill återställa byggkonfigurationen?
-            </Dialog.Description>
+            </AlertDialog.Description>
             <div class="mt-4 flex justify-end gap-2">
-              <Dialog.Close class="rounded-md border border-[var(--color-line-soft)] bg-white px-3 py-2 text-sm text-stone-700 hover:bg-stone-50">
+              <AlertDialog.Cancel class="rounded-md border border-[var(--color-line-soft)] bg-white px-3 py-2 text-sm text-stone-700 hover:bg-stone-50">
                 Avbryt
-              </Dialog.Close>
-              <Button.Root
+              </AlertDialog.Cancel>
+              <AlertDialog.Action
                 onclick={confirmReset}
                 class="cursor-pointer rounded-md bg-red-700 px-3 py-2 text-sm font-medium text-white hover:bg-red-800"
               >
                 Bekräfta
-              </Button.Root>
+              </AlertDialog.Action>
             </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+          </AlertDialog.Content>
+        </AlertDialog.Portal>
+      </AlertDialog.Root>
     </div>
 
     <div class="rounded-2xl border border-[var(--color-line-soft)] bg-[var(--color-surface-0)]/90 p-4 shadow-sm">

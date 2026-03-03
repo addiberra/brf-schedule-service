@@ -1,6 +1,19 @@
 = State Transition Log
 :last-updated: 2026-03-03
 
+== TRANSITION-005
+:date: 2026-03-03
+:intent: Fully utilize Bits UI components where semantically appropriate
+:type: Quality improvement (refactoring)
+:risk: Medium
+:features: building-configuration (updated), inspection-scheduling (updated), message-templates (updated), print-output (updated)
+:desired-state: All interactive UI components use the most semantically appropriate Bits UI primitives: AlertDialog for destructive confirmations, Switch for immediate-effect toggles, Tooltip for icon-only and ambiguous buttons, native TimeField for time inputs, Collapsible for expand/collapse sections.
+:prior-state: Dialog used for confirmations (should be AlertDialog), Checkbox used for toggles (should be Switch), no Tooltips on 13 buttons, custom Select-based time field (should be native TimeField), no Collapsible for lunch section. 245 tests passing, build clean.
+:capabilities-invoked: needs-implementation (refactoring mode)
+:constraints-checked: Dependencies (pass -- no new deps, all Bits UI components already in bits-ui@2.16.2), UI (pass -- Swedish text retained), Quality (pass -- 245 tests passing, build clean)
+:result: Achieved
+:artifacts-modified: src/lib/components/MessageTemplatePanel.svelte (Dialog→AlertDialog), src/lib/components/BuildingConfigPanel.svelte (Dialog→AlertDialog, Checkbox→Switch), src/lib/components/ScheduleConfigPanel.svelte (Checkbox→Switch, added Tooltip, added Collapsible), src/lib/components/BitsIsoTimeField.svelte (Select→TimeField rewrite), src/lib/components/BitsIsoDateField.svelte (added Tooltip), src/lib/components/BitsIsoDateRangeField.svelte (added Tooltip), src/lib/components/TemplateList.svelte (added Tooltip), src/lib/components/TemplateEditor.svelte (added Tooltip), src/lib/components/ScheduleAppointmentRow.svelte (added Tooltip), src/app.css (added Collapsible animations and warm color tokens), src/__tests__/building-ui.contract.test.ts (updated for AlertDialog and Switch)
+
 == TRANSITION-004
 :date: 2026-03-03
 :intent: Migrate UI to Tailwind CSS v4 and Bits UI with warm professional full redesign and tabbed navigation

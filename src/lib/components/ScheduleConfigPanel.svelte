@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Checkbox, Label } from 'bits-ui';
+  import { Button, Collapsible, Label, Switch, Tooltip } from 'bits-ui';
   import type { Apartment } from '../models/building.js';
   import type { ScheduleConfig, ManualOverride } from '../models/schedule.js';
   import {
@@ -145,6 +145,7 @@ import BitsIsoTimeField from './BitsIsoTimeField.svelte';
   }
 </script>
 
+<Tooltip.Provider delayDuration={300}>
 <section class="space-y-4">
   <h2 class="text-2xl font-semibold tracking-tight text-[var(--color-text-strong)]">Besiktningsschema</h2>
 
@@ -183,17 +184,17 @@ import BitsIsoTimeField from './BitsIsoTimeField.svelte';
         </div>
       </div>
 
-      <div class="space-y-3">
+      <Collapsible.Root open={scheduleConfig.lunchBreakEnabled} class="space-y-3">
         <h3 class="text-sm font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">Lunchrast</h3>
-        <div class="flex items-center gap-2 rounded-lg border border-[var(--color-line-soft)] bg-white px-3 py-2">
-          <Checkbox.Root id="lunch-toggle" checked={scheduleConfig.lunchBreakEnabled} onCheckedChange={handleLunchToggle} class="flex h-5 w-5 items-center justify-center rounded border border-[var(--color-line-soft)] bg-[var(--color-surface-1)] text-[var(--color-warm-700)]">
-            {scheduleConfig.lunchBreakEnabled ? '✓' : ''}
-          </Checkbox.Root>
+        <div class="flex items-center gap-3 rounded-lg border border-[var(--color-line-soft)] bg-white px-3 py-2">
+          <Switch.Root id="lunch-toggle" checked={scheduleConfig.lunchBreakEnabled} onCheckedChange={handleLunchToggle} class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent bg-stone-300 transition-colors data-[state=checked]:bg-[var(--color-warm-600)]">
+            <Switch.Thumb class="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-sm transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0" />
+          </Switch.Root>
           <Label.Root for="lunch-toggle" class="text-sm font-medium text-stone-800">Aktivera lunchrast</Label.Root>
         </div>
 
-        {#if scheduleConfig.lunchBreakEnabled}
-          <div class="grid gap-3 sm:grid-cols-2">
+        <Collapsible.Content class="overflow-hidden data-[state=closed]:animate-collapse data-[state=open]:animate-expand">
+          <div class="grid gap-3 pt-1 sm:grid-cols-2">
             <div class="space-y-1">
               <Label.Root for="lunch-start" class="text-sm font-medium text-stone-800">Lunchrast start:</Label.Root>
               <BitsIsoTimeField id="lunch-start" value={formatTime(scheduleConfig.lunchStartTime)} ariaLabel="Lunchrast start" onchange={handleLunchStartChange} />
@@ -204,15 +205,15 @@ import BitsIsoTimeField from './BitsIsoTimeField.svelte';
               {#if validationErrors.has('lunchEndTime')}<p class="text-sm text-red-700" role="alert">{validationErrors.get('lunchEndTime')}</p>{/if}
             </div>
           </div>
-        {/if}
-      </div>
+        </Collapsible.Content>
+      </Collapsible.Root>
 
       <div class="space-y-3">
         <h3 class="text-sm font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">Undantag</h3>
-        <div class="flex items-center gap-2 rounded-lg border border-[var(--color-line-soft)] bg-white px-3 py-2">
-          <Checkbox.Root id="exclude-weekends" checked={scheduleConfig.excludeWeekends} onCheckedChange={handleExcludeWeekendsToggle} class="flex h-5 w-5 items-center justify-center rounded border border-[var(--color-line-soft)] bg-[var(--color-surface-1)] text-[var(--color-warm-700)]">
-            {scheduleConfig.excludeWeekends ? '✓' : ''}
-          </Checkbox.Root>
+        <div class="flex items-center gap-3 rounded-lg border border-[var(--color-line-soft)] bg-white px-3 py-2">
+          <Switch.Root id="exclude-weekends" checked={scheduleConfig.excludeWeekends} onCheckedChange={handleExcludeWeekendsToggle} class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent bg-stone-300 transition-colors data-[state=checked]:bg-[var(--color-warm-600)]">
+            <Switch.Thumb class="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-sm transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0" />
+          </Switch.Root>
           <Label.Root for="exclude-weekends" class="text-sm font-medium text-stone-800">Exkludera helger (lördag och söndag)</Label.Root>
         </div>
 
@@ -220,14 +221,20 @@ import BitsIsoTimeField from './BitsIsoTimeField.svelte';
           <Label.Root for="exclude-date-input" class="text-sm font-medium text-stone-800">Exkludera specifika datum:</Label.Root>
           <div class="mt-2 flex flex-wrap items-center gap-2">
             <BitsIsoDateField id="exclude-date-input" value={newExcludedDate} ariaLabel="Exkludera specifikt datum" onchange={(value) => (newExcludedDate = value)} class="w-auto" />
-            <Button.Root class="rounded-md bg-[var(--color-warm-600)] px-3 py-2 text-sm text-white hover:bg-[var(--color-warm-700)]" onclick={addExcludedDate}>Lägg till</Button.Root>
+            <Tooltip.Root>
+              <Tooltip.Trigger class="rounded-md bg-[var(--color-warm-600)] px-3 py-2 text-sm text-white hover:bg-[var(--color-warm-700)]" onclick={addExcludedDate}>Lägg till</Tooltip.Trigger>
+              <Tooltip.Content class="z-50 rounded bg-stone-800 px-2 py-1 text-xs text-white shadow">Lägg till undantaget datum</Tooltip.Content>
+            </Tooltip.Root>
           </div>
           {#if scheduleConfig.excludedDates.length > 0}
             <ul class="mt-2 space-y-1 text-sm">
               {#each scheduleConfig.excludedDates as date}
                 <li class="flex items-center justify-between rounded border border-stone-200 px-2 py-1">
                   <span>{date}</span>
-                  <Button.Root class="rounded bg-red-700 px-2 py-1 text-xs text-white hover:bg-red-800" onclick={() => removeExcludedDate(date)}>Ta bort</Button.Root>
+                  <Tooltip.Root>
+                    <Tooltip.Trigger class="rounded bg-red-700 px-2 py-1 text-xs text-white hover:bg-red-800" onclick={() => removeExcludedDate(date)}>Ta bort</Tooltip.Trigger>
+                    <Tooltip.Content class="z-50 rounded bg-stone-800 px-2 py-1 text-xs text-white shadow">Ta bort undantaget datum</Tooltip.Content>
+                  </Tooltip.Root>
                 </li>
               {/each}
             </ul>
@@ -245,3 +252,4 @@ import BitsIsoTimeField from './BitsIsoTimeField.svelte';
     <ScheduleView result={scheduleResult} {overrides} onoverride={handleOverride} onrevert={handleRevert} />
   {/if}
 </section>
+</Tooltip.Provider>

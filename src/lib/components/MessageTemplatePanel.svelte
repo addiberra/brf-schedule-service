@@ -1,6 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import { Button, Dialog, Tabs } from 'bits-ui';
+  import { AlertDialog, Button, Tabs } from 'bits-ui';
   import type { Apartment } from '../models/building.js';
   import type { ScheduleResult } from '../models/schedule.js';
   import type { MessageTemplate } from '../models/template.js';
@@ -119,23 +119,23 @@
     </div>
   </div>
 
-  <Dialog.Root bind:open={deleteDialogOpen}>
-    <Dialog.Portal>
-      <Dialog.Overlay class="fixed inset-0 z-40 bg-black/50" />
-      <Dialog.Content class="fixed left-1/2 top-1/2 z-50 w-[min(92vw,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-[var(--color-line-soft)] bg-[var(--color-surface-0)] p-4 shadow-xl">
-        <Dialog.Title class="text-lg font-semibold text-stone-900">Ta bort mall</Dialog.Title>
-        <Dialog.Description class="mt-2 text-sm text-[var(--color-text-muted)]">
+  <AlertDialog.Root bind:open={deleteDialogOpen}>
+    <AlertDialog.Portal>
+      <AlertDialog.Overlay class="fixed inset-0 z-40 bg-black/50" />
+      <AlertDialog.Content class="fixed left-1/2 top-1/2 z-50 w-[min(92vw,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-[var(--color-line-soft)] bg-[var(--color-surface-0)] p-4 shadow-xl">
+        <AlertDialog.Title class="text-lg font-semibold text-stone-900">Ta bort mall</AlertDialog.Title>
+        <AlertDialog.Description class="mt-2 text-sm text-[var(--color-text-muted)]">
           Vill du ta bort den valda mallen? Den här åtgärden kan inte ångras.
-        </Dialog.Description>
+        </AlertDialog.Description>
         <div class="mt-4 flex justify-end gap-2">
-          <Dialog.Close class="rounded-md border border-[var(--color-line-soft)] bg-white px-3 py-2 text-sm text-stone-700 hover:bg-stone-50" onclick={() => (pendingDeleteId = null)}>
+          <AlertDialog.Cancel class="rounded-md border border-[var(--color-line-soft)] bg-white px-3 py-2 text-sm text-stone-700 hover:bg-stone-50" onclick={() => (pendingDeleteId = null)}>
             Avbryt
-          </Dialog.Close>
-          <Button.Root class="rounded-md bg-red-700 px-3 py-2 text-sm text-white hover:bg-red-800" onclick={confirmDeleteTemplate}>
+          </AlertDialog.Cancel>
+          <AlertDialog.Action class="rounded-md bg-red-700 px-3 py-2 text-sm text-white hover:bg-red-800" onclick={confirmDeleteTemplate}>
             Ta bort
-          </Button.Root>
+          </AlertDialog.Action>
         </div>
-      </Dialog.Content>
-    </Dialog.Portal>
-  </Dialog.Root>
+      </AlertDialog.Content>
+    </AlertDialog.Portal>
+  </AlertDialog.Root>
 </section>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Label, Select } from 'bits-ui';
+  import { Button, Label, Select, Tooltip } from 'bits-ui';
   import type { MessageTemplate, PlaceholderMapping, DataField } from '../models/template.js';
   import { getAvailableDataFields } from '../models/template-model.js';
 
@@ -63,6 +63,7 @@
   }
 </script>
 
+<Tooltip.Provider delayDuration={300}>
 <div class="space-y-4 rounded-xl border border-[var(--color-line-soft)] bg-white p-4 shadow-sm" data-testid="template-editor">
   <div class="space-y-1">
     <Label.Root for="template-name" class="text-sm font-medium text-stone-800">Mallnamn:</Label.Root>
@@ -118,8 +119,18 @@
                     </Select.Portal>
                   </Select.Root>
                 </td>
-                <td class="px-2 py-2"><Button.Root class="rounded bg-violet-700 px-2 py-1 text-xs text-white hover:bg-violet-800" onclick={() => insertPlaceholder(placeholder.name)} title="Infoga i meddelande">Infoga</Button.Root></td>
-                <td class="px-2 py-2"><Button.Root class="rounded bg-red-700 px-2 py-1 text-xs text-white hover:bg-red-800" onclick={() => removePlaceholder(placeholder.name)}>Ta bort</Button.Root></td>
+                <td class="px-2 py-2">
+                  <Tooltip.Root>
+                    <Tooltip.Trigger class="rounded bg-violet-700 px-2 py-1 text-xs text-white hover:bg-violet-800" onclick={() => insertPlaceholder(placeholder.name)}>Infoga</Tooltip.Trigger>
+                    <Tooltip.Content class="z-50 rounded bg-stone-800 px-2 py-1 text-xs text-white shadow">Infoga i meddelande</Tooltip.Content>
+                  </Tooltip.Root>
+                </td>
+                <td class="px-2 py-2">
+                  <Tooltip.Root>
+                    <Tooltip.Trigger class="rounded bg-red-700 px-2 py-1 text-xs text-white hover:bg-red-800" onclick={() => removePlaceholder(placeholder.name)}>Ta bort</Tooltip.Trigger>
+                    <Tooltip.Content class="z-50 rounded bg-stone-800 px-2 py-1 text-xs text-white shadow">Ta bort platshållare</Tooltip.Content>
+                  </Tooltip.Root>
+                </td>
               </tr>
             {/each}
           </tbody>
@@ -156,7 +167,10 @@
           </Select.Content>
         </Select.Portal>
       </Select.Root>
-      <Button.Root class="rounded-md bg-[var(--color-warm-600)] px-3 py-1.5 text-sm text-white hover:bg-[var(--color-warm-700)]" onclick={addPlaceholder}>Lägg till</Button.Root>
+      <Tooltip.Root>
+        <Tooltip.Trigger class="rounded-md bg-[var(--color-warm-600)] px-3 py-1.5 text-sm text-white hover:bg-[var(--color-warm-700)]" onclick={addPlaceholder}>Lägg till</Tooltip.Trigger>
+        <Tooltip.Content class="z-50 rounded bg-stone-800 px-2 py-1 text-xs text-white shadow">Lägg till platshållare</Tooltip.Content>
+      </Tooltip.Root>
     </div>
   </div>
 
@@ -164,3 +178,4 @@
     <Button.Root class="rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800" data-testid="template-save-btn" onclick={handleSave}>Spara mall</Button.Root>
   </div>
 </div>
+</Tooltip.Provider>

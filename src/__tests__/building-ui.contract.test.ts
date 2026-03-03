@@ -13,16 +13,20 @@ function readPanel(): string {
 }
 
 describe('Building UI migration contracts', () => {
-  it('replaces reset confirm with Bits dialog', () => {
+  it('uses AlertDialog for destructive reset confirmation', () => {
     const source = readPanel();
-    expect(source).toContain('Dialog.Root');
+    expect(source).toContain('AlertDialog.Root');
     expect(source).toContain('resetDialogOpen');
     expect(source).not.toContain('confirm(');
+    // Ensure we're using AlertDialog, not regular Dialog (check import line)
+    expect(source).toMatch(/import\s*\{[^}]*AlertDialog[^}]*\}\s*from\s*['"]bits-ui['"]/);
+    expect(source).not.toMatch(/import\s*\{[^}]*\bDialog\b[^}]*\}\s*from\s*['"]bits-ui['"]/);
   });
 
-  it('uses Bits checkbox for uniform mode toggle', () => {
+  it('uses Switch for uniform mode toggle', () => {
     const source = readPanel();
-    expect(source).toContain('Checkbox.Root');
+    expect(source).toContain('Switch.Root');
     expect(source).toContain('uniformMode');
+    expect(source).not.toMatch(/import\s*\{[^}]*\bCheckbox\b[^}]*\}\s*from\s*['"]bits-ui['"]/);
   });
 });

@@ -68,9 +68,9 @@
     <DatePicker.Calendar>
       {#snippet children({ months, weekdays })}
         <DatePicker.Header class="mb-2 flex items-center justify-between">
-          <DatePicker.PrevButton class="rounded px-2 py-1 text-sm hover:bg-[var(--color-surface-1)]" aria-label="Föregående månad">&lt;</DatePicker.PrevButton>
+          <DatePicker.PrevButton class="rounded px-2 py-1 text-sm hover:bg-[var(--color-surface-1)]" aria-label="Föregående månad" title="Föregående månad">&lt;</DatePicker.PrevButton>
           <DatePicker.Heading class="text-sm font-semibold text-stone-800" />
-          <DatePicker.NextButton class="rounded px-2 py-1 text-sm hover:bg-[var(--color-surface-1)]" aria-label="Nästa månad">&gt;</DatePicker.NextButton>
+          <DatePicker.NextButton class="rounded px-2 py-1 text-sm hover:bg-[var(--color-surface-1)]" aria-label="Nästa månad" title="Nästa månad">&gt;</DatePicker.NextButton>
         </DatePicker.Header>
 
         {#each months as month (month.value)}

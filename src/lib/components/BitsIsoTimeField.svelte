@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Select } from 'bits-ui';
+  import { TimeField } from 'bits-ui';
+  import { Time } from '@internationalized/date';
 
   interface Props {
     id: string;
@@ -12,70 +13,61 @@
 
   let { id, value, ariaLabel, invalid = false, onchange, class: className = '' }: Props = $props();
 
-  const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
-  const minutes = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
-
-  // Use $derived to make these reactive to value prop changes
-  const valueHour = $derived(value.split(':')[0] ?? '');
-  const valueMinute = $derived(value.split(':')[1] ?? '');
-
-  function handleHourChange(nextHour: string): void {
-    if (!nextHour || !valueMinute) return;
-    const nextValue = `${nextHour}:${valueMinute}`;
-    if (nextValue !== value) {
-      onchange?.(nextValue);
-    }
+  // Convert ISO "HH:MM" string to Time object
+  function toTimeValue(isoTime: string): Time | undefined {
+    const [h, m] = isoTime.split(':').map(Number);
+    if (isNaN(h) || isNaN(m)) return undefined;
+    return new Time(h, m);
   }
 
-  function handleMinuteChange(nextMinute: string): void {
-    if (!valueHour || !nextMinute) return;
-    const nextValue = `${valueHour}:${nextMinute}`;
-    if (nextValue !== value) {
-      onchange?.(nextValue);
+  // Convert Time object to ISO "HH:MM" string
+  function fromTimeValue(t: Time | undefined): string {
+    if (!t) return '';
+    return `${String(t.hour).padStart(2, '0')}:${String(t.minute).padStart(2, '0')}`;
+  }
+
+  let timeValue = $derived(toTimeValue(value));
+
+  function handleValueChange(newValue: Time | undefined) {
+    const isoValue = fromTimeValue(newValue);
+    if (isoValue && isoValue !== value) {
+      onchange?.(isoValue);
     }
   }
 </script>
 
 <div
-  id={id}
+  {id}
   role="group"
   aria-label={ariaLabel}
   data-iso-value={value}
-  class={`flex items-center gap-2 rounded-md border bg-white px-2 py-1.5 text-sm shadow-xs ${invalid ? 'border-red-500' : 'border-[var(--color-line-soft)]'} ${className}`}
+  class={`inline-flex ${className}`}
 >
-  <Select.Root type="single" value={valueHour} onValueChange={handleHourChange} items={hours.map((h) => ({ value: h, label: h }))}>
-    <Select.Trigger id={`${id}-hour`} class="min-w-14 rounded border border-[var(--color-line-soft)] bg-white px-2 py-1 text-center tabular-nums text-sm">
-      {valueHour || '--'}
-    </Select.Trigger>
-    <Select.Portal>
-      <Select.Content class="z-50 mt-1 max-h-64 w-20 overflow-auto rounded-md border border-[var(--color-line-soft)] bg-white p-1 shadow-lg">
-        <Select.Viewport>
-          {#each hours as hour}
-            <Select.Item value={hour} label={hour} class="cursor-pointer rounded px-2 py-1 text-center text-sm outline-none data-[highlighted]:bg-[var(--color-surface-1)]">
-              {hour}
-            </Select.Item>
-          {/each}
-        </Select.Viewport>
-      </Select.Content>
-    </Select.Portal>
-  </Select.Root>
-
-  <span class="text-stone-500">:</span>
-
-  <Select.Root type="single" value={valueMinute} onValueChange={handleMinuteChange} items={minutes.map((m) => ({ value: m, label: m }))}>
-    <Select.Trigger id={`${id}-minute`} class="min-w-14 rounded border border-[var(--color-line-soft)] bg-white px-2 py-1 text-center tabular-nums text-sm">
-      {valueMinute || '--'}
-    </Select.Trigger>
-    <Select.Portal>
-      <Select.Content class="z-50 mt-1 max-h-64 w-20 overflow-auto rounded-md border border-[var(--color-line-soft)] bg-white p-1 shadow-lg">
-        <Select.Viewport>
-          {#each minutes as minute}
-            <Select.Item value={minute} label={minute} class="cursor-pointer rounded px-2 py-1 text-center text-sm outline-none data-[highlighted]:bg-[var(--color-surface-1)]">
-              {minute}
-            </Select.Item>
-          {/each}
-        </Select.Viewport>
-      </Select.Content>
-    </Select.Portal>
-  </Select.Root>
+  <TimeField.Root
+    value={timeValue}
+    onValueChange={handleValueChange}
+    hourCycle={24}
+    locale="sv-SE"
+  >
+    <TimeField.Input
+      class={`flex items-center rounded-md border bg-white px-2 py-1.5 text-sm shadow-xs ${invalid ? 'border-red-500' : 'border-[var(--color-line-soft)]'}`}
+    >
+      {#snippet children({ segments })}
+        {#each segments as { part, value: segmentValue }, i (part + i)}
+          {#if part === 'literal'}
+            <TimeField.Segment {part} class="px-0.5 text-stone-500">
+              {segmentValue}
+            </TimeField.Segment>
+          {:else}
+            <TimeField.Segment
+              {part}
+              class="rounded px-1 py-0.5 tabular-nums outline-none hover:bg-stone-100 focus:bg-[var(--color-warm-100)] focus:text-[var(--color-warm-900)] aria-[valuetext=Empty]:text-stone-400"
+            >
+              {segmentValue}
+            </TimeField.Segment>
+          {/if}
+        {/each}
+      {/snippet}
+    </TimeField.Input>
+  </TimeField.Root>
 </div>

@@ -10,6 +10,33 @@
   --color-warm-500: #a96f3f;
   --color-warm-600: #8b552f;
   --color-warm-700: #6e4124;
+  --color-warm-100: #f5e6d8;
+  --color-warm-900: #4a2d17;
+
+  --animate-expand: expand 200ms ease-out;
+  --animate-collapse: collapse 200ms ease-out;
+
+  @keyframes expand {
+    from {
+      height: 0;
+      opacity: 0;
+    }
+    to {
+      height: var(--bits-collapsible-content-height);
+      opacity: 1;
+    }
+  }
+
+  @keyframes collapse {
+    from {
+      height: var(--bits-collapsible-content-height);
+      opacity: 1;
+    }
+    to {
+      height: 0;
+      opacity: 0;
+    }
+  }
 }
 
 :root {
