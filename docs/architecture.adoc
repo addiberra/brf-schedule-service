@@ -1,5 +1,5 @@
 = System Architecture
-:version: 1.1.0
+:version: 1.2.0
 :last-updated: 2026-03-03
 :toc:
 
@@ -9,7 +9,7 @@
 |===
 | Feature | Design Version
 
-| building-configuration | 1.2.0
+| building-configuration | 2.1.0
 | inspection-scheduling | 1.2.0
 | message-templates | 1.2.0
 | print-output | 1.1.0
@@ -130,7 +130,7 @@ Pure TypeScript functions with no side effects. Each feature has a type definiti
 | Module | Responsibility
 
 | `building.ts` / `building-model.ts`
-| Building configuration types. Validation (floors 1-30, apartments 1-20), configurable apartment numbering start (1001-1901 step 100), apartment ID generation from numbering start + floor + position, floor adjustment, default config.
+| Building configuration types. Validation (floors 1-30, apartments 1-20), configurable apartment numbering start (1000-9999), flexible digit position assignment for floor and apartment numbers within the 4-digit ID, apartment ID generation via digit substitution algorithm, floor adjustment, default config.
 
 | `schedule.ts` / `schedule-model.ts`
 | Schedule types. Date arithmetic, ISO date handling (`YYYY-MM-DD`), 24-hour time formatting (`HH:MM` via minutes since midnight), weekend/exclusion filtering, lunch break handling, scheduling algorithm (sequential floor-by-floor assignment with manual overrides), validation.
