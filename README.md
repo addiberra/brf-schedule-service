@@ -39,6 +39,8 @@ Open `http://localhost:5173` in your browser.
 - **Svelte 5** (`^5.0.0`) -- runes API, compiles to vanilla JS
 - **Vite 6** (`^6.0.0`) -- build tool and dev server
 - **TypeScript** (`^5.5.0`) -- strict mode
+- **Tailwind CSS 4** (`^4.0.0`) -- utility-first CSS framework
+- **Bits UI** (`^2.0.0`) -- headless UI primitives (Dialog, AlertDialog, Switch, Tooltip, etc.)
 - **Vitest** (`^4.0.0`) -- unit tests with native Vite integration
 - **Playwright** (`^1.58.2`) -- end-to-end tests across Chromium, Firefox, and WebKit
 - Zero runtime dependencies -- all packages are devDependencies only
@@ -69,7 +71,7 @@ All data is stored in the browser's `localStorage`. No backend, no accounts, no 
 
 ## Testing
 
-Unit tests (229 tests across 8 test files):
+Unit tests (245 tests across 13 test files):
 
 ```bash
 npm test
