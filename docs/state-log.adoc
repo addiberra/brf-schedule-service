@@ -1,6 +1,19 @@
 = State Transition Log
 :last-updated: 2026-03-03
 
+== TRANSITION-006
+:date: 2026-03-03
+:intent: Transform building facade from flat 2D to clean 3D isometric rendering
+:type: Quality improvement (visual enhancement)
+:risk: Medium
+:features: building-configuration (updated)
+:desired-state: BuildingFacade component renders a clean, minimal 3D isometric building with horizontal window bands, auto-scaling width based on apartment count, and readable apartment labels
+:prior-state: BuildingFacade renders a flat 2D facade with basic gradients and simple shapes. 245 tests passing, build clean.
+:capabilities-invoked: needs-implementation (visual refactoring)
+:constraints-checked: Dependencies (pass -- no new dependencies, pure SVG), Quality (pass -- 245 tests passing, build clean)
+:result: Achieved
+:artifacts-modified: src/lib/components/BuildingFacade.svelte (complete rewrite to 3D isometric style with auto-scaling)
+
 == TRANSITION-005
 :date: 2026-03-03
 :intent: Fully utilize Bits UI components where semantically appropriate
