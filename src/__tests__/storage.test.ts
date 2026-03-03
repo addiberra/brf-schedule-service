@@ -81,7 +81,10 @@ describe('BCFG-019: Auto-persist configuration on change', () => {
     saveBuilding(config1);
     saveBuilding(config2);
     const loaded = loadBuilding();
-    expect(loaded).toEqual(config2);
+    // loadBuilding adds default levelDigits and apartmentDigits if missing
+    expect(loaded?.floorCount).toBe(config2.floorCount);
+    expect(loaded?.floors).toEqual(config2.floors);
+    expect(loaded?.apartmentNumberStart).toBe(config2.apartmentNumberStart);
   });
 });
 
@@ -100,7 +103,10 @@ describe('BCFG-020: Restore configuration on load', () => {
     };
     saveBuilding(config);
     const loaded = loadBuilding();
-    expect(loaded).toEqual(config);
+    // loadBuilding adds default levelDigits and apartmentDigits if missing
+    expect(loaded?.floorCount).toBe(config.floorCount);
+    expect(loaded?.floors).toEqual(config.floors);
+    expect(loaded?.apartmentNumberStart).toBe(config.apartmentNumberStart);
   });
 
   it('should restore correct floor counts and apartment counts', () => {
@@ -167,7 +173,10 @@ describe('BCFG-025: Cancel reset preserves configuration (storage layer)', () =>
     saveBuilding(config);
     // Simulate cancel: do NOT call clearBuilding()
     const loaded = loadBuilding();
-    expect(loaded).toEqual(config);
+    // loadBuilding adds default levelDigits and apartmentDigits if missing
+    expect(loaded?.floorCount).toBe(config.floorCount);
+    expect(loaded?.floors).toEqual(config.floors);
+    expect(loaded?.apartmentNumberStart).toBe(config.apartmentNumberStart);
   });
 });
 
@@ -188,5 +197,25 @@ describe('BCFG-047: Legacy building data defaults numbering start to 1001', () =
 
     expect(loaded).not.toBeNull();
     expect(loaded?.apartmentNumberStart).toBe(1001);
+  });
+
+  it('should add levelDigits=[1,1] and apartmentDigits=[3,4] when loading legacy saved data', () => {
+    const legacyConfig = {
+      floorCount: 2,
+      floors: [
+        { floorNumber: 1, apartmentCount: 2 },
+        { floorNumber: 2, apartmentCount: 2 },
+      ],
+      apartmentNumberStart: 1001,
+    };
+
+    localStorageMock.setItem(STORAGE_KEY, JSON.stringify(legacyConfig));
+    vi.clearAllMocks();
+
+    const loaded = loadBuilding();
+
+    expect(loaded).not.toBeNull();
+    expect(loaded?.levelDigits).toEqual([1, 1]);
+    expect(loaded?.apartmentDigits).toEqual([3, 4]);
   });
 });

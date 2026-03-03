@@ -1,6 +1,19 @@
 = State Transition Log
 :last-updated: 2026-03-03
 
+== TRANSITION-007
+:date: 2026-03-03
+:intent: Flexible apartment numbering with configurable digit positions, and schedule config UI layout fixes
+:type: Feature evolution
+:risk: High
+:features: building-configuration (extended), inspection-scheduling (UI fix)
+:desired-state: Users can set any 4-digit start number (1000-9999) and choose which digit positions represent floor vs apartment via two dropdowns. A live preview shows the generated number. Schedule config panel has properly constrained date picker widths and aligned daily time settings.
+:prior-state: Apartment numbering start restricted to 1001-1901 in steps of 100, hardcoded formula floor*1000+offset+position. Schedule config date pickers stretch full width, DAGLIG TIDSINSTÄLLNING inputs misaligned. 245 tests passing, build clean.
+:capabilities-invoked:
+:constraints-checked: Dependencies (pass -- no new runtime dependencies), Quality (pass -- 290 tests passing, build clean)
+:result: Achieved
+:artifacts-modified: src/lib/models/building.ts (DigitPosition type, levelDigits/apartmentDigits fields), src/lib/models/building-model.ts (validation functions, generateApartmentId rewrite), src/lib/services/storage.ts (legacy migration for digit defaults), src/lib/components/BuildingConfigPanel.svelte (digit position dropdowns, live preview, expanded start range), src/lib/components/ScheduleConfigPanel.svelte (grid alignment, date picker width, duration input width), src/lib/components/BitsIsoDateRangeField.svelte (custom width class support), src/__tests__/building-model.test.ts, src/__tests__/building-config-panel.contract.test.ts, src/__tests__/storage.test.ts, docs/features/building-configuration/*.adoc (stories v1.4.0, spec v1.3.0, design v2.1.0, tasks v4.0.0)
+
 == TRANSITION-006
 :date: 2026-03-03
 :intent: Transform building facade from flat 2D to clean 3D isometric rendering

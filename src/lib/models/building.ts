@@ -6,14 +6,21 @@ export interface FloorConfig {
   apartmentCount: number;
 }
 
+/** Digit position range [startPos, endPos], 1-indexed (e.g., [1,1] for position 1 only, [3,4] for positions 3-4) */
+export type DigitPosition = [number, number];
+
 /** Complete building configuration */
 export interface BuildingConfig {
   /** Number of floors (1-30) */
   floorCount: number;
   /** Per-floor configuration, indexed from 0 (floor 1 is index 0) */
   floors: FloorConfig[];
-  /** Apartment number for floor 1, position 1 (1001-1901, step 100) */
-  apartmentNumberStart: number;
+  /** Apartment number start (1000-9999). Defaults to 1001 if not specified. */
+  apartmentNumberStart?: number;
+  /** Which digit position(s) represent the floor number. Defaults to [1,1]. */
+  levelDigits?: DigitPosition;
+  /** Which digit position(s) represent the apartment number. Defaults to [3,4]. */
+  apartmentDigits?: DigitPosition;
 }
 
 /** An apartment with its computed identifier */

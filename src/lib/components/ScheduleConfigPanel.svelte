@@ -159,14 +159,14 @@ import BitsIsoTimeField from './BitsIsoTimeField.svelte';
         <h3 class="text-sm font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">Besiktningsperiod</h3>
         <div class="space-y-1">
           <Label.Root for="date-range" class="text-sm font-medium text-stone-800">Datumintervall:</Label.Root>
-          <BitsIsoDateRangeField id="date-range" startValue={scheduleConfig.startDate} endValue={scheduleConfig.endDate} ariaLabel="Besiktningsperiod" onchange={handleDateRangeChange} invalid={validationErrors.has('endDate')} />
+          <BitsIsoDateRangeField id="date-range" startValue={scheduleConfig.startDate} endValue={scheduleConfig.endDate} ariaLabel="Besiktningsperiod" onchange={handleDateRangeChange} invalid={validationErrors.has('endDate')} class="max-w-xs" />
           {#if validationErrors.has('endDate')}<p class="text-sm text-red-700" role="alert">{validationErrors.get('endDate')}</p>{/if}
         </div>
       </div>
 
       <div class="space-y-2">
         <h3 class="text-sm font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">Daglig tidsinställning</h3>
-        <div class="grid gap-3 md:grid-cols-3">
+        <div class="grid items-end gap-3 md:grid-cols-3">
           <div class="space-y-1">
             <Label.Root for="daily-start-time" class="text-sm font-medium text-stone-800">Starttid:</Label.Root>
             <BitsIsoTimeField id="daily-start-time" value={formatTime(scheduleConfig.dailyStartTime)} ariaLabel="Daglig starttid" onchange={handleDailyStartTimeChange} />
@@ -178,7 +178,7 @@ import BitsIsoTimeField from './BitsIsoTimeField.svelte';
           </div>
           <div class="space-y-1">
             <Label.Root for="duration" class="text-sm font-medium text-stone-800">Tid per lägenhet (min):</Label.Root>
-            <input id="duration" class="w-full rounded-md border border-[var(--color-line-soft)] bg-white px-3 py-2 text-sm" type="number" min="5" max="120" value={scheduleConfig.durationMinutes} oninput={handleDurationChange} aria-invalid={validationErrors.has('durationMinutes')} />
+            <input id="duration" class="w-full max-w-32 rounded-md border border-[var(--color-line-soft)] bg-white px-3 py-2 text-sm" type="number" min="5" max="120" value={scheduleConfig.durationMinutes} oninput={handleDurationChange} aria-invalid={validationErrors.has('durationMinutes')} />
             {#if validationErrors.has('durationMinutes')}<p class="text-sm text-red-700" role="alert">{validationErrors.get('durationMinutes')}</p>{/if}
           </div>
         </div>

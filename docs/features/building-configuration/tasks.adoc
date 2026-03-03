@@ -1,16 +1,16 @@
 = Implementation Tasks: Building Configuration
-:version: 3.0.0
+:version: 4.0.0
 :status: Implemented
-:source-design-version: 2.0.0
-:source-stories-version: 1.3.0
-:source-spec-version: 1.2.0
+:source-design-version: 2.1.0
+:source-stories-version: 1.4.0
+:source-spec-version: 1.3.0
 :last-updated: 2026-03-03
 :feature: building-configuration
 :toc:
 
 == Overview
 
-Implementation of the building configuration feature with historical phases preserved and a new migration phase aligned to design v2.0.0 (Tailwind v4, Bits UI primitives, tabbed shell integration, warm facade redesign). Phases 1-7 are implemented. Phase 8 defines migration work for the redesign transition. 8 phases, 25 tasks.
+Implementation of the building configuration feature with historical phases preserved. Phases 1-9 are implemented. 9 phases, 32 tasks total. Phase 9 added flexible apartment digit assignment aligned to design v2.1.0.
 
 == Phase 1: Foundation
 
@@ -224,6 +224,59 @@ Stories:: US-001, US-006, US-007, US-008
 Specs:: BCFG-004, BCFG-023, BCFG-027, BCFG-041
 Description:: Add or update tests that verify access via tabs, reset dialog confirmation semantics, uniform mode behavior parity, and real-time facade updates after redesign migration.
 
+== Phase 9: Flexible Apartment Digit Assignment
+
+Implement configurable digit positions for floor and apartment numbers within the 4-digit apartment identifier, allowing users to customize which digits represent floor vs. apartment.
+
+* [x] TASK-026: Update BuildingConfig type with digit position fields [parallel]
++
+Components:: src/lib/models/building.ts
+Stories:: US-010
+Specs:: BCFG-048, BCFG-049, BCFG-052
+Description:: Add `levelDigits: [number, number]` and `apartmentDigits: [number, number]` optional tuple fields to the BuildingConfig interface. These represent 1-indexed digit positions (e.g., `[1, 1]` for position 1 only, `[3, 4]` for positions 3-4). Update type exports.
+
+* [x] TASK-027: Update validation functions for digit positions and expanded range [parallel]
++
+Components:: src/lib/models/building-model.ts
+Stories:: US-009, US-010
+Specs:: BCFG-043, BCFG-044, BCFG-051, BCFG-056, BCFG-057
+Description:: Update `validateApartmentNumberStart` to accept 1000-9999 (any 4-digit value, no step restriction). Add `validateDigitPositions(levelDigits, apartmentDigits)` to check for overlap between floor and apartment digit ranges. Add `validateDigitCapacity(digits, maxValue, fieldLabel)` to verify the digit range can accommodate the value (single digit: max 9, two digits: max 99). Return Swedish validation error messages.
+
+* [x] TASK-028: Rewrite generateApartmentId with digit substitution algorithm [sequential]
++
+Components:: src/lib/models/building-model.ts
+Stories:: US-009, US-010
+Specs:: BCFG-045, BCFG-046, BCFG-052, BCFG-055
+Description:: Update `generateApartmentId` to accept `levelDigits` and `apartmentDigits` parameters. Implement the digit substitution algorithm: convert start number to 4-char array, zero-pad floor and apartment values to fit their assigned digit counts, substitute into assigned positions, keep unassigned digits from start number. Ensure unique IDs by the (floor, position) → ID mapping.
+
+* [x] TASK-029: Update storage migration for digit position defaults [sequential]
++
+Components:: src/lib/services/storage.ts
+Stories:: US-009, US-010
+Specs:: BCFG-047
+Description:: In `loadBuilding()`, when loading legacy data: if `levelDigits` is missing, default to `[1, 1]`; if `apartmentDigits` is missing, default to `[3, 4]`. This preserves backward compatibility with existing saved configurations.
+
+* [x] TASK-030: Update BuildingConfigPanel UI with digit position controls [sequential]
++
+Components:: src/lib/components/BuildingConfigPanel.svelte
+Stories:: US-009, US-010
+Specs:: BCFG-042, BCFG-043, BCFG-048, BCFG-049, BCFG-050, BCFG-051, BCFG-053, BCFG-054
+Description:: Update numbering start input to `min=1000 max=9999 step=1`. Add floor digit position dropdown ("Siffra för våning") using Bits UI Select with options: "Position 1" `[1,1]`, "Position 2" `[2,2]`, "Position 3" `[3,3]`, "Position 4" `[4,4]`, "Positioner 1-2" `[1,2]`, "Positioner 2-3" `[2,3]`, "Positioner 3-4" `[3,4]`. Add apartment digit position dropdown ("Siffra för lägenhet") with same options. Add live preview: "Våning 2, Lgh 3 → {computed}". Wire handlers to update config and trigger validation. Show overlap validation errors inline.
+
+* [x] TASK-031: Add unit tests for digit position model functions [parallel]
++
+Components:: src/__tests__/building-model.test.ts, src/__tests__/storage.test.ts
+Stories:: US-009, US-010
+Specs:: BCFG-043, BCFG-044, BCFG-045, BCFG-046, BCFG-047, BCFG-051, BCFG-052, BCFG-055, BCFG-056, BCFG-057
+Description:: Add tests for `validateDigitPositions` (valid non-overlapping, overlapping error). Add tests for `validateDigitCapacity` (within range, exceeds range). Add tests for updated `generateApartmentId` (various digit position configurations, edge cases, uniqueness). Add tests for storage migration (legacy data gets defaults, new data preserved).
+
+* [x] TASK-032: Add contract tests for digit position UI [sequential]
++
+Components:: src/__tests__/building-config-panel.test.ts
+Stories:: US-010
+Specs:: BCFG-048, BCFG-049, BCFG-053
+Description:: Add contract tests verifying: floor digit dropdown exists in BuildingConfigPanel, apartment digit dropdown exists, live preview element exists and displays expected format. Verify dropdowns have the 7 expected options.
+
 == Traceability
 
 [cols="1,1,1", options="header"]
@@ -264,5 +317,9 @@ Description:: Add or update tests that verify access via tabs, reset dialog conf
 
 | US-009: Configurable Apartment Numbering Start
 | BCFG-042, BCFG-043, BCFG-044, BCFG-045, BCFG-046, BCFG-047
-| TASK-017, TASK-018, TASK-019, TASK-020, TASK-021
+| TASK-017, TASK-018, TASK-019, TASK-020, TASK-021, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031
+
+| US-010: Flexible Apartment Digit Assignment
+| BCFG-048, BCFG-049, BCFG-050, BCFG-051, BCFG-052, BCFG-053, BCFG-054, BCFG-055, BCFG-056, BCFG-057
+| TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032
 |===

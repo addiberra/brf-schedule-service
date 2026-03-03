@@ -1,20 +1,47 @@
 <script lang="ts">
-  import { AlertDialog, Button, Label, Switch } from 'bits-ui';
-  import type { BuildingConfig } from '../models/building.js';
+  import { AlertDialog, Button, Label, Select, Switch } from 'bits-ui';
+  import type { BuildingConfig, DigitPosition } from '../models/building.js';
   import type { Apartment } from '../models/building.js';
   import {
     createDefaultConfig,
     validateFloorCount,
     validateApartmentCount,
     validateApartmentNumberStart,
+    validateDigitPositions,
+    validateFloorDigitCapacity,
+    validateApartmentDigitCapacity,
+    generateApartmentId,
     generateAllApartments,
     totalApartments,
     adjustFloors,
     setUniformApartmentCount,
+    DEFAULT_LEVEL_DIGITS,
+    DEFAULT_APARTMENT_DIGITS,
   } from '../models/building-model.js';
   import { saveBuilding, loadBuilding, clearBuilding } from '../services/storage.js';
   import FloorInputRow from './FloorInputRow.svelte';
   import BuildingFacade from './BuildingFacade.svelte';
+
+  /** Available digit position options */
+  const DIGIT_POSITION_OPTIONS: { value: string; label: string; digits: DigitPosition }[] = [
+    { value: '1', label: 'Position 1', digits: [1, 1] },
+    { value: '2', label: 'Position 2', digits: [2, 2] },
+    { value: '3', label: 'Position 3', digits: [3, 3] },
+    { value: '4', label: 'Position 4', digits: [4, 4] },
+    { value: '1-2', label: 'Positioner 1-2', digits: [1, 2] },
+    { value: '2-3', label: 'Positioner 2-3', digits: [2, 3] },
+    { value: '3-4', label: 'Positioner 3-4', digits: [3, 4] },
+  ];
+
+  function digitsToValue(digits: DigitPosition): string {
+    if (digits[0] === digits[1]) return String(digits[0]);
+    return `${digits[0]}-${digits[1]}`;
+  }
+
+  function valueToDigits(value: string): DigitPosition {
+    const opt = DIGIT_POSITION_OPTIONS.find((o) => o.value === value);
+    return opt?.digits ?? DEFAULT_LEVEL_DIGITS;
+  }
 
   interface Props {
     onchange?: (apartments: Apartment[]) => void;
@@ -30,6 +57,38 @@
 
   let apartments: Apartment[] = $derived(generateAllApartments(config));
   let totalCount: number = $derived(totalApartments(config));
+
+  // Digit position state
+  let levelDigitsValue = $derived(digitsToValue(config.levelDigits ?? DEFAULT_LEVEL_DIGITS));
+  let apartmentDigitsValue = $derived(digitsToValue(config.apartmentDigits ?? DEFAULT_APARTMENT_DIGITS));
+
+  // Live preview computation
+  let previewId = $derived.by(() => {
+    const startNum = config.apartmentNumberStart ?? 1001;
+    const levelDigits = config.levelDigits ?? DEFAULT_LEVEL_DIGITS;
+    const apartmentDigits = config.apartmentDigits ?? DEFAULT_APARTMENT_DIGITS;
+    return generateApartmentId(2, 3, startNum, levelDigits, apartmentDigits);
+  });
+
+  // Filter apartment digit options to exclude overlapping positions
+  let availableApartmentOptions = $derived.by(() => {
+    const levelDigits = config.levelDigits ?? DEFAULT_LEVEL_DIGITS;
+    const levelRange = new Set<number>();
+    for (let i = levelDigits[0]; i <= levelDigits[1]; i++) {
+      levelRange.add(i);
+    }
+    return DIGIT_POSITION_OPTIONS.filter((opt) => {
+      for (let i = opt.digits[0]; i <= opt.digits[1]; i++) {
+        if (levelRange.has(i)) return false;
+      }
+      return true;
+    });
+  });
+
+  // Find max apartments per floor for capacity validation
+  let maxApartmentsPerFloor = $derived(
+    Math.max(...config.floors.map((f) => f.apartmentCount), 1)
+  );
 
   $effect(() => {
     if (validationErrors.size === 0) {
@@ -103,6 +162,60 @@
     config = { ...config, apartmentNumberStart: value };
   }
 
+  function handleLevelDigitsChange(value: string) {
+    const newLevelDigits = valueToDigits(value);
+    const currentApartmentDigits = config.apartmentDigits ?? DEFAULT_APARTMENT_DIGITS;
+    const errors = new Map(validationErrors);
+
+    // Validate no overlap
+    const overlapResult = validateDigitPositions(newLevelDigits, currentApartmentDigits);
+    if (!overlapResult.valid) {
+      errors.set('levelDigits', overlapResult.error!);
+      validationErrors = errors;
+      return;
+    }
+
+    // Validate floor capacity
+    const capacityResult = validateFloorDigitCapacity(newLevelDigits, config.floorCount);
+    if (!capacityResult.valid) {
+      errors.set('levelDigits', capacityResult.error!);
+      validationErrors = errors;
+      return;
+    }
+
+    errors.delete('levelDigits');
+    errors.delete('apartmentDigits');
+    validationErrors = errors;
+    config = { ...config, levelDigits: newLevelDigits };
+  }
+
+  function handleApartmentDigitsChange(value: string) {
+    const newApartmentDigits = valueToDigits(value);
+    const currentLevelDigits = config.levelDigits ?? DEFAULT_LEVEL_DIGITS;
+    const errors = new Map(validationErrors);
+
+    // Validate no overlap
+    const overlapResult = validateDigitPositions(currentLevelDigits, newApartmentDigits);
+    if (!overlapResult.valid) {
+      errors.set('apartmentDigits', overlapResult.error!);
+      validationErrors = errors;
+      return;
+    }
+
+    // Validate apartment capacity
+    const capacityResult = validateApartmentDigitCapacity(newApartmentDigits, maxApartmentsPerFloor);
+    if (!capacityResult.valid) {
+      errors.set('apartmentDigits', capacityResult.error!);
+      validationErrors = errors;
+      return;
+    }
+
+    errors.delete('levelDigits');
+    errors.delete('apartmentDigits');
+    validationErrors = errors;
+    config = { ...config, apartmentDigits: newApartmentDigits };
+  }
+
   function toggleUniformMode(value: boolean) {
     uniformMode = value;
     if (uniformMode) {
@@ -171,10 +284,10 @@
             class="w-full rounded-md border border-[var(--color-line-soft)] bg-white px-3 py-2 text-sm outline-none transition focus:border-[var(--color-warm-500)] focus:ring-2 focus:ring-[color:var(--color-warm-500)]/25"
             id="apartment-number-start"
             type="number"
-            min="1001"
-            max="1901"
-            step="100"
-            value={config.apartmentNumberStart}
+            min="1000"
+            max="9999"
+            step="1"
+            value={config.apartmentNumberStart ?? 1001}
             oninput={handleApartmentNumberStartChange}
             aria-invalid={validationErrors.has('apartmentNumberStart')}
             aria-describedby={validationErrors.has('apartmentNumberStart')
@@ -187,6 +300,68 @@
             </p>
           {/if}
         </div>
+      </div>
+
+      <h3 class="text-sm font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">Sifferpositioner</h3>
+
+      <div class="grid gap-3 sm:grid-cols-2">
+        <div class="space-y-1">
+          <Label.Root for="level-digit-position" class="text-sm font-medium text-stone-800">Våningsposition:</Label.Root>
+          <Select.Root type="single" value={levelDigitsValue} onValueChange={handleLevelDigitsChange}>
+            <Select.Trigger
+              id="level-digit-position"
+              class="flex w-full items-center justify-between rounded-md border border-[var(--color-line-soft)] bg-white px-3 py-2 text-sm outline-none transition focus:border-[var(--color-warm-500)] focus:ring-2 focus:ring-[color:var(--color-warm-500)]/25"
+              aria-invalid={validationErrors.has('levelDigits')}
+            >
+              {DIGIT_POSITION_OPTIONS.find((o) => o.value === levelDigitsValue)?.label ?? 'Välj position'}
+            </Select.Trigger>
+            <Select.Content class="z-50 rounded-lg border border-[var(--color-line-soft)] bg-white p-1 shadow-lg">
+              {#each DIGIT_POSITION_OPTIONS as option (option.value)}
+                <Select.Item
+                  value={option.value}
+                  label={option.label}
+                  class="cursor-pointer rounded px-3 py-2 text-sm outline-none hover:bg-[var(--color-surface-1)] data-[highlighted]:bg-[var(--color-surface-1)]"
+                >
+                  {option.label}
+                </Select.Item>
+              {/each}
+            </Select.Content>
+          </Select.Root>
+          {#if validationErrors.has('levelDigits')}
+            <p class="text-sm text-red-700" role="alert">{validationErrors.get('levelDigits')}</p>
+          {/if}
+        </div>
+
+        <div class="space-y-1">
+          <Label.Root for="apartment-digit-position" class="text-sm font-medium text-stone-800">Lägenhetsposition:</Label.Root>
+          <Select.Root type="single" value={apartmentDigitsValue} onValueChange={handleApartmentDigitsChange}>
+            <Select.Trigger
+              id="apartment-digit-position"
+              class="flex w-full items-center justify-between rounded-md border border-[var(--color-line-soft)] bg-white px-3 py-2 text-sm outline-none transition focus:border-[var(--color-warm-500)] focus:ring-2 focus:ring-[color:var(--color-warm-500)]/25"
+              aria-invalid={validationErrors.has('apartmentDigits')}
+            >
+              {availableApartmentOptions.find((o) => o.value === apartmentDigitsValue)?.label ?? 'Välj position'}
+            </Select.Trigger>
+            <Select.Content class="z-50 rounded-lg border border-[var(--color-line-soft)] bg-white p-1 shadow-lg">
+              {#each availableApartmentOptions as option (option.value)}
+                <Select.Item
+                  value={option.value}
+                  label={option.label}
+                  class="cursor-pointer rounded px-3 py-2 text-sm outline-none hover:bg-[var(--color-surface-1)] data-[highlighted]:bg-[var(--color-surface-1)]"
+                >
+                  {option.label}
+                </Select.Item>
+              {/each}
+            </Select.Content>
+          </Select.Root>
+          {#if validationErrors.has('apartmentDigits')}
+            <p class="text-sm text-red-700" role="alert">{validationErrors.get('apartmentDigits')}</p>
+          {/if}
+        </div>
+      </div>
+
+      <div id="digit-position-preview" class="rounded-lg border border-[var(--color-line-soft)] bg-[var(--color-surface-1)] px-3 py-2 text-sm text-stone-800">
+        <span class="text-[var(--color-text-muted)]">Förhandsgranskning:</span> Våning 2, Lgh 3 → <strong>{previewId}</strong>
       </div>
 
       <div class="flex items-center gap-3 rounded-lg border border-[var(--color-line-soft)] bg-white px-3 py-2">

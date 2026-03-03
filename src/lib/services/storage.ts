@@ -20,6 +20,7 @@ export function saveBuilding(config: BuildingConfig): void {
 /**
  * Loads building configuration from localStorage.
  * Returns null if no saved data exists or if parsing fails.
+ * Applies defaults for legacy data missing apartmentNumberStart, levelDigits, or apartmentDigits.
  */
 export function loadBuilding(): BuildingConfig | null {
   try {
@@ -28,8 +29,17 @@ export function loadBuilding(): BuildingConfig | null {
       return null;
     }
     const config = JSON.parse(data) as BuildingConfig;
+    // Legacy migration: default apartmentNumberStart to 1001
     if (config.apartmentNumberStart === undefined) {
       config.apartmentNumberStart = 1001;
+    }
+    // Legacy migration: default levelDigits to [1, 1] (first digit = floor)
+    if (config.levelDigits === undefined) {
+      config.levelDigits = [1, 1];
+    }
+    // Legacy migration: default apartmentDigits to [3, 4] (last two digits = apartment)
+    if (config.apartmentDigits === undefined) {
+      config.apartmentDigits = [3, 4];
     }
     return config;
   } catch {

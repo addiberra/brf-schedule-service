@@ -60,7 +60,7 @@
     {id}
     data-iso-start-value={startValue}
     data-iso-end-value={endValue}
-    class={`flex w-full items-center gap-1 rounded-md border bg-white px-3 py-2 text-sm shadow-xs outline-none focus-within:ring-2 focus-within:ring-[var(--color-warm-500)]/40 ${invalid ? 'border-red-500' : 'border-[var(--color-line-soft)]'} ${className}`}
+    class={`flex items-center gap-1 rounded-md border bg-white px-3 py-2 text-sm shadow-xs outline-none focus-within:ring-2 focus-within:ring-[var(--color-warm-500)]/40 ${invalid ? 'border-red-500' : 'border-[var(--color-line-soft)]'} ${className || 'w-full'}`}
   >
     {#each ['start', 'end'] as const as type (type)}
       <DateRangePicker.Input {type} aria-label={type === 'start' ? `${ariaLabel} start` : `${ariaLabel} slut`}>

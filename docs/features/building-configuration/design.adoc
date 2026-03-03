@@ -1,8 +1,8 @@
 = Design: Building Configuration
-:version: 2.0.0
+:version: 2.1.0
 :status: Current
-:source-stories-version: 1.3.0
-:source-spec-version: 1.2.0
+:source-stories-version: 1.4.0
+:source-spec-version: 1.3.0
 :last-updated: 2026-03-03
 :feature: building-configuration
 :toc:
@@ -199,11 +199,237 @@ Responsive behavior:
 
 === Data Model and Persistence
 
-No data schema change is introduced in this design update.
+==== BuildingConfig extensions
 
-* `BuildingConfig`, `FloorConfig`, `Apartment`, and validation result structures remain as currently specified.
-* Numbering start logic remains part of model derivation and validation.
-* `storage.ts` key namespace and migration behavior remain unchanged.
+The `BuildingConfig` interface is extended with two new optional fields to support flexible digit position assignment:
+
+[source,typescript]
+----
+export interface BuildingConfig {
+  floorCount: number;
+  floors: FloorConfig[];
+  apartmentNumberStart: number;      // Range: 1000-9999 (expanded from 1001-1901)
+  levelDigits?: [number, number];    // [startPos, endPos], 1-indexed, e.g. [1,1] or [1,2]
+  apartmentDigits?: [number, number]; // Same format, must not overlap with levelDigits
+}
+----
+
+**Digit position tuples:**
+
+* Each tuple represents a contiguous range of digit positions in a 4-digit apartment number.
+* Position 1 is the leftmost digit, position 4 is the rightmost.
+* Single digit: `[1, 1]`, `[2, 2]`, `[3, 3]`, or `[4, 4]`
+* Consecutive pairs: `[1, 2]`, `[2, 3]`, or `[3, 4]`
+* The ranges must not overlap -- `levelDigits` and `apartmentDigits` must cover disjoint positions.
+
+**Backward compatibility defaults:**
+
+When `levelDigits` or `apartmentDigits` are undefined (legacy data), the system applies:
+
+* `levelDigits: [1, 1]` -- first digit represents the floor
+* `apartmentDigits: [3, 4]` -- last two digits represent the apartment position
+* `apartmentNumberStart: 1001` -- default start value
+
+These defaults produce identical output to the previous algorithm for existing configurations.
+
+==== Apartment numbering start range update
+
+The `apartmentNumberStart` range is expanded:
+
+* **New range:** 1000-9999 (any 4-digit value)
+* **Previous range:** 1001-1901 in steps of 100
+* **Step restriction:** Removed -- any integer in range is valid
+
+==== Legacy data migration
+
+In `storage.ts`, when loading saved configuration:
+
+1. If `levelDigits` is missing, set to `[1, 1]`
+2. If `apartmentDigits` is missing, set to `[3, 4]`
+3. If `apartmentNumberStart` is missing, set to `1001`
+4. If `apartmentNumberStart` is present but uses old step-100 values, preserve as-is (still valid in new range)
+
+This ensures seamless migration for existing users.
+
+==== Apartment identifier generation algorithm
+
+The `generateApartmentId` function is updated to support flexible digit positions:
+
+[source,typescript]
+----
+function generateApartmentId(
+  floor: number,
+  position: number,
+  apartmentNumberStart: number,
+  levelDigits: [number, number],
+  apartmentDigits: [number, number]
+): string {
+  // 1. Convert start number to 4-character array (zero-pad if needed)
+  const startStr = apartmentNumberStart.toString().padStart(4, '0');
+  const result = startStr.split('');
+
+  // 2. Calculate digit counts for each range
+  const levelDigitCount = levelDigits[1] - levelDigits[0] + 1;
+  const apartmentDigitCount = apartmentDigits[1] - apartmentDigits[0] + 1;
+
+  // 3. Format floor number with leading zeros to fit level digit range
+  const floorStr = floor.toString().padStart(levelDigitCount, '0');
+
+  // 4. Substitute floor digits into result at levelDigits positions (1-indexed)
+  for (let i = 0; i < levelDigitCount; i++) {
+    result[levelDigits[0] - 1 + i] = floorStr[i];
+  }
+
+  // 5. Format apartment position with leading zeros to fit apartment digit range
+  const posStr = position.toString().padStart(apartmentDigitCount, '0');
+
+  // 6. Substitute apartment digits into result at apartmentDigits positions (1-indexed)
+  for (let i = 0; i < apartmentDigitCount; i++) {
+    result[apartmentDigits[0] - 1 + i] = posStr[i];
+  }
+
+  // 7. Return result as string
+  return result.join('');
+}
+----
+
+**Algorithm examples:**
+
+|===
+| Start | Level Digits | Apt Digits | Floor 2, Apt 3 | Explanation
+
+| 1001 | [1, 1] | [3, 4] | 2003 | Floor in pos 1, apt in pos 3-4, "00" from start preserved in pos 2
+| 1234 | [2, 2] | [4, 4] | 1234 → 1233 | Floor in pos 2, apt in pos 4, "1" and "3" fixed
+| 5000 | [1, 2] | [3, 4] | 0203 | Floor 02 in pos 1-2, apt 03 in pos 3-4
+| 1100 | [3, 3] | [4, 4] | 1123 | Floor in pos 3, apt in pos 4, "11" fixed
+|===
+
+==== Validation functions
+
+New validation functions in `building-model.ts`:
+
+**validateDigitPositions:**
+[source,typescript]
+----
+function validateDigitPositions(
+  levelDigits: [number, number],
+  apartmentDigits: [number, number]
+): ValidationResult {
+  // Ranges must be consecutive (endPos >= startPos)
+  if (levelDigits[1] < levelDigits[0] || apartmentDigits[1] < apartmentDigits[0]) {
+    return { valid: false, error: 'Ogiltigt positionsintervall.' };
+  }
+
+  // Ranges must not overlap
+  const levelRange = new Set<number>();
+  for (let i = levelDigits[0]; i <= levelDigits[1]; i++) levelRange.add(i);
+
+  for (let i = apartmentDigits[0]; i <= apartmentDigits[1]; i++) {
+    if (levelRange.has(i)) {
+      return { valid: false, error: 'Positioner för våning och lägenhet får inte överlappa.' };
+    }
+  }
+
+  return { valid: true };
+}
+----
+
+**validateDigitCapacity:**
+[source,typescript]
+----
+function validateDigitCapacity(
+  digits: [number, number],
+  maxValue: number,
+  fieldLabel: string
+): ValidationResult {
+  const digitCount = digits[1] - digits[0] + 1;
+  const maxCapacity = digitCount === 1 ? 9 : 99; // single digit: 1-9, two digits: 1-99
+
+  if (maxValue > maxCapacity) {
+    return {
+      valid: false,
+      error: `${fieldLabel} (${maxValue}) överstiger kapaciteten för ${digitCount} siffra (max ${maxCapacity}).`,
+    };
+  }
+
+  return { valid: true };
+}
+----
+
+**Updated validateApartmentNumberStart:**
+[source,typescript]
+----
+function validateApartmentNumberStart(value: number): ValidationResult {
+  if (!Number.isInteger(value)) {
+    return { valid: false, error: 'Startnummer måste vara ett heltal.' };
+  }
+
+  if (value < 1000 || value > 9999) {
+    return { valid: false, error: 'Startnummer måste vara mellan 1000 och 9999.' };
+  }
+
+  return { valid: true };
+}
+----
+
+=== Digit Position UI Controls
+
+==== Control layout in BuildingConfigPanel
+
+The configuration form is extended with two dropdown controls for digit position selection, placed after the numbering start input:
+
+**Floor digit position dropdown ("Siffra för våning"):**
+
+* Label: "Siffra för våning"
+* Options:
+** "Position 1" → `[1, 1]`
+** "Position 2" → `[2, 2]`
+** "Position 3" → `[3, 3]`
+** "Position 4" → `[4, 4]`
+** "Positioner 1-2" → `[1, 2]`
+** "Positioner 2-3" → `[2, 3]`
+** "Positioner 3-4" → `[3, 4]`
+* Default: "Position 1" (`[1, 1]`)
+
+**Apartment digit position dropdown ("Siffra för lägenhet"):**
+
+* Label: "Siffra för lägenhet"
+* Same option set as floor dropdown
+* Default: "Positioner 3-4" (`[3, 4]`)
+* When floor digit selection changes, apartment options that would overlap are shown with an error state if selected
+
+**Numbering start input update:**
+
+* Input attributes changed: `min=1000 max=9999 step=1`
+* Removes the step-100 restriction from the previous design
+
+==== Live preview display
+
+A preview component displays below the digit position controls:
+
+* Format: "Våning N, Lgh M → XXXX"
+* Example values: Floor 2, Apartment 3 (fixed example values for consistent preview)
+* The computed value uses the current `apartmentNumberStart`, `levelDigits`, and `apartmentDigits`
+* Updates immediately when any of the three inputs change
+
+Preview implementation:
+
+[source,svelte]
+----
+<p class="text-sm text-muted">
+  Våning 2, Lgh 3 → {generateApartmentId(2, 3, config.apartmentNumberStart, config.levelDigits, config.apartmentDigits)}
+</p>
+----
+
+==== Validation feedback
+
+Validation errors are displayed inline:
+
+* Overlapping digit positions: error message below both dropdowns
+* Floor digit capacity exceeded: error message indicating floor count exceeds digit range
+* Apartment digit capacity exceeded: error message indicating max apartments exceeds digit range
+
+All validation errors block the save path (same pattern as existing validations).
 
 == Story Resolution
 
@@ -292,9 +518,24 @@ Criteria::
 
 Components:: BuildingConfigPanel, building-model, storage, BuildingFacade
 Criteria::
-* Numbering start input remains present in the configuration form (BCFG-042)
-* Valid values remain constrained to accepted numbering start set (BCFG-043)
-* Invalid values still produce error and block valid-save path (BCFG-044)
-* Changing start value recalculates all displayed apartment identifiers (BCFG-045)
-* Uniqueness guarantees remain enforced by identifier generation approach (BCFG-046)
-* Legacy persisted data still defaults numbering start to 1001 on load (BCFG-047)
+* Numbering start input is present in the configuration form with `min=1000 max=9999 step=1` (BCFG-042)
+* Valid range is 1000-9999 inclusive, enforced by `validateApartmentNumberStart` (BCFG-043)
+* Values outside 1000-9999 produce inline validation error and block save (BCFG-044)
+* Changing start value triggers `generateApartmentId` recalculation for all apartments, updating facade labels (BCFG-045)
+* Uniqueness is guaranteed by the algorithm: each (floor, position) combination produces a unique ID (BCFG-046)
+* Legacy data without `apartmentNumberStart` defaults to 1001 via migration in `storage.ts` (BCFG-047)
+
+=== US-010: Flexible Apartment Digit Assignment
+
+Components:: BuildingConfigPanel, building-model, storage, BuildingFacade
+Criteria::
+* Floor digit dropdown ("Siffra för våning") is rendered in the configuration form below numbering start input (BCFG-048)
+* Apartment digit dropdown ("Siffra för lägenhet") is rendered adjacent to floor digit dropdown (BCFG-049)
+* Both dropdowns offer options: "Position 1", "Position 2", "Position 3", "Position 4", "Positioner 1-2", "Positioner 2-3", "Positioner 3-4" (BCFG-050)
+* `validateDigitPositions` checks for overlap; if overlap detected, inline validation error is shown and save is blocked (BCFG-051)
+* Digits not assigned to floor or apartment retain their values from `apartmentNumberStart` -- the algorithm only substitutes into assigned positions (BCFG-052)
+* Live preview displays "Våning 2, Lgh 3 → {computed}" using `generateApartmentId` with current settings (BCFG-053)
+* Preview updates reactively when floor or apartment digit selection changes (BCFG-054)
+* All apartment identifiers are recalculated via `generateAllApartments` when digit positions change, triggering facade update (BCFG-055)
+* `validateDigitCapacity(levelDigits, floorCount, "Antal våningar")` returns error if floor count exceeds single-digit range (1-9) when only one digit is assigned to floor (BCFG-056)
+* `validateDigitCapacity(apartmentDigits, maxApartmentsPerFloor, "Antal lägenheter")` returns error if max apartments exceeds single-digit range (1-9) when only one digit is assigned to apartment (BCFG-057)

@@ -1,5 +1,5 @@
 = User Stories: Building Configuration
-:version: 1.3.0
+:version: 1.4.0
 :last-updated: 2026-03-03
 :feature: building-configuration
 :toc:
@@ -117,8 +117,26 @@ so that apartment identifiers follow my BRF's numbering convention (for example 
 Acceptance Criteria:
 
 * [ ] The system shall provide an input for apartment numbering start value for floor 1, apartment 1.
-* [ ] The system shall accept numbering start values in the format `xx01` where `xx` is 10 through 19.
-* [ ] If the user enters a numbering start value outside the valid format, then the system shall display a validation error and prevent saving.
+* [ ] The system shall accept any 4-digit numbering start value between 1000 and 9999.
+* [ ] If the user enters a numbering start value outside the range 1000-9999, then the system shall display a validation error and prevent saving.
 * [ ] When the user changes the numbering start value, the system shall recalculate all apartment identifiers.
 * [ ] The system shall preserve uniqueness of apartment identifiers across all configured floors and positions.
 * [ ] When the application loads saved building data without a numbering start value, then the system shall default to 1001.
+
+== US-010: Flexible Apartment Digit Assignment
+As a BRF administrator,
+I want to choose which digit positions in the apartment number represent the floor and which represent the apartment,
+so that apartment identifiers match my BRF's specific numbering convention.
+
+Acceptance Criteria:
+
+* [ ] The system shall provide a dropdown to select which digit position(s) represent the floor number.
+* [ ] The system shall provide a dropdown to select which digit position(s) represent the apartment number.
+* [ ] The system shall offer single digit positions (1, 2, 3, 4) and consecutive pairs (1-2, 2-3, 3-4) as options in both dropdowns.
+* [ ] If the user selects digit positions for floor that overlap with the selected apartment positions, then the system shall display a validation error.
+* [ ] The system shall keep digit positions not assigned to floor or apartment fixed at their values from the start number.
+* [ ] The system shall display a live preview showing an example apartment number in the format "Våning N, Lgh M → XXXX".
+* [ ] When the user changes floor or apartment digit position selections, the system shall update the live preview immediately.
+* [ ] When the user changes floor or apartment digit position selections, the system shall recalculate all apartment identifiers.
+* [ ] If the selected floor digit range cannot accommodate the configured floor count, then the system shall display a validation error.
+* [ ] If the selected apartment digit range cannot accommodate the maximum apartments per floor, then the system shall display a validation error.

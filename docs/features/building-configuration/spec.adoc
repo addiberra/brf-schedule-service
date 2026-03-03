@@ -1,6 +1,6 @@
 = Specification: Building Configuration
-:version: 1.2.0
-:source-stories-version: 1.3.0
+:version: 1.3.0
+:source-stories-version: 1.4.0
 :last-updated: 2026-03-03
 :feature: building-configuration
 :prefix: BCFG
@@ -303,18 +303,18 @@ Source:: US-009: Configurable Apartment Numbering Start, Criterion 1
 Verification:: Open the building configuration view. Confirm there is an input control for selecting the starting apartment number.
 
 == BCFG-043
-The system shall accept apartment numbering start values 1001 through 1901 in increments of 100.
+The system shall accept any 4-digit apartment numbering start value between 1000 and 9999 inclusive.
 
 Type:: Ubiquitous
 Source:: US-009: Configurable Apartment Numbering Start, Criterion 2
-Verification:: Enter 1001, 1101, and 1901 as start values and confirm they are accepted. Enter 1050 and confirm it is rejected.
+Verification:: Enter 1000, 5555, and 9999 as start values and confirm they are accepted without error.
 
 == BCFG-044
-If the user enters an apartment numbering start value outside the valid set, then the system shall display a validation error and prevent saving.
+If the user enters an apartment numbering start value outside the range 1000-9999, then the system shall display a validation error and prevent saving.
 
 Type:: Unwanted behavior
 Source:: US-009: Configurable Apartment Numbering Start, Criterion 3
-Verification:: Enter 999, 1950, or 2001 as start value. Confirm a validation error is shown and the invalid value is not persisted.
+Verification:: Enter 999 as start value. Confirm a validation error is shown and the invalid value is not persisted. Enter 10000. Confirm the same behavior.
 
 == BCFG-045
 When the user changes the apartment numbering start value, the system shall recalculate apartment identifiers for all configured apartments.
@@ -336,6 +336,76 @@ When the application loads saved building data that lacks apartment numbering st
 Type:: Event-driven
 Source:: US-009: Configurable Apartment Numbering Start, Criterion 6
 Verification:: Load legacy saved building data created before numbering start existed. Confirm the application sets the numbering start to 1001.
+
+== BCFG-048
+The system shall provide a dropdown to select which digit position(s) represent the floor number.
+
+Type:: Ubiquitous
+Source:: US-010: Flexible Apartment Digit Assignment, Criterion 1
+Verification:: Open the building configuration view. Confirm a dropdown control for selecting floor digit position(s) is visible.
+
+== BCFG-049
+The system shall provide a dropdown to select which digit position(s) represent the apartment number.
+
+Type:: Ubiquitous
+Source:: US-010: Flexible Apartment Digit Assignment, Criterion 2
+Verification:: Open the building configuration view. Confirm a dropdown control for selecting apartment digit position(s) is visible.
+
+== BCFG-050
+The system shall offer single digit positions (1, 2, 3, 4) and consecutive pairs (1-2, 2-3, 3-4) as options in both floor and apartment digit position dropdowns.
+
+Type:: Ubiquitous
+Source:: US-010: Flexible Apartment Digit Assignment, Criterion 3
+Verification:: Open the floor digit dropdown. Confirm options include: 1, 2, 3, 4, 1-2, 2-3, 3-4. Open the apartment digit dropdown. Confirm the same options are available.
+
+== BCFG-051
+If the user selects digit positions for floor that overlap with the selected apartment positions, then the system shall display a validation error.
+
+Type:: Unwanted behavior
+Source:: US-010: Flexible Apartment Digit Assignment, Criterion 4
+Verification:: Select "2" for floor digits and "2-3" for apartment digits. Confirm a validation error is displayed indicating overlap. Select "1" for floor and "2" for apartment. Confirm no error.
+
+== BCFG-052
+The system shall keep digit positions not assigned to floor or apartment fixed at their values from the start number.
+
+Type:: Ubiquitous
+Source:: US-010: Flexible Apartment Digit Assignment, Criterion 5
+Verification:: Set start number to 1234. Assign floor to position 2 and apartment to position 4. Confirm digits 1 and 3 remain "1" and "3" respectively in all generated apartment identifiers.
+
+== BCFG-053
+The system shall display a live preview showing an example apartment number in the format "Våning N, Lgh M → XXXX".
+
+Type:: Ubiquitous
+Source:: US-010: Flexible Apartment Digit Assignment, Criterion 6
+Verification:: Open the building configuration view with digit position controls visible. Confirm a preview label is displayed showing the format "Våning N, Lgh M → XXXX" with actual values.
+
+== BCFG-054
+When the user changes floor or apartment digit position selections, the system shall update the live preview immediately.
+
+Type:: Event-driven
+Source:: US-010: Flexible Apartment Digit Assignment, Criterion 7
+Verification:: Change the floor digit position from "1" to "2". Confirm the preview updates immediately without page reload or explicit save.
+
+== BCFG-055
+When the user changes floor or apartment digit position selections, the system shall recalculate all apartment identifiers.
+
+Type:: Event-driven
+Source:: US-010: Flexible Apartment Digit Assignment, Criterion 8
+Verification:: Configure a building with 2 floors and 2 apartments per floor. Change the floor digit position. Confirm all apartment identifiers in the facade illustration update to reflect the new digit assignment.
+
+== BCFG-056
+If the selected floor digit range cannot accommodate the configured floor count, then the system shall display a validation error.
+
+Type:: Unwanted behavior
+Source:: US-010: Flexible Apartment Digit Assignment, Criterion 9
+Verification:: Configure a building with 15 floors. Select a single digit position for floor. Confirm a validation error is displayed indicating the floor count exceeds the single-digit range (0-9).
+
+== BCFG-057
+If the selected apartment digit range cannot accommodate the maximum apartments per floor, then the system shall display a validation error.
+
+Type:: Unwanted behavior
+Source:: US-010: Flexible Apartment Digit Assignment, Criterion 10
+Verification:: Configure a building with 12 apartments on one floor. Select a single digit position for apartment. Confirm a validation error is displayed indicating the apartment count exceeds the single-digit range (0-9).
 
 == Traceability
 
@@ -512,11 +582,11 @@ Verification:: Load legacy saved building data created before numbering start ex
 | US-009: Criterion 1
 
 | BCFG-043
-| Numbering start valid set
+| Numbering start valid range 1000-9999
 | US-009: Criterion 2
 
 | BCFG-044
-| Validation error for invalid numbering start
+| Validation error for out-of-range numbering start
 | US-009: Criterion 3
 
 | BCFG-045
@@ -530,4 +600,44 @@ Verification:: Load legacy saved building data created before numbering start ex
 | BCFG-047
 | Default numbering start for legacy saved data
 | US-009: Criterion 6
+
+| BCFG-048
+| Floor digit position dropdown
+| US-010: Criterion 1
+
+| BCFG-049
+| Apartment digit position dropdown
+| US-010: Criterion 2
+
+| BCFG-050
+| Digit position options (singles and pairs)
+| US-010: Criterion 3
+
+| BCFG-051
+| Validation error for overlapping digit positions
+| US-010: Criterion 4
+
+| BCFG-052
+| Fixed digits from start number
+| US-010: Criterion 5
+
+| BCFG-053
+| Live preview display
+| US-010: Criterion 6
+
+| BCFG-054
+| Preview updates on selection change
+| US-010: Criterion 7
+
+| BCFG-055
+| Recalculate IDs on digit position change
+| US-010: Criterion 8
+
+| BCFG-056
+| Floor digit range validation
+| US-010: Criterion 9
+
+| BCFG-057
+| Apartment digit range validation
+| US-010: Criterion 10
 |===
