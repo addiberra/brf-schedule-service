@@ -195,8 +195,7 @@ describe('TMPL-007: Map placeholder to data field', () => {
     const apartment = makeApartment('1001', 1, 1);
     const appointment = makeAppointment('1001', 1, 1, '2026-03-10', 540);
     const result = resolveDataField('dateSwedish', apartment, appointment);
-    expect(result).toContain('mars');
-    expect(result).toContain('2026');
+    expect(result).toBe('2026-03-10');
   });
 
   it('should return empty string for schedule fields when no appointment exists', () => {
@@ -252,7 +251,7 @@ describe('TMPL-017: Replace placeholders with data', () => {
     const apartment = makeApartment('1001', 1, 1);
     const appointment = makeAppointment('1001', 1, 1, '2026-03-10', 540);
     const result = renderTemplate(template, apartment, appointment);
-    expect(result).toContain('mars');
+    expect(result).toContain('2026-03-10');
     expect(result).toContain('09:00');
   });
 
@@ -296,7 +295,7 @@ describe('TMPL-015: Preview with actual data', () => {
     const result = renderTemplate(template, apartment, appointment);
     expect(result).toContain('1001');
     expect(result).toContain('09:00');
-    expect(result).toContain('mars');
+    expect(result).toContain('2026-03-10');
     expect(result).toContain('Med vänliga hälsningar');
   });
 });
@@ -433,17 +432,18 @@ describe('generateTemplateId', () => {
 });
 
 describe('TMPL-025 to TMPL-028: dateFormatted DataField', () => {
-  it('should resolve dateFormatted to a non-empty string', () => {
+  it('should resolve dateFormatted to ISO date output', () => {
     const apartment = makeApartment('1001', 1, 1);
     const appointment = makeAppointment('1001', 1, 1, '2026-03-10', 540);
     const result = resolveDataField('dateFormatted', apartment, appointment);
-    expect(result.length).toBeGreaterThan(0);
+    expect(result).toBe('2026-03-10');
   });
 
-  it('should include dateFormatted in available data fields', () => {
+  it('should hide legacy locale-only date options from available data fields', () => {
     const fields = getAvailableDataFields();
     const fieldKeys = fields.map((f) => f.field);
-    expect(fieldKeys).toContain('dateFormatted');
+    expect(fieldKeys).not.toContain('dateFormatted');
+    expect(fieldKeys).not.toContain('dateSwedish');
   });
 
   it('should return empty string for dateFormatted when no appointment exists', () => {
@@ -456,8 +456,7 @@ describe('TMPL-025 to TMPL-028: dateFormatted DataField', () => {
     const apartment = makeApartment('1001', 1, 1);
     const appointment = makeAppointment('1001', 1, 1, '2026-03-10', 540);
     const result = resolveDataField('dateSwedish', apartment, appointment);
-    expect(result).toContain('mars');
-    expect(result).toContain('2026');
+    expect(result).toBe('2026-03-10');
   });
 });
 
@@ -494,7 +493,6 @@ describe('TMPL-029 to TMPL-032: ISO date/time placeholders', () => {
 
     const result = resolveDataField('dateSwedish', apartment, appointment);
 
-    expect(result).toContain('2026');
-    expect(result.length).toBeGreaterThan(0);
+    expect(result).toBe('2026-03-10');
   });
 });

@@ -1,12 +1,12 @@
 = Project Constraints
-:version: 1.0.0
-:last-updated: 2026-03-02
+:version: 1.1.0
+:last-updated: 2026-03-03
 
 == Dependencies
 
 * Only popular, well-known npm packages may be used as dependencies.
 * The number of direct dependencies shall be minimized -- prefer browser-native APIs and hand-written code over libraries.
-* Zero runtime (production) dependencies are permitted. All packages must be dev dependencies only.
+* Zero runtime overhead in production is required. Build-time and component-library dependencies are allowed only when they compile into static vanilla HTML/CSS/JS output and add no runtime dependency in the shipped site.
 * All dependencies must be MIT, Apache-2.0, or BSD-licensed.
 
 == Hosting

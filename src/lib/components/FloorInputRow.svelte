@@ -17,11 +17,12 @@
   }
 </script>
 
-<div class="floor-row" class:has-error={!!error}>
-  <label for="floor-{floorNumber}-apartments">
+<div class="flex flex-wrap items-center gap-2" class:border-red-400={!!error}>
+  <label class="min-w-24 text-sm font-medium text-stone-800" for="floor-{floorNumber}-apartments">
     Våning {floorNumber}:
   </label>
   <input
+    class="w-20 rounded-md border border-[var(--color-line-soft)] bg-white px-2 py-1 text-sm text-stone-900 outline-none transition focus:border-[var(--color-warm-500)] focus:ring-2 focus:ring-[color:var(--color-warm-500)]/25"
     id="floor-{floorNumber}-apartments"
     type="number"
     min="1"
@@ -31,52 +32,8 @@
     aria-invalid={!!error}
     aria-describedby={error ? `floor-${floorNumber}-error` : undefined}
   />
-  <span class="unit">lägenheter</span>
+  <span class="text-sm text-[var(--color-text-muted)]">lägenheter</span>
   {#if error}
-    <p class="error" id="floor-{floorNumber}-error" role="alert">{error}</p>
+    <p class="w-full text-sm text-red-700" id="floor-{floorNumber}-error" role="alert">{error}</p>
   {/if}
 </div>
-
-<style>
-  .floor-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-    flex-wrap: wrap;
-  }
-
-  label {
-    min-width: 6rem;
-    font-weight: 500;
-  }
-
-  input {
-    width: 5rem;
-    padding: 0.4rem 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 1rem;
-  }
-
-  input:focus {
-    outline: 2px solid #3498db;
-    outline-offset: 1px;
-  }
-
-  .has-error input {
-    border-color: #e74c3c;
-  }
-
-  .unit {
-    color: #666;
-    font-size: 0.9rem;
-  }
-
-  .error {
-    width: 100%;
-    margin: 0.25rem 0 0;
-    color: #e74c3c;
-    font-size: 0.85rem;
-  }
-</style>

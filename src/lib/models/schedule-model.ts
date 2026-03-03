@@ -174,63 +174,6 @@ export function addDays(dateStr: string, days: number): string {
 }
 
 /**
- * Formats a YYYY-MM-DD date as a Swedish-friendly display string.
- * Example: "2026-04-10" -> "torsdag 10 april 2026"
- */
-export function formatDateSwedish(dateStr: string): string {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
-
-  const weekdays = [
-    'söndag',
-    'måndag',
-    'tisdag',
-    'onsdag',
-    'torsdag',
-    'fredag',
-    'lördag',
-  ];
-  const months = [
-    'januari',
-    'februari',
-    'mars',
-    'april',
-    'maj',
-    'juni',
-    'juli',
-    'augusti',
-    'september',
-    'oktober',
-    'november',
-    'december',
-  ];
-
-  const weekday = weekdays[date.getDay()];
-  const month = months[date.getMonth()];
-  return `${weekday} ${d} ${month} ${y}`;
-}
-
-/**
- * Formats a YYYY-MM-DD date using the browser's locale-aware Intl.DateTimeFormat.
- * Example (sv locale): "2026-04-10" -> "torsdag 10 april 2026"
- * Falls back to formatDateSwedish() on error.
- */
-export function formatDateLocale(dateStr: string): string {
-  try {
-    const [y, m, d] = dateStr.split('-').map(Number);
-    const date = new Date(y, m - 1, d);
-    return new Intl.DateTimeFormat(undefined, {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    }).format(date);
-  } catch {
-    return formatDateSwedish(dateStr);
-  }
-}
-
-/**
  * Returns all available dates within the period, excluding weekends
  * (if configured) and excluded dates.
  */

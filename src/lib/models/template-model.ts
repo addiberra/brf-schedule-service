@@ -1,6 +1,6 @@
 import type { Apartment } from './building.js';
 import type { ScheduleAppointment } from './schedule.js';
-import { formatTime, formatDateSwedish, formatDateLocale } from './schedule-model.js';
+import { formatTime } from './schedule-model.js';
 import type {
   MessageTemplate,
   PlaceholderMapping,
@@ -80,9 +80,9 @@ export function resolveDataField(
     case 'time':
       return appointment ? formatTime(appointment.startTime) : '';
     case 'dateSwedish':
-      return appointment ? formatDateSwedish(appointment.date) : '';
+      return appointment ? appointment.date : '';
     case 'dateFormatted':
-      return appointment ? formatDateLocale(appointment.date) : '';
+      return appointment ? appointment.date : '';
   }
 }
 
@@ -134,7 +134,5 @@ export function getAvailableDataFields(): {
     { field: 'position', label: 'Position på våning' },
     { field: 'date', label: 'Datum (ÅÅÅÅ-MM-DD)' },
     { field: 'time', label: 'Tid (TT:MM)' },
-    { field: 'dateSwedish', label: 'Datum (svenska)' },
-    { field: 'dateFormatted', label: 'Datum (formaterat)' },
   ];
 }

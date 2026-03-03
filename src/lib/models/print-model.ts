@@ -87,7 +87,6 @@ export function generateScheduleOverviewData(
 
     return {
       date,
-      dateSwedish: date,
       appointments,
     };
   });

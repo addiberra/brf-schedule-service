@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button, Label, Select } from 'bits-ui';
   import type { MessageTemplate, PlaceholderMapping, DataField } from '../models/template.js';
   import { getAvailableDataFields } from '../models/template-model.js';
 
@@ -9,13 +10,11 @@
 
   let { template, onsave }: Props = $props();
 
-  // Local editing state -- deep clone to avoid mutating parent state
   let editName = $state('');
   let editBody = $state('');
   let editPlaceholders: PlaceholderMapping[] = $state([]);
-
-  // Sync when a different template is selected (track id only)
   let lastTemplateId = $state('');
+
   $effect(() => {
     if (template.id !== lastTemplateId) {
       lastTemplateId = template.id;
@@ -26,8 +25,12 @@
   });
 
   const availableFields = getAvailableDataFields();
+  const availableFieldItems = availableFields.map((field) => ({ value: field.field, label: field.label }));
 
-  // New placeholder form state
+  function getFieldLabel(field: DataField): string {
+    return availableFields.find((option) => option.field === field)?.label ?? field;
+  }
+
   let newPlaceholderName = $state('');
   let newPlaceholderField = $state<DataField>('apartmentId');
 
@@ -42,12 +45,8 @@
 
   function addPlaceholder() {
     const trimmed = newPlaceholderName.trim().toLowerCase().replace(/\s+/g, '_');
-    if (!trimmed) return;
-    if (editPlaceholders.some((p) => p.name === trimmed)) return;
-    editPlaceholders = [
-      ...editPlaceholders,
-      { name: trimmed, field: newPlaceholderField },
-    ];
+    if (!trimmed || editPlaceholders.some((p) => p.name === trimmed)) return;
+    editPlaceholders = [...editPlaceholders, { name: trimmed, field: newPlaceholderField }];
     newPlaceholderName = '';
   }
 
@@ -56,281 +55,112 @@
   }
 
   function updatePlaceholderField(name: string, field: DataField) {
-    editPlaceholders = editPlaceholders.map((p) =>
-      p.name === name ? { ...p, field } : p
-    );
+    editPlaceholders = editPlaceholders.map((p) => (p.name === name ? { ...p, field } : p));
   }
 
   function insertPlaceholder(name: string) {
-    editBody = editBody + `{${name}}`;
+    editBody = `${editBody}{${name}}`;
   }
 </script>
 
-<div class="template-editor" data-testid="template-editor">
-  <div class="field-group">
-    <label for="template-name">Mallnamn:</label>
-    <input
-      id="template-name"
-      type="text"
-      bind:value={editName}
-      placeholder="Ange mallens namn..."
-    />
+<div class="space-y-4 rounded-xl border border-[var(--color-line-soft)] bg-white p-4 shadow-sm" data-testid="template-editor">
+  <div class="space-y-1">
+    <Label.Root for="template-name" class="text-sm font-medium text-stone-800">Mallnamn:</Label.Root>
+    <input id="template-name" class="w-full rounded-md border border-[var(--color-line-soft)] px-3 py-2 text-sm" type="text" bind:value={editName} placeholder="Ange mallens namn..." />
   </div>
 
-  <div class="field-group">
-    <label for="template-body">Meddelande:</label>
-    <textarea
-      id="template-body"
-      bind:value={editBody}
-      rows="8"
-      placeholder="Skriv ditt meddelande här. Använd &#123;platshållare&#125; för dynamiska fält..."
-    ></textarea>
+  <div class="space-y-1">
+    <Label.Root for="template-body" class="text-sm font-medium text-stone-800">Meddelande:</Label.Root>
+    <textarea id="template-body" class="min-h-36 w-full rounded-md border border-[var(--color-line-soft)] px-3 py-2 text-sm" bind:value={editBody} rows="8" placeholder="Skriv ditt meddelande här. Använd &#123;platshållare&#125; för dynamiska fält..."></textarea>
   </div>
 
-  <div class="placeholders-section">
-    <h4>Platshållare</h4>
-
+  <div class="space-y-2">
+    <h4 class="text-sm font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">Platshållare</h4>
     {#if editPlaceholders.length > 0}
-      <table class="placeholder-table">
-        <thead>
-          <tr>
-            <th>Namn</th>
-            <th>Datafält</th>
-            <th>Infoga</th>
-            <th>Ta bort</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each editPlaceholders as placeholder (placeholder.name)}
+      <div class="overflow-x-auto rounded-lg border border-[var(--color-line-soft)]">
+        <table class="min-w-full border-collapse text-sm">
+          <thead class="bg-[var(--color-surface-1)] text-left text-xs uppercase tracking-wide text-stone-600">
             <tr>
-              <td><code>{`{${placeholder.name}}`}</code></td>
-              <td>
-                <select
-                  value={placeholder.field}
-                  onchange={(e) => {
-                    const target = e.target as HTMLSelectElement;
-                    updatePlaceholderField(placeholder.name, target.value as DataField);
-                  }}
-                >
-                  {#each availableFields as fieldOption}
-                    <option value={fieldOption.field}>{fieldOption.label}</option>
-                  {/each}
-                </select>
-              </td>
-              <td>
-                <button
-                  class="btn btn-insert"
-                  onclick={() => insertPlaceholder(placeholder.name)}
-                  title="Infoga i meddelande"
-                >+</button>
-              </td>
-              <td>
-                <button
-                  class="btn btn-remove"
-                  onclick={() => removePlaceholder(placeholder.name)}
-                >✕</button>
-              </td>
+              <th class="px-2 py-2">Namn</th>
+              <th class="px-2 py-2">Datafält</th>
+              <th class="px-2 py-2">Infoga</th>
+              <th class="px-2 py-2">Ta bort</th>
             </tr>
-          {/each}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {#each editPlaceholders as placeholder (placeholder.name)}
+              <tr class="border-t border-stone-200">
+                <td class="px-2 py-2"><code class="rounded bg-stone-100 px-1 py-0.5 text-xs">{`{${placeholder.name}}`}</code></td>
+                <td class="px-2 py-2">
+                  <Select.Root
+                    type="single"
+                    value={placeholder.field}
+                    items={availableFieldItems}
+                    onValueChange={(value) => updatePlaceholderField(placeholder.name, value as DataField)}
+                  >
+                    <Select.Trigger class="w-full min-w-44 rounded border border-[var(--color-line-soft)] bg-white px-2 py-1 text-left text-sm">
+                      {getFieldLabel(placeholder.field)}
+                    </Select.Trigger>
+                    <Select.Portal>
+                      <Select.Content class="z-50 mt-1 w-56 rounded-md border border-[var(--color-line-soft)] bg-white p-1 shadow-lg">
+                        <Select.Viewport>
+                          {#each availableFields as fieldOption}
+                            <Select.Item
+                              value={fieldOption.field}
+                              label={fieldOption.label}
+                              class="cursor-pointer rounded px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-[var(--color-surface-1)]"
+                            >
+                              {fieldOption.label}
+                            </Select.Item>
+                          {/each}
+                        </Select.Viewport>
+                      </Select.Content>
+                    </Select.Portal>
+                  </Select.Root>
+                </td>
+                <td class="px-2 py-2"><Button.Root class="rounded bg-violet-700 px-2 py-1 text-xs text-white hover:bg-violet-800" onclick={() => insertPlaceholder(placeholder.name)} title="Infoga i meddelande">Infoga</Button.Root></td>
+                <td class="px-2 py-2"><Button.Root class="rounded bg-red-700 px-2 py-1 text-xs text-white hover:bg-red-800" onclick={() => removePlaceholder(placeholder.name)}>Ta bort</Button.Root></td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
     {:else}
-      <p class="empty-notice">Inga platshållare definierade.</p>
+      <p class="text-sm italic text-[var(--color-text-muted)]">Inga platshållare definierade.</p>
     {/if}
 
-    <div class="add-placeholder">
-      <input
-        type="text"
-        bind:value={newPlaceholderName}
-        placeholder="Platshållarens namn..."
-      />
-      <select bind:value={newPlaceholderField}>
-        {#each availableFields as fieldOption}
-          <option value={fieldOption.field}>{fieldOption.label}</option>
-        {/each}
-      </select>
-      <button class="btn btn-add" onclick={addPlaceholder}>Lägg till</button>
+    <div class="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--color-line-soft)] bg-[var(--color-surface-1)] p-2">
+      <input class="min-w-44 flex-1 rounded-md border border-[var(--color-line-soft)] bg-white px-2 py-1 text-sm" type="text" bind:value={newPlaceholderName} placeholder="Platshållarens namn..." />
+      <Select.Root
+        type="single"
+        value={newPlaceholderField}
+        items={availableFieldItems}
+        onValueChange={(value) => (newPlaceholderField = value as DataField)}
+      >
+        <Select.Trigger class="w-full min-w-44 rounded-md border border-[var(--color-line-soft)] bg-white px-2 py-1 text-left text-sm">
+          {getFieldLabel(newPlaceholderField)}
+        </Select.Trigger>
+        <Select.Portal>
+          <Select.Content class="z-50 mt-1 w-56 rounded-md border border-[var(--color-line-soft)] bg-white p-1 shadow-lg">
+            <Select.Viewport>
+              {#each availableFields as fieldOption}
+                <Select.Item
+                  value={fieldOption.field}
+                  label={fieldOption.label}
+                  class="cursor-pointer rounded px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-[var(--color-surface-1)]"
+                >
+                  {fieldOption.label}
+                </Select.Item>
+              {/each}
+            </Select.Viewport>
+          </Select.Content>
+        </Select.Portal>
+      </Select.Root>
+      <Button.Root class="rounded-md bg-[var(--color-warm-600)] px-3 py-1.5 text-sm text-white hover:bg-[var(--color-warm-700)]" onclick={addPlaceholder}>Lägg till</Button.Root>
     </div>
   </div>
 
-  <div class="actions">
-    <button class="btn btn-save" data-testid="template-save-btn" onclick={handleSave}>Spara mall</button>
+  <div>
+    <Button.Root class="rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800" data-testid="template-save-btn" onclick={handleSave}>Spara mall</Button.Root>
   </div>
 </div>
-
-<style>
-  .template-editor {
-    background: white;
-    padding: 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  }
-
-  .field-group {
-    margin-bottom: 1rem;
-  }
-
-  .field-group label {
-    display: block;
-    font-weight: 500;
-    font-size: 0.9rem;
-    margin-bottom: 0.3rem;
-  }
-
-  .field-group input[type='text'] {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    box-sizing: border-box;
-  }
-
-  .field-group textarea {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    font-family: inherit;
-    resize: vertical;
-    box-sizing: border-box;
-  }
-
-  .field-group input:focus,
-  .field-group textarea:focus {
-    outline: 2px solid #3498db;
-    outline-offset: 1px;
-  }
-
-  .placeholders-section {
-    margin-top: 1rem;
-  }
-
-  .placeholders-section h4 {
-    font-size: 1rem;
-    margin: 0 0 0.5rem;
-    color: #34495e;
-  }
-
-  .placeholder-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 0.75rem;
-    font-size: 0.85rem;
-  }
-
-  .placeholder-table th,
-  .placeholder-table td {
-    padding: 0.4rem 0.5rem;
-    text-align: left;
-    border-bottom: 1px solid #eee;
-  }
-
-  .placeholder-table th {
-    font-weight: 600;
-    color: #555;
-    font-size: 0.8rem;
-  }
-
-  .placeholder-table code {
-    background: #f0f0f0;
-    padding: 0.1rem 0.3rem;
-    border-radius: 3px;
-    color: #2c3e50;
-  }
-
-  .placeholder-table select {
-    padding: 0.25rem 0.4rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 0.85rem;
-  }
-
-  .empty-notice {
-    color: #7f8c8d;
-    font-style: italic;
-    font-size: 0.9rem;
-    margin: 0.5rem 0;
-  }
-
-  .add-placeholder {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-    flex-wrap: wrap;
-  }
-
-  .add-placeholder input[type='text'] {
-    padding: 0.35rem 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 0.85rem;
-    flex: 1;
-    min-width: 120px;
-  }
-
-  .add-placeholder select {
-    padding: 0.35rem 0.4rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 0.85rem;
-  }
-
-  .actions {
-    margin-top: 1.25rem;
-  }
-
-  .btn {
-    padding: 0.3rem 0.7rem;
-    border: none;
-    border-radius: 4px;
-    font-size: 0.85rem;
-    cursor: pointer;
-  }
-
-  .btn-save {
-    background: #27ae60;
-    color: white;
-    padding: 0.5rem 1.25rem;
-    font-size: 0.9rem;
-  }
-
-  .btn-save:hover {
-    background: #219a52;
-  }
-
-  .btn-add {
-    background: #3498db;
-    color: white;
-  }
-
-  .btn-add:hover {
-    background: #2980b9;
-  }
-
-  .btn-insert {
-    background: #8e44ad;
-    color: white;
-    font-weight: bold;
-    font-size: 0.9rem;
-    padding: 0.15rem 0.5rem;
-  }
-
-  .btn-insert:hover {
-    background: #7d3c98;
-  }
-
-  .btn-remove {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #e74c3c;
-    font-size: 1rem;
-    padding: 0;
-  }
-
-  .btn-remove:hover {
-    color: #c0392b;
-  }
-</style>

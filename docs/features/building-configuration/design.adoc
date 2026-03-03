@@ -1,5 +1,5 @@
 = Design: Building Configuration
-:version: 1.2.0
+:version: 2.0.0
 :status: Current
 :source-stories-version: 1.3.0
 :source-spec-version: 1.2.0
@@ -9,399 +9,201 @@
 
 == Technical Context
 
-The building configuration feature is implemented and deployed. This update adds two enhancements: a uniform apartment count mode that simplifies input for buildings with identical floors, and a visually rich SVG facade illustration that replaces the current minimal rendering.
+This feature is already implemented and stays behaviorally unchanged. This design revision updates *how* the UI is implemented to align with the accepted architecture migration and redesign direction:
 
-All existing code, persistence, and validation remain unchanged. The enhancements are additive.
+* Tailwind CSS v4 utility-first styling replaces large component-scoped CSS.
+* Bits UI primitives become the standard interaction layer for key controls.
+* The application shell shifts from a single long page to tabbed top-level navigation.
+* The building facade keeps the same functional outputs while being visually redesigned for a warm professional look.
+
+All requirements in `spec.adoc` remain the source of truth and are still satisfied without adding or removing feature behavior.
 
 == Decisions and Constraints
 
-* <<../../adrs/0001-svelte5-vite6-typescript-static-site.adoc#,ADR-0001>>: Svelte 5 with runes, Vite 6, TypeScript, Vitest. Five dev dependencies only.
-* <<../../adrs/0002-browser-localstorage-persistence.adoc#,ADR-0002>>: Browser localStorage for all persistence, namespaced `brf-schedule:*`.
+* <<../../adrs/0001-svelte5-vite6-typescript-static-site.adoc#,ADR-0001>>: Svelte 5 + Vite 6 + TypeScript remain the base stack.
+* <<../../adrs/0002-browser-localstorage-persistence.adoc#,ADR-0002>>: Building configuration persistence remains browser `localStorage` under `brf-schedule:*` keys.
+* <<../../adrs/0003-tailwindcss-v4-bits-ui-warm-tabbed-redesign.adoc#,ADR-0003>>: Tailwind CSS v4 + Bits UI and tabbed navigation are the accepted architecture/tooling direction for redesign.
 
 From `docs/constraints.adoc`:
 
-* Zero runtime dependencies -- all packages are dev dependencies
-* Static site deployable to GitHub Pages
-* All user-facing text in Swedish
-* TypeScript strict mode
-* A4 print layout (relevant for future features, not this one)
+* Build output remains static HTML/CSS/JS for GitHub Pages.
+* No server-side code or external services are introduced.
+* Data remains exclusively in `localStorage`.
+* UI text remains Swedish.
+* TypeScript strict mode and test quality constraints remain in force.
 
 == Research and Unknowns
 
-No unknowns remain. SVG `<defs>`, `<filter>`, `<pattern>`, and `<linearGradient>` are universally supported in modern browsers. No external libraries are needed.
+No unresolved unknowns remain for this design update.
+
+Resolved research points:
+
+* Tailwind v4 utility composition can express the full warm redesign without changing business logic modules.
+* Bits UI primitives (Tabs, Checkbox, Button, Label, Dialog) satisfy interaction/accessibility needs while preserving existing behavior.
+* The redesigned facade remains SVG-based and reactive; no canvas or external graphics library is required.
 
 == System Design
-
-The feature consists of four layers: a data model, a persistence service, business logic utilities, and Svelte UI components.
 
 === Component Interaction Diagram
 
 [source,mermaid]
 ----
 flowchart TD
-    subgraph UI ["Svelte Components"]
+    subgraph Shell ["Application Shell"]
         App["App.svelte"]
+        Tabs["Bits Tabs\n(main navigation)"]
+    end
+
+    subgraph Building ["Building Configuration View"]
         BCP["BuildingConfigPanel.svelte"]
         FI["FloorInputRow.svelte"]
         BFI["BuildingFacade.svelte"]
+        UIBits["Bits UI\nCheckbox/Button/Label/Dialog"]
     end
 
     subgraph Logic ["Business Logic"]
-        BM["building-model.ts<br/>(validation, identifiers,<br/>default config, uniform)"]
+        BM["building-model.ts"]
     end
 
-    subgraph Persistence ["Persistence Layer"]
-        PS["storage.ts<br/>(localStorage read/write)"]
+    subgraph Persistence ["Persistence"]
+        ST["storage.ts"]
+        LS["localStorage\nbrf-schedule:building"]
     end
 
-    subgraph Browser ["Browser"]
-        LS["localStorage<br/>brf-schedule:building"]
-    end
-
-    App --> BCP
+    App --> Tabs
+    Tabs --> BCP
+    BCP --> UIBits
     BCP --> FI
     BCP --> BFI
     BCP --> BM
-    BCP --> PS
+    BCP --> ST
+    ST --> LS
     BFI --> BM
-    PS --> LS
 ----
 
-=== Data Flow Diagram
-
-[source,mermaid]
-----
-flowchart LR
-    USER["User input"] -->|floor count,<br/>apt counts,<br/>uniform toggle| BCP["BuildingConfigPanel"]
-    BCP -->|validate| BM["building-model.ts"]
-    BM -->|validation result| BCP
-    BCP -->|valid config| PS["storage.ts"]
-    PS -->|JSON| LS["localStorage"]
-    BCP -->|config data| BFI["BuildingFacade"]
-    BFI -->|renders| SVG["Enhanced SVG illustration"]
-    PS -->|load on startup| BCP
-----
-
-=== Sequence Diagram: User Modifies Configuration
+=== Primary Flow Sequence (Building Configuration)
 
 [source,mermaid]
 ----
 sequenceDiagram
     actor User
+    participant Tabs as Bits Tabs
     participant BCP as BuildingConfigPanel
     participant BM as building-model
-    participant PS as storage
+    participant ST as storage
     participant BFI as BuildingFacade
 
-    User->>BCP: Changes floor count or apartment count
-    BCP->>BM: validateFloorCount(value) / validateApartmentCount(value)
-    BM-->>BCP: ValidationResult (valid/invalid + error message)
-    alt Valid input
-        BCP->>BCP: Update $state (reactive)
-        BCP->>BM: generateApartmentIds(config)
-        BM-->>BCP: Apartment identifiers
-        BCP->>PS: saveBuilding(config)
-        PS->>PS: JSON.stringify → localStorage
-        BCP->>BFI: Pass updated config (reactive prop)
-        BFI->>BFI: Re-render enhanced SVG facade
-    else Invalid input
-        BCP->>BCP: Display validation error
+    User->>Tabs: Open "Byggnad" tab
+    Tabs-->>BCP: Render active tab panel
+    User->>BCP: Change floor/apartment values
+    BCP->>BM: Validate + derive apartments
+    BM-->>BCP: Valid/invalid result + identifiers
+    alt Valid state
+        BCP->>ST: saveBuilding(config)
+        ST->>ST: JSON serialize
+        ST->>ST: localStorage write
+        BCP->>BFI: Pass reactive config + apartments
+        BFI-->>User: Updated warm facade in real time
+    else Invalid state
+        BCP-->>User: Show inline Swedish validation message
     end
 ----
 
-=== Data Model
+=== UI Architecture and Styling Strategy
 
-All types are defined in `src/lib/models/building.ts`.
+==== App shell and tabbed navigation
 
-[source,typescript]
+`App.svelte` is restructured around Bits UI Tabs as the top-level navigation container. Each major feature renders inside a tab panel. The building-configuration tab keeps current data flow and callbacks.
+
+Implementation notes:
+
+* Tabs state is UI-only and does not affect persistence schema.
+* The building configuration panel mounts/unmounts via tab panels without changing persisted building data behavior.
+* Keyboard and ARIA behavior for tabs are provided by Bits UI primitives.
+
+==== Tailwind CSS v4 utility approach
+
+Tailwind utilities are the default styling mechanism. The feature defines a warm professional visual language through reusable utility patterns and CSS variables exposed at shell level.
+
+Design tokens (example variable set, exact values can be adjusted during implementation):
+
+[source,css]
 ----
-/** Configuration for a single floor */
-interface FloorConfig {
-  /** 1-based floor number */
-  floorNumber: number;
-  /** Number of apartments on this floor (1–20) */
-  apartmentCount: number;
-}
-
-/** Complete building configuration */
-interface BuildingConfig {
-  /** Number of floors (1–30) */
-  floorCount: number;
-  /** Per-floor configuration, indexed from 0 (floor 1 is index 0) */
-  floors: FloorConfig[];
-}
-
-/** An apartment with its computed identifier */
-interface Apartment {
-  /** Unique identifier: floorNumber * 1000 + position (e.g., 1001) */
-  id: string;
-  /** 1-based floor number */
-  floor: number;
-  /** 1-based position on floor */
-  position: number;
-}
-
-/** Validation result for a single field */
-interface ValidationResult {
-  valid: boolean;
-  error?: string;
+:root {
+  --surface-0: #f7f4ef;
+  --surface-1: #efe7dc;
+  --surface-2: #e3d6c3;
+  --text-strong: #2f2a24;
+  --text-muted: #5f5549;
+  --accent-warm: #a96f3f;
+  --accent-warm-strong: #8b552f;
+  --line-soft: #d6c7b3;
 }
 ----
 
-NOTE: The `BuildingConfig` interface is unchanged. Uniform mode is purely a UI concern -- when enabled, the panel writes the same apartment count to every floor in the existing `floors` array. No new fields are needed in the persisted model.
+Utility composition principles:
 
-=== Business Logic: `building-model.ts`
+* Layout: `grid`, `flex`, and responsive breakpoint utilities (`sm`, `md`, `lg`) replace custom layout CSS.
+* Surface styling: layered warm backgrounds, subtle borders, and soft shadows via utility classes.
+* Typography: utility-defined scale/weight for hierarchy; Swedish labels remain unchanged in content.
+* State styling: validation, hover, focus-visible, and disabled states are expressed with utility variants.
 
-Located at `src/lib/models/building-model.ts`. Pure functions with no side effects.
+==== Bits UI primitives usage in this feature
 
-Existing functions (unchanged):
+* `Checkbox` + `Label`: uniform apartment mode toggle (US-007).
+* `Button`: reset trigger and other panel actions.
+* `Dialog`: reset confirmation flow replacing browser-native confirm while keeping same decision behavior.
+* Tabs remain in app shell and affect access to this panel contextually.
 
-* `createDefaultConfig(): BuildingConfig` -- returns a default building with 1 floor, 2 apartments.
-* `validateFloorCount(value: number): ValidationResult` -- validates floor count is integer in [1, 30].
-* `validateApartmentCount(value: number): ValidationResult` -- validates apartment count is integer in [1, 20].
-* `generateApartmentId(floor: number, position: number): string` -- computes `floor * 1000 + position`, returned as a string.
-* `generateAllApartments(config: BuildingConfig): Apartment[]` -- generates all apartment objects for the building.
-* `totalApartments(config: BuildingConfig): number` -- sums apartment counts across floors.
-* `adjustFloors(config: BuildingConfig, newFloorCount: number): BuildingConfig` -- adds or removes floors when floor count changes, preserving existing floor data. New floors default to 2 apartments.
+=== BuildingConfigPanel responsibilities
 
-New function:
+The panel remains the orchestration component for this feature. Existing domain behavior is preserved; only interaction composition and visual layer change.
 
-* `setUniformApartmentCount(config: BuildingConfig, count: number): BuildingConfig` -- returns a new `BuildingConfig` where every floor has `apartmentCount` set to `count`. Preserves `floorCount` and `floorNumber` values. Used by BuildingConfigPanel when uniform mode is active and the shared input changes.
+State and derivations:
 
-[source,typescript]
-----
-export function setUniformApartmentCount(
-  config: BuildingConfig,
-  count: number
-): BuildingConfig {
-  return {
-    ...config,
-    floors: config.floors.map((floor) => ({ ...floor, apartmentCount: count })),
-  };
-}
-----
+* `config` from `loadBuilding()` fallback to `createDefaultConfig()`.
+* `validationErrors` keyed by field id.
+* `uniformMode` as non-persisted UI state.
+* `apartments` and `totalCount` as reactive derivations from model functions.
+* Autosave effect remains gated by valid state and writes with `saveBuilding(config)`.
 
-=== Persistence: `storage.ts`
+Input rendering strategy:
 
-Located at `src/lib/services/storage.ts`. Unchanged.
+* Floor count and numbering start inputs are rendered in a responsive form card.
+* Uniform mode ON: per-floor rows are hidden and replaced by one shared apartment count input.
+* Uniform mode OFF: per-floor rows return with current values preserved.
+* Validation messages are inline and associated with controls.
 
-* `const STORAGE_KEY = "brf-schedule:building"`
-* `saveBuilding(config: BuildingConfig): void` -- serializes to JSON, writes to localStorage.
-* `loadBuilding(): BuildingConfig | null` -- reads from localStorage, parses JSON. Returns null if key missing or parse fails.
-* `clearBuilding(): void` -- removes the key from localStorage.
+Reset flow:
 
-Uses `try/catch` around all localStorage operations for robustness (private browsing, quota exceeded).
+* Reset action opens Bits Dialog.
+* Confirm path: clear persisted state and restore default config.
+* Cancel path: no mutation.
 
-=== UI Components
+=== BuildingFacade redesign approach
 
-==== `App.svelte`
+`BuildingFacade.svelte` keeps SVG as rendering technology and keeps all functional mapping (floors, apartments, labels, real-time updates). The redesign focuses on aesthetics and responsive framing.
 
-Root component. Renders `BuildingConfigPanel` as the main (and currently only) view. Unchanged.
+Facade principles:
 
-==== `BuildingConfigPanel.svelte`
+* Warm professional palette with gradient walls and atmospheric background.
+* Clear apartment delineation with frames, headers, sills, and readable labels.
+* Architectural details (roof ridge, chimney, door, separators, alternating balconies, ground vegetation) remain dynamically computed from configuration.
+* SVG scales responsively inside a Tailwind-styled container (`w-full`, bounded max width, preserved aspect ratio).
 
-The main orchestrating component for building configuration.
+Responsive behavior:
 
-State management (Svelte 5 runes):
+* Mobile: facade appears below controls, reduced outer spacing, labels remain readable via minimum text size strategy.
+* Tablet/Desktop: two-column layout (controls + facade) where width permits.
+* Large apartment counts: horizontal overflow is avoided by viewBox scaling rather than clipping.
 
-* `let config = $state<BuildingConfig>(...)` -- initialized from `loadBuilding()` or `createDefaultConfig()`.
-* `let validationErrors = $state<Map<string, string>>(new Map())` -- keyed by field identifier (e.g., `"floorCount"`, `"floor-1-apartments"`, `"uniformCount"`).
-* `let uniformMode = $state<boolean>(false)` -- whether uniform apartment count mode is active. UI-only state, not persisted.
-* `let apartments = $derived(generateAllApartments(config))` -- recalculated reactively.
-* `let totalCount = $derived(totalApartments(config))` -- recalculated reactively.
-* `$effect(() => { ... })` -- persists valid configuration to localStorage whenever config changes.
+=== Data Model and Persistence
 
-New behavior for uniform mode:
+No data schema change is introduced in this design update.
 
-* A checkbox labeled "Samma antal lägenheter på alla våningar" is rendered below the floor count input.
-* When checked (`uniformMode = true`), the `{#each config.floors}` block rendering `FloorInputRow` components is hidden, and a single input field labeled "Antal lägenheter per våning:" is shown instead.
-* The single input's value is derived from `config.floors[0].apartmentCount`.
-* On change, the handler validates with `validateApartmentCount()` and calls `config = setUniformApartmentCount(config, value)`.
-* When the checkbox is toggled ON, the handler calls `config = setUniformApartmentCount(config, config.floors[0].apartmentCount)` to synchronize all floors to floor 1's count.
-* When the checkbox is toggled OFF, no changes are made -- the current per-floor values (which are all equal) are preserved and the per-floor inputs reappear.
-
-Existing behavior for floor count, per-floor input, total count, reset, and auto-save is unchanged.
-
-==== `FloorInputRow.svelte`
-
-Unchanged. Props: `floorNumber`, `apartmentCount`, `error`, `onchange`.
-
-==== `BuildingFacade.svelte`
-
-Fully rewritten to render a detailed, visually rich SVG facade. Props remain unchanged: `config: BuildingConfig`, `apartments: Apartment[]`.
-
-===== SVG Structure
-
-The SVG uses a `<defs>` section for reusable definitions:
-
-[source,xml]
-----
-<defs>
-  <!-- Wall gradient: warm stone, lighter at top, slightly darker at bottom -->
-  <linearGradient id="wallGradient" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0%" stop-color="#e8d5b7" />
-    <stop offset="100%" stop-color="#d4b896" />
-  </linearGradient>
-
-  <!-- Sky gradient: light blue fading to white -->
-  <linearGradient id="skyGradient" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0%" stop-color="#87ceeb" />
-    <stop offset="100%" stop-color="#d4eaf7" />
-  </linearGradient>
-
-  <!-- Window glass gradient: subtle reflection -->
-  <linearGradient id="glassGradient" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0%" stop-color="#a8d4e6" />
-    <stop offset="40%" stop-color="#d4e6f1" />
-    <stop offset="100%" stop-color="#87b5c9" />
-  </linearGradient>
-
-  <!-- Ground gradient: grass -->
-  <linearGradient id="groundGradient" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0%" stop-color="#5a8c69" />
-    <stop offset="100%" stop-color="#4a7c59" />
-  </linearGradient>
-
-  <!-- Drop shadow filter for building depth -->
-  <filter id="buildingShadow" x="-5%" y="-5%" width="115%" height="115%">
-    <feDropShadow dx="3" dy="3" stdDeviation="4" flood-color="#00000033" />
-  </filter>
-</defs>
-----
-
-===== Color Palette
-
-[cols="2,2,3", options="header"]
-|===
-| Element | Color | Hex
-
-| Wall base (warm stone)
-| Linear gradient
-| #e8d5b7 to #d4b896
-
-| Window frame (dark)
-| Solid
-| #2c3e50
-
-| Window glass
-| Linear gradient
-| #a8d4e6 to #87b5c9
-
-| Window sill / header
-| Solid
-| #8b7355
-
-| Roof (terracotta)
-| Solid
-| #a0522d
-
-| Roof ridge
-| Solid
-| #7a3b1e
-
-| Chimney
-| Solid
-| #6b4c3b
-
-| Sky
-| Linear gradient
-| #87ceeb to #d4eaf7
-
-| Ground (green)
-| Linear gradient
-| #5a8c69 to #4a7c59
-
-| Door (dark wood)
-| Solid
-| #5c4033
-
-| Balcony railing
-| Solid
-| #4a4a4a
-
-| Floor separator
-| Solid
-| #c4a882 (subtle)
-|===
-
-===== Rendering Layers (back to front)
-
-1. **Sky background**: Full-viewport `<rect>` with `skyGradient` fill.
-
-2. **Ground area**: A `<rect>` at the bottom spanning full width, filled with `groundGradient`. Simple ellipses (2-3 bushes) positioned along the ground strip in dark green (#3a6b49).
-
-3. **Building body**: A `<rect>` with `wallGradient` fill, with `filter="url(#buildingShadow)"` applied. Positioned from roof base to ground level.
-
-4. **Floor separators**: Horizontal `<line>` elements between each floor in `#c4a882`, `stroke-width="1"`, `opacity="0.6"`.
-
-5. **Windows per apartment**: Each apartment is rendered as a window group:
-   * Outer frame: `<rect>` in `#2c3e50`, 2px wider/taller than inner glass.
-   * Inner glass: `<rect>` with `glassGradient` fill.
-   * Window cross: Vertical and horizontal `<line>` in `#2c3e50`, `stroke-width="0.5"`.
-   * Sill: A small `<rect>` below the window, `#8b7355`, protruding 2px on each side.
-   * Header: A small `<rect>` above the window, `#8b7355`, protruding 1px on each side.
-   * Apartment label: `<text>` centered below the sill, `font-size="9"`, `#2c3e50`.
-
-6. **Balconies**: On alternating apartments (every other `position` on each floor, offset by 1 between floors for staggering), render:
-   * A protruding `<rect>` below the window (balcony platform), `#8b7355`, 4px thick.
-   * Vertical railing lines: 3 thin `<line>` elements in `#4a4a4a` above the platform.
-   * Condition: `(floorNumber + position) % 2 === 0` determines which apartments get balconies.
-
-7. **Entrance door** (ground floor only): Centered horizontally on the building.
-   * Outer doorframe: `<rect>` in `#5c4033`.
-   * Two door panels: Two `<rect>` elements side by side in `#7a5c47`.
-   * Door handles: Two small `<circle>` elements in `#c4a882`.
-   * Replaces the center window(s) on floor 1 -- if floor 1 has an odd apartment count, the middle apartment is replaced by the door; if even, the door occupies the center gap between the two middle apartments. Door width equals approximately 1.5x a window width.
-
-8. **Roof**: A `<polygon>` (triangle) in `#a0522d` spanning the building width.
-   * Ridge line: A `<line>` along the top edge of the triangle, `#7a3b1e`, `stroke-width="2"`.
-   * Chimney: A `<rect>` on the right quarter of the roof, `#6b4c3b`, extending above the roof slope. A small smoke wisp: 2-3 `<path>` elements using quadratic bezier curves (`Q`), `stroke="#cccccc"`, `fill="none"`, `stroke-width="1.5"`, `opacity="0.5"`.
-
-===== Layout Constants
-
-Updated constants for the enhanced facade:
-
-* `APARTMENT_WIDTH = 70` (increased from 60 for sills/headers)
-* `APARTMENT_HEIGHT = 55` (increased from 50 for sills/headers)
-* `FLOOR_PADDING = 12`
-* `WALL_PADDING = 30` (increased for shadows and ground)
-* `ROOF_HEIGHT = 50` (increased for chimney)
-* `GROUND_HEIGHT = 35` (new -- vegetation strip)
-* `WINDOW_INSET = 8` (padding inside the apartment cell for the window)
-* `SILL_HEIGHT = 4`
-* `HEADER_HEIGHT = 3`
-* `BALCONY_DEPTH = 12`
-
-ViewBox:
-
-* Width = `maxApartments * APARTMENT_WIDTH + 2 * WALL_PADDING`
-* Height = `floorCount * (APARTMENT_HEIGHT + FLOOR_PADDING) + ROOF_HEIGHT + GROUND_HEIGHT + WALL_PADDING`
-
-===== Accessibility
-
-The `<svg>` element retains `role="img"` and `aria-label="Fasadillustration av byggnaden"` for screen reader accessibility.
-
-=== File Structure
-
-----
-src/
-├── app.html                    # HTML shell
-├── main.ts                     # Entry point, mounts App.svelte
-├── App.svelte                  # Root component
-├── lib/
-│   ├── models/
-│   │   ├── building.ts         # TypeScript interfaces (unchanged)
-│   │   └── building-model.ts   # Pure business logic + setUniformApartmentCount
-│   ├── services/
-│   │   └── storage.ts          # localStorage persistence (unchanged)
-│   └── components/
-│       ├── BuildingConfigPanel.svelte  # + uniform mode toggle
-│       ├── FloorInputRow.svelte        # unchanged
-│       └── BuildingFacade.svelte       # rewritten: enhanced SVG
-└── __tests__/
-    ├── building-model.test.ts  # + tests for setUniformApartmentCount
-    └── storage.test.ts         # unchanged
-----
+* `BuildingConfig`, `FloorConfig`, `Apartment`, and validation result structures remain as currently specified.
+* Numbering start logic remains part of model derivation and validation.
+* `storage.ts` key namespace and migration behavior remain unchanged.
 
 == Story Resolution
 
@@ -409,90 +211,90 @@ src/
 
 Components:: BuildingConfigPanel, building-model
 Criteria::
-* Provides an input field for floor count -> BuildingConfigPanel renders a numeric input for `config.floorCount` (BCFG-001)
-* Accepts floor count 1-30 -> `validateFloorCount()` enforces [1, 30] range (BCFG-002)
-* Displays validation error for out-of-range -> BuildingConfigPanel shows error from `validationErrors` when `validateFloorCount()` returns invalid (BCFG-003)
-* Updates illustration on change -> `$state` reactivity propagates changed config to BuildingFacade (BCFG-004)
+* Floor count input remains present in panel form card (BCFG-001)
+* Valid range 1-30 enforced by existing floor validation logic (BCFG-002)
+* Invalid values show inline error and block valid-save state (BCFG-003)
+* Facade updates reactively when floor count changes (BCFG-004)
 
 === US-002: Configure Apartments per Floor
 
-Components:: BuildingConfigPanel, FloorInputRow, building-model
+Components:: BuildingConfigPanel, FloorInputRow, building-model, BuildingFacade
 Criteria::
-* Per-floor input field -> One FloorInputRow rendered per floor (BCFG-005)
-* Variable apartments per floor -> Each FloorInputRow binds to its own `floors[i].apartmentCount` (BCFG-006)
-* Accepts apartment count 1-20 -> `validateApartmentCount()` enforces [1, 20] range (BCFG-007)
-* Per-floor validation error -> FloorInputRow receives and displays the error for its specific floor (BCFG-008)
-* Illustration updates on change -> Reactive config propagation to BuildingFacade (BCFG-009)
-* Displays total apartments -> `totalCount = $derived(totalApartments(config))` rendered in BuildingConfigPanel (BCFG-010)
+* Per-floor apartment input rows remain available when uniform mode is off (BCFG-005)
+* Floor rows keep independent values in non-uniform mode (BCFG-006)
+* Range validation 1-20 remains unchanged (BCFG-007)
+* Errors stay floor-specific and rendered inline per row (BCFG-008)
+* Facade updates per floor change in real time (BCFG-009)
+* Total apartment count remains derived and displayed (BCFG-010)
 
 === US-003: Apartment Numbering
 
 Components:: building-model, BuildingConfigPanel, BuildingFacade
 Criteria::
-* Unique identifier per apartment -> `generateApartmentId(floor, position)` produces unique IDs (BCFG-011)
-* Identifier format floor*1000+position -> `generateApartmentId()` computes e.g., "1001", "2003" (BCFG-012)
-* Recalculate on config change -> `apartments = $derived(generateAllApartments(config))` recalculates reactively (BCFG-013)
+* Unique apartment identifiers continue to be generated by model functions (BCFG-011)
+* Identifier formatting behavior remains unchanged (BCFG-012)
+* Identifier recalculation remains reactive on configuration change (BCFG-013)
 
 === US-004: Building Facade Illustration
 
-Components:: BuildingFacade, building-model
+Components:: BuildingFacade
 Criteria::
-* Display front-facade illustration -> BuildingFacade renders inline SVG (BCFG-014)
-* Dynamic based on config -> SVG viewBox and elements computed from config props (BCFG-015)
-* Each apartment as distinct visual element -> SVG rectangles per apartment (BCFG-016)
-* Labels with apartment identifier -> SVG `<text>` elements with apartment ID inside each rectangle (BCFG-017)
-* Real-time update -> Svelte reactivity re-renders SVG when config props change (BCFG-018)
+* Facade remains visible as front-facing SVG illustration (BCFG-014)
+* Geometry remains dynamically driven by floors/apartments configuration (BCFG-015)
+* Apartments remain rendered as distinct facade elements (BCFG-016)
+* Apartment identifiers remain rendered as labels in facade (BCFG-017)
+* Reactive updates remain immediate on config edits (BCFG-018)
 
 === US-005: Save Building Configuration
 
-Components:: storage, BuildingConfigPanel
+Components:: BuildingConfigPanel, storage
 Criteria::
-* Persist on modification -> `$effect` in BuildingConfigPanel calls `saveBuilding(config)` when config changes (BCFG-019)
-* Restore on load -> BuildingConfigPanel initialization calls `loadBuilding()` (BCFG-020)
-* Default when no saved data -> `loadBuilding()` returns null, BuildingConfigPanel uses `createDefaultConfig()` (BCFG-021)
+* Valid configuration changes continue to persist to localStorage (BCFG-019)
+* Initialization continues to restore persisted building state (BCFG-020)
+* Default state is used when persisted data is absent (BCFG-021)
 
 === US-006: Reset Building Configuration
 
-Components:: BuildingConfigPanel, storage
+Components:: BuildingConfigPanel, Bits Dialog, storage
 Criteria::
-* Reset button present -> BuildingConfigPanel renders a reset button (BCFG-022)
-* Confirmation before reset -> Button click triggers `confirm()` dialog (BCFG-023)
-* Clear and restore defaults on confirm -> Calls `clearBuilding()` + `createDefaultConfig()` (BCFG-024)
-* Cancel preserves configuration -> `confirm()` returns false, no action taken (BCFG-025)
+* Reset control remains available as a button (BCFG-022)
+* Confirmation remains required, implemented through Bits Dialog (BCFG-023)
+* Confirm clears persistence and restores defaults (BCFG-024)
+* Cancel keeps configuration unchanged (BCFG-025)
 
 === US-007: Uniform Apartment Count Per Level
 
-Components:: BuildingConfigPanel, building-model
+Components:: BuildingConfigPanel, Bits Checkbox/Label, building-model
 Criteria::
-* Toggle control -> Checkbox "Samma antal lägenheter på alla våningar" in BuildingConfigPanel (BCFG-026)
-* Single shared input when enabled -> Per-floor FloorInputRow components hidden; single "Antal lägenheter per våning" input shown (BCFG-027)
-* Shared input applies to all floors -> Handler calls `setUniformApartmentCount(config, value)` (BCFG-028)
-* Uniform count range 1-20 -> Reuses `validateApartmentCount()` (BCFG-029)
-* Validation error -> Error displayed next to shared input (BCFG-030)
-* Per-floor inputs restored when disabled -> `uniformMode = false` re-shows FloorInputRow components; floor data unchanged (BCFG-031)
-* Enable sets all floors to floor 1 count -> `setUniformApartmentCount(config, config.floors[0].apartmentCount)` on toggle ON (BCFG-032)
+* Uniform mode toggle is implemented with Bits Checkbox and Label (BCFG-026)
+* Enabled state switches to one shared apartment count input (BCFG-027)
+* Shared input applies value across all floors via model helper (BCFG-028)
+* Uniform input range remains 1-20 (BCFG-029)
+* Invalid uniform value shows inline validation error (BCFG-030)
+* Disabling uniform mode restores per-floor inputs with preserved values (BCFG-031)
+* Enabling uniform mode still seeds all floors from floor 1 value (BCFG-032)
 
 === US-008: Enhanced Building Facade Illustration
 
 Components:: BuildingFacade
 Criteria::
-* Gradient/textured walls -> `wallGradient` applied to building body rect (BCFG-033)
-* Window frames with sills and headers -> Each window has outer frame, inner glass, sill rect, header rect (BCFG-034)
-* Detailed roof with ridge and chimney -> Roof polygon + ridge line + chimney rect + smoke wisps (BCFG-035)
-* Entrance door on ground floor -> Centered double door with handles, replacing center window(s) (BCFG-036)
-* Balconies on alternating apartments -> Platform + railing lines where `(floorNumber + position) % 2 === 0` (BCFG-037)
-* Floor separator lines -> Horizontal lines between floors in subtle color (BCFG-038)
-* Ground area with vegetation -> Green gradient strip + bush ellipses below building (BCFG-039)
-* Drop shadows -> SVG `<filter>` with `feDropShadow` on building body (BCFG-040)
-* Real-time update -> Svelte reactivity re-renders all SVG elements on config change (BCFG-041)
+* Warm gradient/textured wall treatment remains part of SVG body styling (BCFG-033)
+* Window frames, sills, and headers remain explicit sub-elements (BCFG-034)
+* Roof ridge and chimney remain rendered details (BCFG-035)
+* Ground-floor entrance door remains centered and dynamic (BCFG-036)
+* Alternating balconies remain algorithmically placed (BCFG-037)
+* Floor separator lines remain visible between levels (BCFG-038)
+* Ground strip with vegetation remains rendered below facade (BCFG-039)
+* Drop shadow/depth treatment remains applied (BCFG-040)
+* Full enhanced facade remains real-time reactive on configuration updates (BCFG-041)
 
 === US-009: Configurable Apartment Numbering Start
 
 Components:: BuildingConfigPanel, building-model, storage, BuildingFacade
 Criteria::
-* Numbering start input -> BuildingConfigPanel adds a numeric input for start value used by floor 1 apartment 1 (BCFG-042)
-* Valid set 1001..1901 step 100 -> `validateApartmentNumberStart()` enforces the accepted values (BCFG-043)
-* Validation error and prevent save -> Invalid start values are stored in `validationErrors`; autosave remains gated behind zero validation errors (BCFG-044)
-* Recalculate all apartment IDs on change -> `generateAllApartments()` uses numbering start and updates all derived apartment identifiers reactively (BCFG-045)
-* Preserve uniqueness -> ID generation uses floor+position offsets from the selected start value to ensure unique IDs in the generated apartment list (BCFG-046)
-* Legacy storage default -> `loadBuilding()` migration path sets missing numbering start to 1001 for previously saved configurations (BCFG-047)
+* Numbering start input remains present in the configuration form (BCFG-042)
+* Valid values remain constrained to accepted numbering start set (BCFG-043)
+* Invalid values still produce error and block valid-save path (BCFG-044)
+* Changing start value recalculates all displayed apartment identifiers (BCFG-045)
+* Uniqueness guarantees remain enforced by identifier generation approach (BCFG-046)
+* Legacy persisted data still defaults numbering start to 1001 on load (BCFG-047)

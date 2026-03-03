@@ -11,35 +11,28 @@
 
   let { result, overrides, onoverride, onrevert }: Props = $props();
 
-  // Group appointments by date
   let groupedByDate = $derived.by(() => {
     const groups = new Map<string, typeof result.appointments>();
-    for (const apt of result.appointments) {
-      const group = groups.get(apt.date);
-      if (group) {
-        group.push(apt);
-      } else {
-        groups.set(apt.date, [apt]);
-      }
+    for (const appointment of result.appointments) {
+      const group = groups.get(appointment.date);
+      if (group) group.push(appointment);
+      else groups.set(appointment.date, [appointment]);
     }
-    // Sort by date
-    return new Map(
-      [...groups.entries()].sort(([a], [b]) => a.localeCompare(b))
-    );
+    return new Map([...groups.entries()].sort(([a], [b]) => a.localeCompare(b)));
   });
 </script>
 
-<div class="schedule-view">
+<div class="mt-6 space-y-4">
   {#if result.warning}
-    <div class="warning" role="alert" data-testid="schedule-warning">
+    <div class="rounded-lg border border-amber-300 bg-amber-100/70 px-4 py-3 text-sm text-amber-900" role="alert" data-testid="schedule-warning">
       <strong>Varning:</strong> {result.warning}
     </div>
   {/if}
 
   {#if result.appointments.length === 0}
-    <p class="empty-state">Inga besiktningar schemalagda.</p>
+    <p class="text-sm italic text-[var(--color-text-muted)]">Inga besiktningar schemalagda.</p>
   {:else}
-    <p class="summary" data-testid="schedule-summary">
+    <p class="text-sm text-stone-700" data-testid="schedule-summary">
       Totalt: <strong>{result.appointments.length}</strong> besiktningar schemalagda
       {#if overrides.size > 0}
         ({overrides.size} manuellt ändrade)
@@ -47,85 +40,27 @@
     </p>
 
     {#each [...groupedByDate] as [date, appointments]}
-      <div class="date-group">
-        <h4 class="date-header">{date}</h4>
-        <table class="appointments-table">
-          <thead>
-            <tr>
-              <th>Lägenhet</th>
-              <th>Våning</th>
-              <th>Datum</th>
-              <th>Tid</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {#each appointments as appointment (appointment.apartmentId)}
-              <ScheduleAppointmentRow
-                {appointment}
-                {onoverride}
-                {onrevert}
-              />
-            {/each}
-          </tbody>
-        </table>
+      <div class="space-y-2">
+        <h4 class="border-b-2 border-[var(--color-warm-500)] pb-1 text-sm font-semibold text-stone-900">{date}</h4>
+        <div class="overflow-x-auto rounded-lg border border-[var(--color-line-soft)] bg-white">
+          <table class="min-w-full border-collapse">
+            <thead class="bg-[var(--color-surface-1)] text-left text-xs uppercase tracking-wide text-stone-600">
+              <tr>
+                <th class="px-2 py-2">Lägenhet</th>
+                <th class="px-2 py-2">Våning</th>
+                <th class="px-2 py-2">Datum</th>
+                <th class="px-2 py-2">Tid</th>
+                <th class="px-2 py-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {#each appointments as appointment (appointment.apartmentId)}
+                <ScheduleAppointmentRow {appointment} {onoverride} {onrevert} />
+              {/each}
+            </tbody>
+          </table>
+        </div>
       </div>
     {/each}
   {/if}
 </div>
-
-<style>
-  .schedule-view {
-    margin-top: 1.5rem;
-  }
-
-  .warning {
-    background: #fff3cd;
-    border: 1px solid #ffc107;
-    border-radius: 6px;
-    padding: 0.75rem 1rem;
-    margin-bottom: 1rem;
-    color: #856404;
-    font-size: 0.9rem;
-  }
-
-  .empty-state {
-    color: #7f8c8d;
-    font-style: italic;
-    padding: 1rem 0;
-  }
-
-  .summary {
-    margin: 0 0 1rem;
-    font-size: 0.95rem;
-    color: #34495e;
-  }
-
-  .date-group {
-    margin-bottom: 1.5rem;
-  }
-
-  .date-header {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: #2c3e50;
-    margin: 0 0 0.5rem;
-    padding-bottom: 0.25rem;
-    border-bottom: 2px solid #3498db;
-    text-transform: capitalize;
-  }
-
-  .appointments-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  .appointments-table th {
-    text-align: left;
-    padding: 0.3rem 0.6rem;
-    font-size: 0.8rem;
-    color: #7f8c8d;
-    font-weight: 500;
-    border-bottom: 1px solid #ddd;
-  }
-</style>

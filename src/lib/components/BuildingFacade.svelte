@@ -8,12 +8,12 @@
 
   let { config, apartments }: Props = $props();
 
-  const APARTMENT_WIDTH = 64;
-  const APARTMENT_HEIGHT = 52;
+  const APARTMENT_WIDTH = 70;
+  const APARTMENT_HEIGHT = 55;
   const FLOOR_PADDING = 12;
-  const WALL_PADDING = 24;
+  const WALL_PADDING = 30;
   const ROOF_HEIGHT = 50;
-  const GROUND_HEIGHT = 30;
+  const GROUND_HEIGHT = 35;
   const BALCONY_DEPTH = 10;
   const CHIMNEY_WIDTH = 16;
   const CHIMNEY_HEIGHT = 30;
@@ -76,6 +76,7 @@
 </script>
 
 <svg
+  class="mx-auto block h-auto w-full max-w-5xl rounded-xl border border-[var(--color-line-soft)] bg-[var(--color-surface-0)]/80 p-2"
   viewBox="0 0 {svgWidth} {svgHeight}"
   width="100%"
   role="img"
@@ -364,11 +365,3 @@
     />
   {/if}
 </svg>
-
-<style>
-  svg {
-    max-width: 100%;
-    height: auto;
-    display: block;
-  }
-</style>

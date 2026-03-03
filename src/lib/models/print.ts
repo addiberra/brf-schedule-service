@@ -28,8 +28,6 @@ export interface ScheduleOverviewRow {
 export interface ScheduleDateGroup {
   /** Date in YYYY-MM-DD format */
   date: string;
-  /** Swedish formatted date */
-  dateSwedish: string;
   /** Appointments on this date, ordered by time */
   appointments: ScheduleOverviewRow[];
 }

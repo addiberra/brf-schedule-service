@@ -256,7 +256,6 @@ describe('PRNT-006: Overview formatted as table by date', () => {
     const overview = generateScheduleOverviewData(result);
 
     expect(overview.dateGroups[0].date).toBe('2026-03-10');
-    expect(overview.dateGroups[0].dateSwedish).toBe('2026-03-10');
   });
 
   it('PRNT-017: should format times as HH:MM', () => {

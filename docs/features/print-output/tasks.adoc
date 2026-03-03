@@ -1,7 +1,7 @@
 = Implementation Tasks: Print Output
-:version: 1.1.0
-:status: Current
-:source-design-version: 1.1.0
+:version: 2.0.0
+:status: Implemented
+:source-design-version: 1.2.0
 :source-stories-version: 1.2.0
 :source-spec-version: 1.1.0
 :last-updated: 2026-03-03
@@ -10,7 +10,7 @@
 
 == Overview
 
-This feature adds print output capability to the BRF inspection schedule application. It composes data from building configuration, inspection scheduling, and message templates to produce two printable documents: individual apartment letters and a schedule overview. Phases 1-3 are implemented. Phase 4 adds ISO date/time presentation in print output. 4 phases, 11 tasks total.
+This feature adds print output capability to the BRF inspection schedule application. It composes data from building configuration, inspection scheduling, and message templates to produce two printable documents: individual apartment letters and a schedule overview. Historical implementation phases are preserved, and this version adds redesign migration tasks aligned to design v1.2.0 (Tailwind v4 + Bits UI + print layout migration). 5 phases, 16 tasks total.
 
 == Phase 1: Data Model and Business Logic
 
@@ -84,26 +84,70 @@ Description:: Create `src/__tests__/print-model.test.ts`. Test `generateLetterDa
 
 Align printed schedule headings and time values with ISO-style display while keeping letter placeholder rendering driven by template mappings.
 
-* [ ] TASK-009: Update print overview model/view to use ISO date headings [sequential]
+* [x] TASK-009: Update print overview model/view to use ISO date headings [sequential]
 +
 Components:: src/lib/models/print.ts, src/lib/models/print-model.ts, src/lib/components/PrintScheduleOverview.svelte
 Stories:: US-006
 Specs:: PRNT-016
 Description:: Replace Swedish-specific date heading output with YYYY-MM-DD in schedule overview data and rendering.
 
-* [ ] TASK-010: Verify overview times remain 24-hour HH:MM [parallel]
+* [x] TASK-010: Verify overview times remain 24-hour HH:MM [parallel]
 +
 Components:: src/lib/models/print-model.ts, src/lib/components/PrintScheduleOverview.svelte
 Stories:: US-006
 Specs:: PRNT-017
 Description:: Confirm schedule overview rows consistently render 24-hour time values from `formatTime()` without locale transformation.
 
-* [ ] TASK-011: Add tests for ISO heading output and template-driven letter formatting [sequential]
+* [x] TASK-011: Add tests for ISO heading output and template-driven letter formatting [sequential]
 +
 Components:: src/__tests__/print-model.test.ts
 Stories:: US-006
 Specs:: PRNT-016, PRNT-017, PRNT-018
 Description:: Add tests validating ISO date headings in overview output, 24-hour time values, and that letter rendering still follows template-selected date/time field formatting.
+
+== Phase 5: Print UI Migration to Tailwind/Bits
+
+Migrate print controls and print preview surfaces to the redesign architecture while preserving print behavior and A4 output guarantees.
+
+* [x] TASK-012: Refactor PrintPanel controls to Bits RadioGroup/Select/Button primitives [sequential]
++
+Components:: src/lib/components/PrintPanel.svelte
+Design:: Print Output design v1.2.0 - "PrintPanel Control Design (Bits UI)"
+Stories:: US-001, US-002, US-003
+Specs:: PRNT-002, PRNT-007, PRNT-009, PRNT-010, PRNT-011
+Description:: Replace native radios/select/button interaction layer with Bits primitives while preserving mode selection, template selection, and print trigger behavior.
+
+* [x] TASK-013: Migrate PrintPanel visual layer to Tailwind v4 warm redesign with responsive preview wrappers [parallel]
++
+Components:: src/lib/components/PrintPanel.svelte
+Design:: Print Output design v1.2.0 - "Styling and Token Strategy", "A4 Sizing and Print Media Behavior"
+Stories:: US-003, US-004
+Specs:: PRNT-011, PRNT-012, PRNT-013
+Description:: Replace component-scoped styling with Tailwind utilities and tokenized warm surfaces for screen preview while keeping print-mode hide/show behavior intact.
+
+* [x] TASK-014: Migrate PrintLetterPage and PrintScheduleOverview to utility-based A4 sizing and pagination classes [parallel]
++
+Components:: src/lib/components/PrintLetterPage.svelte, src/lib/components/PrintScheduleOverview.svelte
+Design:: Print Output design v1.2.0 - "A4 Sizing and Print Media Behavior"
+Stories:: US-001, US-002, US-004
+Specs:: PRNT-003, PRNT-004, PRNT-006, PRNT-008, PRNT-013
+Description:: Rework print surfaces to Tailwind utility classes (including exact A4 arbitrary values) while preserving page breaks, table grouping, and readable print typography.
+
+* [x] TASK-015: Align App shell integration for tabbed print mode and non-print visibility boundaries [sequential]
++
+Components:: src/App.svelte, src/lib/components/PrintPanel.svelte
+Design:: Print Output design v1.2.0 - "Component Interaction Diagram", "File Structure"
+Stories:: US-003, US-004, US-005
+Specs:: PRNT-009, PRNT-012, PRNT-014, PRNT-015
+Description:: Host print feature in the tabbed shell and update non-print wrappers so only intended print content is emitted during `window.print()`.
+
+* [x] TASK-016: Add migration-focused print contract tests and regression checks [sequential]
++
+Components:: src/__tests__/print-model.test.ts, src/__tests__/print-*.test.ts, src/__tests__/app*.test.ts
+Design:: Print Output design v1.2.0 - "Print Individual Letters" and "PrintPanel" sequences
+Stories:: US-001, US-002, US-003, US-005, US-006
+Specs:: PRNT-002, PRNT-008, PRNT-011, PRNT-014, PRNT-016, PRNT-017, PRNT-018
+Description:: Add or update tests that verify Bits-driven mode switching, print trigger readiness, A4 pagination behavior, and preserved ISO/template formatting semantics after migration.
 
 == Traceability
 
@@ -113,25 +157,25 @@ Description:: Add tests validating ISO date headings in overview output, 24-hour
 
 | US-001: Print Individual Apartment Letters
 | PRNT-001, PRNT-002, PRNT-003, PRNT-004
-| TASK-001, TASK-002, TASK-003, TASK-005, TASK-007
+| TASK-001, TASK-002, TASK-003, TASK-005, TASK-007, TASK-012, TASK-014, TASK-016
 
 | US-002: Print Schedule Overview
 | PRNT-005, PRNT-006, PRNT-007, PRNT-008
-| TASK-001, TASK-002, TASK-004, TASK-005, TASK-007
+| TASK-001, TASK-002, TASK-004, TASK-005, TASK-007, TASK-012, TASK-014, TASK-016
 
 | US-003: Select Print Mode
 | PRNT-009, PRNT-010, PRNT-011
-| TASK-005, TASK-007
+| TASK-005, TASK-007, TASK-012, TASK-013, TASK-015, TASK-016
 
 | US-004: A4 Page Layout
 | PRNT-012, PRNT-013
-| TASK-003, TASK-004, TASK-006
+| TASK-003, TASK-004, TASK-006, TASK-013, TASK-014, TASK-015
 
 | US-005: PDF Export via System Print Dialog
 | PRNT-014, PRNT-015
-| TASK-005, TASK-006
+| TASK-005, TASK-006, TASK-015, TASK-016
 
 | US-006: ISO Date/Time in Printed Schedule
 | PRNT-016, PRNT-017, PRNT-018
-| TASK-009, TASK-010, TASK-011
+| TASK-009, TASK-010, TASK-011, TASK-016
 |===

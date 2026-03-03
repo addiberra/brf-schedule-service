@@ -35,8 +35,6 @@ import {
   parseTime,
   isWeekend,
   addDays,
-  formatDateSwedish,
-  formatDateLocale,
   getAvailableDates,
   getMaxAppointmentsPerDay,
   calculateSchedule,
@@ -218,21 +216,6 @@ describe('addDays', () => {
 
   it('should handle adding 0 days', () => {
     expect(addDays('2026-03-02', 0)).toBe('2026-03-02');
-  });
-});
-
-describe('formatDateSwedish', () => {
-  it('should format a Monday date', () => {
-    const result = formatDateSwedish('2026-03-02');
-    expect(result).toContain('måndag');
-    expect(result).toContain('2');
-    expect(result).toContain('mars');
-    expect(result).toContain('2026');
-  });
-
-  it('should format a Saturday date', () => {
-    const result = formatDateSwedish('2026-03-07');
-    expect(result).toContain('lördag');
   });
 });
 
@@ -708,22 +691,6 @@ describe('edge cases', () => {
     expect(result.appointments).toHaveLength(3);
     const dates = new Set(result.appointments.map((a) => a.date));
     expect(dates.size).toBe(1);
-  });
-});
-
-describe('formatDateLocale', () => {
-  it('should return a non-empty string for a valid date', () => {
-    const result = formatDateLocale('2026-03-10');
-    expect(result.length).toBeGreaterThan(0);
-  });
-
-  it('should return a string containing the year', () => {
-    const result = formatDateLocale('2026-03-10');
-    expect(result).toContain('2026');
-  });
-
-  it('should not throw on valid input', () => {
-    expect(() => formatDateLocale('2026-04-15')).not.toThrow();
   });
 });
 

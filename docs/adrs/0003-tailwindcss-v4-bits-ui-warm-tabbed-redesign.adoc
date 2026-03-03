@@ -1,0 +1,40 @@
+= ADR-0003: Adopt Tailwind CSS v4 and Bits UI for Warm Tabbed UI Redesign
+:status: Accepted
+:date: 2026-03-03
+:deciders: Andreas Bergsten
+
+== Context
+
+The current UI relies on large component-scoped CSS blocks and a single long-page layout. The new desired state requires a full visual redesign with a warm professional look, consistent interactive primitives, and tabbed navigation while preserving the static-site architecture and existing functional behavior.
+
+The project constraints require popular, well-known packages, minimized dependency count, allowed licenses (MIT/Apache-2.0/BSD), and zero runtime dependencies declared in production dependency sections.
+
+== Decision
+
+We will standardize the UI stack on Tailwind CSS v4 and Bits UI.
+
+* Tailwind CSS v4 will be used as the primary styling system, including utility classes, design tokens, and print-specific arbitrary values where needed.
+* Bits UI headless components will be used for interactive primitives, including tabbed navigation as the primary top-level navigation pattern.
+* Existing large scoped CSS blocks will be replaced with Tailwind-based styling patterns.
+* Dependencies will remain declared as development dependencies only, consistent with project constraints.
+
+This ADR records the technology and interaction-pattern decision. Feature-level design documents define exact component structure and visual details.
+
+== Consequences
+
+* **Positive:** Consistent styling and spacing system across all views, reducing ad-hoc CSS divergence.
+* **Positive:** Faster UI iteration and cleaner component styling through utility-first classes and reusable headless primitives.
+* **Positive:** Tabbed navigation improves discoverability of core workflows and supports the full redesign goal.
+* **Negative:** Additional tooling and framework knowledge (Tailwind v4 + Bits UI) increases onboarding complexity.
+* **Negative:** Initial migration cost is significant because component styles and layout patterns must be rewritten.
+
+== Alternatives Considered
+
+=== Keep hand-written scoped CSS and current single-page layout
+Rejected because maintaining warm, consistent redesign quality across many components with custom CSS increases long-term maintenance overhead and inconsistency risk.
+
+=== Tailwind CSS v4 without Bits UI
+Rejected because interaction primitives (tabs, popovers, menus, dialogs) would still require hand-built accessibility behavior, increasing implementation and testing burden.
+
+=== Custom design system with no CSS framework
+Rejected because it provides maximum control but is slower to deliver and harder to keep consistent for the current migration scope.

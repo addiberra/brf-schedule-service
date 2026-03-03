@@ -1,7 +1,7 @@
 = Implementation Tasks: Inspection Scheduling
-:version: 2.1.0
-:status: Current
-:source-design-version: 1.2.0
+:version: 3.0.0
+:status: Implemented
+:source-design-version: 2.0.0
 :source-stories-version: 1.3.0
 :source-spec-version: 1.2.0
 :last-updated: 2026-03-03
@@ -10,7 +10,7 @@
 
 == Overview
 
-Implement the inspection scheduling feature in 5 phases with 15 tasks total. Phases 1-4 (TASK-001 through TASK-010) are the original implementation and are complete. Phase 5 adds configurable daily end time and browser-locale date formatting.
+Implement the inspection scheduling feature with historical implementation phases preserved and a new redesign migration phase aligned to design v2.0.0 (Tailwind v4, Bits UI primitives, tabbed shell integration). Earlier phases cover existing scheduling behavior; the latest phase captures migration work without behavioral changes. 7 phases, 23 tasks total.
 
 == Phase 1: Data Model and Core Logic
 
@@ -141,26 +141,70 @@ Description:: In `src/__tests__/schedule-model.test.ts`: (1) Add tests for `dail
 
 Switch schedule display from locale-long date labels to ISO date and 24-hour time presentation.
 
-* [ ] TASK-016: Update schedule view date headers to ISO format [sequential]
+* [x] TASK-016: Update schedule view date headers to ISO format [sequential]
 +
 Components:: src/lib/components/ScheduleView.svelte
 Stories:: US-011
 Specs:: SCHED-044, SCHED-047
 Description:: Replace locale-formatted date group headers with raw YYYY-MM-DD values from grouped appointment date keys.
 
-* [ ] TASK-017: Ensure manual override editing and row display use ISO/24h consistently [parallel]
+* [x] TASK-017: Ensure manual override editing and row display use ISO/24h consistently [parallel]
 +
 Components:: src/lib/components/ScheduleAppointmentRow.svelte, src/lib/components/ScheduleConfigPanel.svelte
 Stories:: US-011
 Specs:: SCHED-045, SCHED-046
 Description:: Keep date/time edit controls and rendered row values aligned with YYYY-MM-DD and HH:MM by using native date/time input values and `formatTime()` output for all displayed times.
 
-* [ ] TASK-018: Add/adjust tests for ISO schedule display behavior [sequential]
+* [x] TASK-018: Add/adjust tests for ISO schedule display behavior [sequential]
 +
 Components:: src/__tests__/schedule-model.test.ts, src/__tests__/schedule-view*.test.ts
 Stories:: US-011
 Specs:: SCHED-044, SCHED-045, SCHED-046, SCHED-047
 Description:: Add or update tests to verify grouped date headings and appointment display use YYYY-MM-DD and HH:MM, and that manual override editing preserves ISO/24-hour values.
+
+== Phase 7: Tailwind/Bits UI + Tabbed Shell Migration
+
+Migrate scheduling UI composition to design v2.0.0 while preserving schedule calculation, persistence, and formatting behavior.
+
+* [x] TASK-019: Refactor ScheduleConfigPanel to Tailwind v4 utility layout and warm token styling [sequential]
++
+Components:: src/lib/components/ScheduleConfigPanel.svelte
+Design:: Inspection Scheduling design v2.0.0 - "Tailwind CSS v4 strategy", "UI Architecture and Primitive Mapping"
+Stories:: US-001, US-002, US-003, US-004, US-007, US-009
+Specs:: SCHED-001, SCHED-005, SCHED-010, SCHED-014, SCHED-029, SCHED-036
+Description:: Replace panel-scoped CSS with Tailwind utilities and shell design tokens while keeping existing input value semantics and validation behavior unchanged.
+
+* [x] TASK-020: Replace scheduling control primitives with Bits UI components where specified [parallel]
++
+Components:: src/lib/components/ScheduleConfigPanel.svelte, src/lib/components/ScheduleAppointmentRow.svelte
+Design:: Inspection Scheduling design v2.0.0 - "Bits UI primitives in this feature"
+Stories:: US-003, US-004, US-006, US-007
+Specs:: SCHED-013, SCHED-015, SCHED-024, SCHED-029
+Description:: Adopt Bits Label/Checkbox/Select/Button/Dialog primitives for schedule controls and row actions while retaining native date/time inputs for behavioral compatibility.
+
+* [x] TASK-021: Integrate inspection scheduling into top-level Bits Tabs shell [sequential]
++
+Components:: src/App.svelte, src/lib/components/ScheduleConfigPanel.svelte
+Design:: Inspection Scheduling design v2.0.0 - "Component Interaction Diagram", "Primary Flow Sequence"
+Stories:: US-001, US-005, US-008
+Specs:: SCHED-004, SCHED-019, SCHED-033
+Description:: Render scheduling feature inside the `Schema` tab and verify tab activation does not alter autosave/recalculation semantics.
+
+* [x] TASK-022: Migrate ScheduleView and ScheduleAppointmentRow visual layer to Tailwind utilities [parallel]
++
+Components:: src/lib/components/ScheduleView.svelte, src/lib/components/ScheduleAppointmentRow.svelte
+Design:: Inspection Scheduling design v2.0.0 - "UI Architecture and Primitive Mapping", "Manual Override Sequence"
+Stories:: US-005, US-006, US-011
+Specs:: SCHED-022, SCHED-026, SCHED-045, SCHED-046, SCHED-047
+Description:: Preserve grouping, override markers, and ISO/24-hour presentation while reworking list/table layout and state styles to the redesign system.
+
+* [x] TASK-023: Add migration-focused contract/UI tests for tab navigation and primitive parity [sequential]
++
+Components:: src/__tests__/schedule-*.test.ts, src/__tests__/app*.test.ts
+Design:: Inspection Scheduling design v2.0.0 - "Primary Flow Sequence", "Manual Override Sequence"
+Stories:: US-001, US-004, US-006, US-011
+Specs:: SCHED-002, SCHED-018, SCHED-027, SCHED-044, SCHED-046
+Description:: Add tests that verify schedule behavior parity after migration, including tabbed access, exclusion recalculation, override preservation, and ISO date/time rendering.
 
 == Traceability
 
@@ -170,45 +214,45 @@ Description:: Add or update tests to verify grouped date headings and appointmen
 
 | US-001: Configure Inspection Period
 | SCHED-001, SCHED-002, SCHED-003, SCHED-004
-| TASK-001, TASK-002, TASK-007, TASK-008
+| TASK-001, TASK-002, TASK-007, TASK-008, TASK-019, TASK-021, TASK-023
 
 | US-002: Configure Daily Inspection Time
 | SCHED-005, SCHED-006, SCHED-007, SCHED-008, SCHED-009
-| TASK-001, TASK-002, TASK-007
+| TASK-001, TASK-002, TASK-007, TASK-019
 
 | US-003: Configure Lunch Break
 | SCHED-010, SCHED-011, SCHED-012, SCHED-013
-| TASK-001, TASK-003, TASK-007
+| TASK-001, TASK-003, TASK-007, TASK-019, TASK-020
 
 | US-004: Exclude Weekends and Specific Dates
 | SCHED-014, SCHED-015, SCHED-016, SCHED-017, SCHED-018
-| TASK-003, TASK-007
+| TASK-003, TASK-007, TASK-019, TASK-020, TASK-023
 
 | US-005: Automatic Schedule Calculation
 | SCHED-019, SCHED-020, SCHED-021, SCHED-022, SCHED-023
-| TASK-003, TASK-006, TASK-007, TASK-008
+| TASK-003, TASK-006, TASK-007, TASK-008, TASK-021, TASK-022
 
 | US-006: Manual Override of Individual Times
 | SCHED-024, SCHED-025, SCHED-026, SCHED-027, SCHED-028
-| TASK-003, TASK-005, TASK-006
+| TASK-003, TASK-005, TASK-006, TASK-020, TASK-022, TASK-023
 
 | US-007: Configure Maximum Apartments per Day
 | SCHED-029, SCHED-030, SCHED-031, SCHED-032
-| TASK-001, TASK-003, TASK-007
+| TASK-001, TASK-003, TASK-007, TASK-019, TASK-020
 
 | US-008: Save Inspection Schedule
 | SCHED-033, SCHED-034, SCHED-035
-| TASK-004, TASK-007, TASK-010
+| TASK-004, TASK-007, TASK-010, TASK-021
 
 | US-009: Configure Daily End Time
 | SCHED-036, SCHED-037, SCHED-038, SCHED-039, SCHED-040
-| TASK-011, TASK-012, TASK-014, TASK-015
+| TASK-011, TASK-012, TASK-014, TASK-015, TASK-019
 
 | US-010: Browser-Locale Date Formatting
 | SCHED-041, SCHED-042, SCHED-043
-| TASK-013, TASK-014, TASK-015
+| TASK-013, TASK-014, TASK-015, TASK-022
 
 | US-011: ISO Date and 24-Hour Time Display
 | SCHED-044, SCHED-045, SCHED-046, SCHED-047
-| TASK-016, TASK-017, TASK-018
+| TASK-016, TASK-017, TASK-018, TASK-022, TASK-023
 |===

@@ -1,7 +1,7 @@
 = Implementation Tasks: Building Configuration
-:version: 2.1.0
-:status: Current
-:source-design-version: 1.2.0
+:version: 3.0.0
+:status: Implemented
+:source-design-version: 2.0.0
 :source-stories-version: 1.3.0
 :source-spec-version: 1.2.0
 :last-updated: 2026-03-03
@@ -10,7 +10,7 @@
 
 == Overview
 
-Implementation of the building configuration feature -- the first feature in the project. Includes project scaffolding (Vite 6 + Svelte 5 + TypeScript + Vitest), data model, persistence layer, business logic, and UI components with SVG facade illustration. Phases 1-6 are implemented. Phase 7 adds configurable apartment numbering start. 7 phases, 20 tasks.
+Implementation of the building configuration feature with historical phases preserved and a new migration phase aligned to design v2.0.0 (Tailwind v4, Bits UI primitives, tabbed shell integration, warm facade redesign). Phases 1-7 are implemented. Phase 8 defines migration work for the redesign transition. 8 phases, 25 tasks.
 
 == Phase 1: Foundation
 
@@ -152,33 +152,77 @@ Description:: Run `npm run test` and `npm run build`. Verify all existing tests 
 
 Add support for choosing the first apartment identifier series (for example 1001 or 1101).
 
-* [ ] TASK-017: Extend building model with apartment numbering start [sequential]
+* [x] TASK-017: Extend building model with apartment numbering start [sequential]
 +
 Components:: src/lib/models/building.ts, src/lib/models/building-model.ts
 Stories:: US-009
 Specs:: BCFG-043, BCFG-045, BCFG-046
 Description:: Add an `apartmentNumberStart` field to the building config model and update apartment ID generation to derive IDs from the configured start value while preserving uniqueness across floors and positions.
 
-* [ ] TASK-018: Add numbering-start input and validation in BuildingConfigPanel [sequential]
+* [x] TASK-018: Add numbering-start input and validation in BuildingConfigPanel [sequential]
 +
 Components:: src/lib/components/BuildingConfigPanel.svelte
 Stories:: US-009
 Specs:: BCFG-042, BCFG-043, BCFG-044, BCFG-045
 Description:: Add a UI input for apartment numbering start, validate accepted values (1001..1901 step 100), show Swedish validation errors, and trigger apartment ID recalculation when the value changes.
 
-* [ ] TASK-019: Add storage migration for legacy building data [parallel]
+* [x] TASK-019: Add storage migration for legacy building data [parallel]
 +
 Components:: src/lib/services/storage.ts
 Stories:: US-009
 Specs:: BCFG-047
 Description:: Update building load logic so saved configurations without numbering-start metadata default to 1001 without breaking existing persisted data.
 
-* [ ] TASK-020: Add tests for configurable numbering start and migration [sequential]
+* [x] TASK-020: Add tests for configurable numbering start and migration [sequential]
 +
 Components:: src/__tests__/building-model.test.ts, src/__tests__/storage.test.ts
 Stories:: US-009
 Specs:: BCFG-043, BCFG-044, BCFG-045, BCFG-046, BCFG-047
 Description:: Add unit tests for valid/invalid numbering start values, apartment ID recalculation behavior, uniqueness guarantees, and legacy storage fallback to 1001.
+
+== Phase 8: Tailwind/Bits UI + Tabbed Shell Migration
+
+Migrate the existing building configuration UI to the redesign architecture defined in design v2.0.0 while preserving behavior.
+
+* [x] TASK-021: Move BuildingConfigPanel to Tailwind v4 utility layout and tokenized warm styling [sequential]
++
+Components:: src/lib/components/BuildingConfigPanel.svelte
+Design:: Building Configuration design v2.0.0 - "UI Architecture and Styling Strategy", "BuildingConfigPanel responsibilities"
+Stories:: US-001, US-002, US-003, US-005, US-007, US-009
+Specs:: BCFG-001, BCFG-005, BCFG-010, BCFG-019, BCFG-026, BCFG-042
+Description:: Replace panel-scoped CSS with Tailwind utility composition and shell-provided warm tokens, keeping current form behavior, validation behavior, and reactive autosave unchanged.
+
+* [x] TASK-022: Replace reset confirmation and uniform-mode controls with Bits primitives [parallel]
++
+Components:: src/lib/components/BuildingConfigPanel.svelte
+Design:: Building Configuration design v2.0.0 - "Bits UI primitives usage in this feature", "Reset flow"
+Stories:: US-006, US-007
+Specs:: BCFG-023, BCFG-024, BCFG-026, BCFG-027, BCFG-031
+Description:: Replace browser `confirm()` with Bits Dialog and use Bits Checkbox/Label/Button primitives for panel actions while preserving confirmation and toggle semantics.
+
+* [x] TASK-023: Integrate building feature into top-level Bits Tabs app shell [sequential]
++
+Components:: src/App.svelte, src/lib/components/BuildingConfigPanel.svelte
+Design:: Building Configuration design v2.0.0 - "App shell and tabbed navigation"
+Stories:: US-001, US-004, US-005
+Specs:: BCFG-001, BCFG-014, BCFG-020
+Description:: Host building configuration in the new tabbed shell (`Byggnad` tab), ensuring mount/unmount behavior does not alter persistence or derived apartment outputs.
+
+* [x] TASK-024: Restyle and refactor BuildingFacade for warm redesign within responsive utility container [parallel]
++
+Components:: src/lib/components/BuildingFacade.svelte
+Design:: Building Configuration design v2.0.0 - "BuildingFacade redesign approach"
+Stories:: US-004, US-008
+Specs:: BCFG-014, BCFG-033, BCFG-034, BCFG-038, BCFG-041
+Description:: Keep SVG rendering behavior and reactive mapping intact while updating visual treatment (palette, details, depth, responsive framing) to the redesign specification.
+
+* [x] TASK-025: Add migration-focused contract/UI tests for tabbed access and Bits/Tailwind behavior parity [sequential]
++
+Components:: src/__tests__/building-config-panel*.test.ts, src/__tests__/app*.test.ts
+Design:: Building Configuration design v2.0.0 - "Primary Flow Sequence", "App shell and tabbed navigation"
+Stories:: US-001, US-006, US-007, US-008
+Specs:: BCFG-004, BCFG-023, BCFG-027, BCFG-041
+Description:: Add or update tests that verify access via tabs, reset dialog confirmation semantics, uniform mode behavior parity, and real-time facade updates after redesign migration.
 
 == Traceability
 
@@ -188,37 +232,37 @@ Description:: Add unit tests for valid/invalid numbering start values, apartment
 
 | US-001: Configure Number of Floors
 | BCFG-001, BCFG-002, BCFG-003, BCFG-004
-| TASK-002, TASK-003, TASK-006, TASK-008
+| TASK-002, TASK-003, TASK-006, TASK-008, TASK-021, TASK-023, TASK-025
 
 | US-002: Configure Apartments per Floor
 | BCFG-005, BCFG-006, BCFG-007, BCFG-008, BCFG-009, BCFG-010
-| TASK-002, TASK-003, TASK-005, TASK-006, TASK-008
+| TASK-002, TASK-003, TASK-005, TASK-006, TASK-008, TASK-021
 
 | US-003: Apartment Numbering
 | BCFG-011, BCFG-012, BCFG-013
-| TASK-002, TASK-003, TASK-006, TASK-008
+| TASK-002, TASK-003, TASK-006, TASK-008, TASK-021
 
 | US-004: Building Facade Illustration
 | BCFG-014, BCFG-015, BCFG-016, BCFG-017, BCFG-018
-| TASK-007, TASK-008, TASK-015
+| TASK-007, TASK-008, TASK-015, TASK-023, TASK-024
 
 | US-005: Save Building Configuration
 | BCFG-019, BCFG-020, BCFG-021
-| TASK-004, TASK-006, TASK-008
+| TASK-004, TASK-006, TASK-008, TASK-021, TASK-023
 
 | US-006: Reset Building Configuration
 | BCFG-022, BCFG-023, BCFG-024, BCFG-025
-| TASK-004, TASK-006, TASK-008
+| TASK-004, TASK-006, TASK-008, TASK-022, TASK-025
 
 | US-007: Uniform Apartment Count Per Level
 | BCFG-026, BCFG-027, BCFG-028, BCFG-029, BCFG-030, BCFG-031, BCFG-032
-| TASK-011, TASK-012, TASK-013
+| TASK-011, TASK-012, TASK-013, TASK-021, TASK-022, TASK-025
 
 | US-008: Enhanced Building Facade Illustration
 | BCFG-033, BCFG-034, BCFG-035, BCFG-036, BCFG-037, BCFG-038, BCFG-039, BCFG-040, BCFG-041
-| TASK-014, TASK-015, TASK-016
+| TASK-014, TASK-015, TASK-016, TASK-024, TASK-025
 
 | US-009: Configurable Apartment Numbering Start
 | BCFG-042, BCFG-043, BCFG-044, BCFG-045, BCFG-046, BCFG-047
-| TASK-017, TASK-018, TASK-019, TASK-020
+| TASK-017, TASK-018, TASK-019, TASK-020, TASK-021
 |===

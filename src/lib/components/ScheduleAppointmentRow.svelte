@@ -1,6 +1,9 @@
 <script lang="ts">
+  import { Button } from 'bits-ui';
   import type { ScheduleAppointment } from '../models/schedule.js';
   import { formatTime, parseTime } from '../models/schedule-model.js';
+  import BitsIsoDateField from './BitsIsoDateField.svelte';
+  import BitsIsoTimeField from './BitsIsoTimeField.svelte';
 
   interface Props {
     appointment: ScheduleAppointment;
@@ -21,8 +24,7 @@
   }
 
   function confirmEdit() {
-    const time = parseTime(editTime);
-    onoverride(appointment.apartmentId, editDate, time);
+    onoverride(appointment.apartmentId, editDate, parseTime(editTime));
     editing = false;
   }
 
@@ -35,118 +37,34 @@
   }
 </script>
 
-<tr class="appointment-row" class:override={appointment.manualOverride} data-testid="appointment-row-{appointment.apartmentId}">
-  <td class="apt-id">{appointment.apartmentId}</td>
-  <td class="apt-floor">Vån {appointment.floor}</td>
+<tr class={`border-b border-stone-200 text-sm ${appointment.manualOverride ? 'bg-amber-100/60' : ''}`} data-testid="appointment-row-{appointment.apartmentId}">
+  <td class="px-2 py-2 font-semibold text-stone-900">{appointment.apartmentId}</td>
+  <td class="px-2 py-2 text-stone-600">Vån {appointment.floor}</td>
   {#if editing}
-    <td class="apt-date">
-      <input type="date" bind:value={editDate} class="edit-input" />
+    <td class="px-2 py-2">
+      <BitsIsoDateField id={`override-date-${appointment.apartmentId}`} value={editDate} ariaLabel={`Redigera datum för lägenhet ${appointment.apartmentId}`} onchange={(value) => (editDate = value)} />
     </td>
-    <td class="apt-time">
-      <input type="time" bind:value={editTime} class="edit-input" />
+    <td class="px-2 py-2">
+      <BitsIsoTimeField id={`override-time-${appointment.apartmentId}`} value={editTime} ariaLabel={`Redigera tid för lägenhet ${appointment.apartmentId}`} onchange={(value) => (editTime = value)} />
     </td>
-    <td class="apt-actions">
-      <button class="btn btn-confirm" onclick={confirmEdit}>Spara</button>
-      <button class="btn btn-cancel" onclick={cancelEdit}>Avbryt</button>
+    <td class="px-2 py-2">
+      <div class="flex flex-wrap gap-1">
+        <Button.Root class="rounded bg-emerald-700 px-2 py-1 text-xs text-white hover:bg-emerald-800" onclick={confirmEdit}>Spara</Button.Root>
+        <Button.Root class="rounded bg-stone-400 px-2 py-1 text-xs text-white hover:bg-stone-500" onclick={cancelEdit}>Avbryt</Button.Root>
+      </div>
     </td>
   {:else}
-    <td class="apt-date">{appointment.date}</td>
-    <td class="apt-time">{formatTime(appointment.startTime)}</td>
-    <td class="apt-actions">
-      {#if appointment.manualOverride}
-        <span class="override-badge">Manuell</span>
-        <button class="btn btn-revert" onclick={handleRevert}>Återställ</button>
-      {:else}
-        <button class="btn btn-edit" onclick={startEdit}>Ändra</button>
-      {/if}
+    <td class="px-2 py-2">{appointment.date}</td>
+    <td class="px-2 py-2">{formatTime(appointment.startTime)}</td>
+    <td class="px-2 py-2">
+      <div class="flex flex-wrap items-center gap-1">
+        {#if appointment.manualOverride}
+          <span class="rounded bg-amber-500 px-2 py-0.5 text-xs font-semibold text-white">Manuell</span>
+          <Button.Root class="rounded bg-orange-700 px-2 py-1 text-xs text-white hover:bg-orange-800" onclick={handleRevert}>Återställ</Button.Root>
+        {:else}
+          <Button.Root class="rounded bg-stone-200 px-2 py-1 text-xs text-stone-800 hover:bg-stone-300" onclick={startEdit}>Ändra</Button.Root>
+        {/if}
+      </div>
     </td>
   {/if}
 </tr>
-
-<style>
-  .appointment-row td {
-    padding: 0.4rem 0.6rem;
-    border-bottom: 1px solid #eee;
-    font-size: 0.9rem;
-  }
-
-  .override td {
-    background-color: #fff8e1;
-  }
-
-  .apt-id {
-    font-weight: 600;
-    color: #2c3e50;
-  }
-
-  .apt-floor {
-    color: #7f8c8d;
-  }
-
-  .edit-input {
-    padding: 0.2rem 0.3rem;
-    border: 1px solid #3498db;
-    border-radius: 3px;
-    font-size: 0.85rem;
-  }
-
-  .apt-actions {
-    white-space: nowrap;
-  }
-
-  .btn {
-    padding: 0.2rem 0.5rem;
-    border: none;
-    border-radius: 3px;
-    font-size: 0.8rem;
-    cursor: pointer;
-    margin-right: 0.25rem;
-  }
-
-  .btn-edit {
-    background: #ecf0f1;
-    color: #2c3e50;
-  }
-
-  .btn-edit:hover {
-    background: #dfe6e9;
-  }
-
-  .btn-confirm {
-    background: #27ae60;
-    color: white;
-  }
-
-  .btn-confirm:hover {
-    background: #219a52;
-  }
-
-  .btn-cancel {
-    background: #95a5a6;
-    color: white;
-  }
-
-  .btn-cancel:hover {
-    background: #7f8c8d;
-  }
-
-  .btn-revert {
-    background: #e67e22;
-    color: white;
-  }
-
-  .btn-revert:hover {
-    background: #d35400;
-  }
-
-  .override-badge {
-    display: inline-block;
-    padding: 0.1rem 0.4rem;
-    background: #f39c12;
-    color: white;
-    border-radius: 3px;
-    font-size: 0.75rem;
-    margin-right: 0.25rem;
-    vertical-align: middle;
-  }
-</style>

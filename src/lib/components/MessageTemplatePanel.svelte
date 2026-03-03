@@ -1,5 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte';
+  import { Button, Dialog, Tabs } from 'bits-ui';
   import type { Apartment } from '../models/building.js';
   import type { ScheduleResult } from '../models/schedule.js';
   import type { MessageTemplate } from '../models/template.js';
@@ -17,14 +18,18 @@
 
   let { apartments, scheduleResult, ontemplateschange }: Props = $props();
 
-  // Load saved templates
   let templates: MessageTemplate[] = $state(loadTemplates());
   let selectedTemplateId: string | null = $state(null);
-  let editingTemplate: MessageTemplate | null = $state(null);
   let previewApartmentId: string | null = $state(null);
   let selectionInitialized = $state(false);
+  let panelTab = $state('editor');
+  let deleteDialogOpen = $state(false);
+  let pendingDeleteId: string | null = $state(null);
 
-  // Auto-save to localStorage when templates change
+  let editingTemplate: MessageTemplate | null = $derived(
+    selectedTemplateId ? templates.find((template) => template.id === selectedTemplateId) ?? null : null
+  );
+
   $effect(() => {
     saveTemplates(templates);
     untrack(() => {
@@ -33,15 +38,11 @@
   });
 
   $effect(() => {
-    if (selectionInitialized) {
-      return;
-    }
-
+    if (selectionInitialized) return;
     selectionInitialized = true;
     if (templates.length > 0) {
       const initialTemplate = templates[templates.length - 1];
       selectedTemplateId = initialTemplate.id;
-      editingTemplate = initialTemplate;
     }
   });
 
@@ -49,36 +50,36 @@
     const newTemplate = createDefaultTemplate();
     templates = [...templates, newTemplate];
     selectedTemplateId = newTemplate.id;
-    editingTemplate = newTemplate;
+    panelTab = 'editor';
   }
 
   function handleSelectTemplate(id: string) {
     selectedTemplateId = id;
-    editingTemplate = templates.find((template) => template.id === id) ?? null;
   }
 
-  function handleDeleteTemplate(id: string) {
-    const template = templates.find((t) => t.id === id);
-    const name = template?.name || 'Namnlös mall';
-    if (!confirm(`Vill du ta bort mallen "${name}"?`)) return;
-    templates = templates.filter((t) => t.id !== id);
-    if (selectedTemplateId === id) {
+  function requestDeleteTemplate(id: string) {
+    pendingDeleteId = id;
+    deleteDialogOpen = true;
+  }
+
+  function confirmDeleteTemplate() {
+    if (!pendingDeleteId) return;
+    templates = templates.filter((t) => t.id !== pendingDeleteId);
+
+    if (selectedTemplateId === pendingDeleteId) {
       if (templates.length > 0) {
-        const fallbackTemplate = templates[templates.length - 1];
-        selectedTemplateId = fallbackTemplate.id;
-        editingTemplate = fallbackTemplate;
+        selectedTemplateId = templates[templates.length - 1].id;
       } else {
         selectedTemplateId = null;
-        editingTemplate = null;
       }
     }
+
+    pendingDeleteId = null;
+    deleteDialogOpen = false;
   }
 
   function handleSaveTemplate(updated: MessageTemplate) {
     templates = templates.map((t) => (t.id === updated.id ? updated : t));
-    if (editingTemplate?.id === updated.id) {
-      editingTemplate = updated;
-    }
   }
 
   function handleSelectPreviewApartment(id: string) {
@@ -86,102 +87,55 @@
   }
 </script>
 
-<section class="message-templates">
-  <h2>Meddelandemallar</h2>
+<section class="space-y-4">
+  <h2 class="text-2xl font-semibold tracking-tight text-[var(--color-text-strong)]">Meddelandemallar</h2>
 
-  <div class="templates-layout">
-    <div class="sidebar">
-      <button class="btn btn-new" data-testid="new-template-btn" onclick={handleNewTemplate}>
+  <div class="grid gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
+    <aside class="space-y-3 rounded-2xl border border-[var(--color-line-soft)] bg-[var(--color-surface-0)]/90 p-4 shadow-sm">
+      <Button.Root class="w-full rounded-md bg-emerald-700 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-800" data-testid="new-template-btn" onclick={handleNewTemplate}>
         + Ny mall
-      </button>
-      <TemplateList
-        {templates}
-        selectedId={selectedTemplateId}
-        onselect={handleSelectTemplate}
-        ondelete={handleDeleteTemplate}
-      />
-    </div>
+      </Button.Root>
+      <TemplateList {templates} selectedId={selectedTemplateId} onselect={handleSelectTemplate} ondelete={requestDeleteTemplate} />
+    </aside>
 
-    <div class="main-area">
+    <div class="space-y-3">
       {#if editingTemplate}
-        <TemplateEditor
-          template={editingTemplate}
-          onsave={handleSaveTemplate}
-        />
-        <TemplatePreview
-          template={editingTemplate}
-          {apartments}
-          {scheduleResult}
-          selectedApartmentId={previewApartmentId}
-          onselectapartment={handleSelectPreviewApartment}
-        />
+        <Tabs.Root value={panelTab} onValueChange={(value) => (panelTab = value)} class="space-y-3">
+          <Tabs.List class="inline-flex rounded-lg border border-[var(--color-line-soft)] bg-[var(--color-surface-1)] p-1">
+            <Tabs.Trigger value="editor" class="rounded-md px-3 py-1.5 text-sm text-stone-700 data-[state=active]:bg-white data-[state=active]:font-semibold">Editor</Tabs.Trigger>
+            <Tabs.Trigger value="preview" class="rounded-md px-3 py-1.5 text-sm text-stone-700 data-[state=active]:bg-white data-[state=active]:font-semibold">Förhandsvisning</Tabs.Trigger>
+          </Tabs.List>
+
+          <Tabs.Content value="editor">
+            <TemplateEditor template={editingTemplate} onsave={handleSaveTemplate} />
+          </Tabs.Content>
+          <Tabs.Content value="preview">
+            <TemplatePreview template={editingTemplate} {apartments} {scheduleResult} selectedApartmentId={previewApartmentId} onselectapartment={handleSelectPreviewApartment} />
+          </Tabs.Content>
+        </Tabs.Root>
       {:else}
-        <p class="no-selection" data-testid="no-template-selected">Välj en mall eller skapa en ny för att börja.</p>
+        <p class="rounded-xl border border-dashed border-[var(--color-line-soft)] bg-[var(--color-surface-0)] px-4 py-8 text-center text-sm italic text-[var(--color-text-muted)]" data-testid="no-template-selected">Välj en mall eller skapa en ny för att börja.</p>
       {/if}
     </div>
   </div>
+
+  <Dialog.Root bind:open={deleteDialogOpen}>
+    <Dialog.Portal>
+      <Dialog.Overlay class="fixed inset-0 z-40 bg-black/50" />
+      <Dialog.Content class="fixed left-1/2 top-1/2 z-50 w-[min(92vw,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-[var(--color-line-soft)] bg-[var(--color-surface-0)] p-4 shadow-xl">
+        <Dialog.Title class="text-lg font-semibold text-stone-900">Ta bort mall</Dialog.Title>
+        <Dialog.Description class="mt-2 text-sm text-[var(--color-text-muted)]">
+          Vill du ta bort den valda mallen? Den här åtgärden kan inte ångras.
+        </Dialog.Description>
+        <div class="mt-4 flex justify-end gap-2">
+          <Dialog.Close class="rounded-md border border-[var(--color-line-soft)] bg-white px-3 py-2 text-sm text-stone-700 hover:bg-stone-50" onclick={() => (pendingDeleteId = null)}>
+            Avbryt
+          </Dialog.Close>
+          <Button.Root class="rounded-md bg-red-700 px-3 py-2 text-sm text-white hover:bg-red-800" onclick={confirmDeleteTemplate}>
+            Ta bort
+          </Button.Root>
+        </div>
+      </Dialog.Content>
+    </Dialog.Portal>
+  </Dialog.Root>
 </section>
-
-<style>
-  .message-templates {
-    margin-top: 2rem;
-  }
-
-  h2 {
-    font-size: 1.3rem;
-    margin: 0 0 1rem;
-    color: #2c3e50;
-  }
-
-  .templates-layout {
-    display: flex;
-    gap: 1.5rem;
-    align-items: flex-start;
-  }
-
-  .sidebar {
-    min-width: 200px;
-    max-width: 260px;
-    flex-shrink: 0;
-  }
-
-  .main-area {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .btn-new {
-    width: 100%;
-    padding: 0.5rem 1rem;
-    background: #27ae60;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    cursor: pointer;
-    margin-bottom: 0.75rem;
-  }
-
-  .btn-new:hover {
-    background: #219a52;
-  }
-
-  .no-selection {
-    color: #7f8c8d;
-    font-style: italic;
-    padding: 2rem 1rem;
-    text-align: center;
-    font-size: 0.95rem;
-  }
-
-  @media (max-width: 640px) {
-    .templates-layout {
-      flex-direction: column;
-    }
-
-    .sidebar {
-      max-width: none;
-      min-width: auto;
-    }
-  }
-</style>

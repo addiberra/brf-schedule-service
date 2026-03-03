@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitest/config';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
+import tailwindcss from '@tailwindcss/vite';
 
 declare const process: { env: Record<string, string | undefined> };
 
@@ -13,7 +14,7 @@ const base =
 
 export default defineConfig({
   base,
-  plugins: [svelte()],
+  plugins: [tailwindcss(), svelte()],
   test: {
     include: ['src/**/*.test.ts'],
     environment: 'node',

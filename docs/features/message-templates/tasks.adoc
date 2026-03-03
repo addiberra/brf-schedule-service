@@ -1,7 +1,7 @@
 = Implementation Tasks: Message Templates
-:version: 2.1.0
-:status: Current
-:source-design-version: 1.2.0
+:version: 3.0.0
+:status: Implemented
+:source-design-version: 1.3.0
 :source-stories-version: 1.3.0
 :source-spec-version: 1.2.0
 :last-updated: 2026-03-03
@@ -10,9 +10,9 @@
 
 == Overview
 
-Implement the message templates feature for BRF inspection schedules. The feature allows administrators to create, edit, preview, and manage message templates with user-defined placeholders that map to building and schedule data fields.
+Implement the message templates feature with historical implementation phases preserved and migration work aligned to design v1.3.0 (Tailwind v4 + Bits UI + tabbed app shell).
 
-Version 1.0.0 delivered the initial implementation (Phases 1-3, 9 tasks -- all completed). Version 2.0.0 adds incremental work: fix template creation reactivity bug (TMPL-024) and add locale-aware date formatting (TMPL-025 through TMPL-028). 2 new phases, 5 new tasks.
+Version 1.0.0 delivered initial implementation. Version 2.x added reactivity fixes and locale/ISO placeholder behavior. Version 3.0.0 adds redesign migration tasks without changing feature behavior. 7 phases, 23 tasks.
 
 == Phase 1: Foundation _(v1.0.0 -- Implemented)_
 
@@ -143,26 +143,70 @@ Description:: Run `npm run build` and all tests (`npm test`). Verify no type err
 
 Shift default template date placeholder behavior to ISO date output while preserving compatibility for older Swedish-specific mappings.
 
-* [ ] TASK-016: Add explicit ISO date field and adjust default placeholder mapping [sequential]
+* [x] TASK-016: Add explicit ISO date field and adjust default placeholder mapping [sequential]
 +
 Components:: src/lib/models/template.ts, src/lib/models/template-model.ts
 Stories:: US-008
 Specs:: TMPL-029, TMPL-031
 Description:: Ensure template data fields include an ISO date option and update `getDefaultPlaceholders()` so `{datum}` maps to ISO date by default for newly created templates.
 
-* [ ] TASK-017: Update template editor field labels/options for ISO date and 24-hour time [parallel]
+* [x] TASK-017: Update template editor field labels/options for ISO date and 24-hour time [parallel]
 +
 Components:: src/lib/components/TemplateEditor.svelte, src/lib/models/template-model.ts
 Stories:: US-008
 Specs:: TMPL-029, TMPL-030
 Description:: Update available data field labels and ordering so users can clearly choose ISO date (YYYY-MM-DD) and time (HH:MM) mappings when editing placeholders.
 
-* [ ] TASK-018: Add compatibility and behavior tests for ISO placeholder mappings [sequential]
+* [x] TASK-018: Add compatibility and behavior tests for ISO placeholder mappings [sequential]
 +
 Components:: src/__tests__/template-model.test.ts, src/__tests__/template-storage.test.ts
 Stories:: US-008
 Specs:: TMPL-029, TMPL-030, TMPL-031, TMPL-032
 Description:: Add tests for default `{datum}` ISO mapping, ISO date/time rendering, and backward compatibility for saved templates using `dateSwedish`.
+
+== Phase 7: Tailwind/Bits UI + Tabbed Shell Migration
+
+Migrate message template UI composition to design v1.3.0 while preserving existing template model and storage behavior.
+
+* [x] TASK-019: Refactor MessageTemplatePanel layout to Tailwind v4 utilities and warm design tokens [sequential]
++
+Components:: src/lib/components/MessageTemplatePanel.svelte
+Design:: Message Templates design v1.3.0 - "UI Composition and Styling Approach"
+Stories:: US-001, US-003, US-004, US-006
+Specs:: TMPL-003, TMPL-010, TMPL-015, TMPL-022
+Description:: Replace component-scoped layout styling with responsive Tailwind utility composition for sidebar/editor/preview surfaces while preserving current state orchestration.
+
+* [x] TASK-020: Introduce Bits Tabs for feature-level editor/preview workflow sections [parallel]
++
+Components:: src/lib/components/MessageTemplatePanel.svelte
+Design:: Message Templates design v1.3.0 - "Component Interaction Diagram", "UI Composition and Styling Approach"
+Stories:: US-001, US-004
+Specs:: TMPL-001, TMPL-015, TMPL-024
+Description:: Add section tabs (editor/preview) using Bits Tabs to support workflow-focused navigation without changing template selection or preview resolution behavior.
+
+* [x] TASK-021: Replace list/editor/preview controls with Bits primitives and dialog-based delete confirmation [sequential]
++
+Components:: src/lib/components/TemplateList.svelte, src/lib/components/TemplateEditor.svelte, src/lib/components/TemplatePreview.svelte
+Design:: Message Templates design v1.3.0 - "Delete Template with Dialog Confirmation", "Bits UI primitives in this feature"
+Stories:: US-002, US-003, US-004, US-005
+Specs:: TMPL-006, TMPL-007, TMPL-014, TMPL-016, TMPL-021
+Description:: Migrate controls to Bits Button/Select/Label/Dialog primitives, replacing browser `confirm()` in delete flow and preserving placeholder mapping and preview semantics.
+
+* [x] TASK-022: Integrate message templates into top-level app Bits Tabs shell [parallel]
++
+Components:: src/App.svelte, src/lib/components/MessageTemplatePanel.svelte
+Design:: Message Templates design v1.3.0 - "Component Interaction Diagram"
+Stories:: US-001, US-004, US-006
+Specs:: TMPL-015, TMPL-022, TMPL-024
+Description:: Mount feature inside `Meddelandemallar` app tab and ensure template loading/saving and immediate editor behavior remain intact across tab switches.
+
+* [x] TASK-023: Add migration-focused contract/UI tests for Bits controls and tabbed behavior parity [sequential]
++
+Components:: src/__tests__/template-*.test.ts, src/__tests__/app*.test.ts
+Design:: Message Templates design v1.3.0 - "Create, Edit, and Preview" sequence, "Delete Template with Dialog Confirmation"
+Stories:: US-001, US-002, US-003, US-004
+Specs:: TMPL-007, TMPL-011, TMPL-014, TMPL-017, TMPL-024
+Description:: Add tests validating that tabbed navigation, dialog-confirmed deletion, and Bits select mapping retain existing template editing and rendering outcomes.
 
 == Traceability
 
@@ -172,33 +216,33 @@ Description:: Add tests for default `{datum}` ISO mapping, ISO date/time renderi
 
 | US-001: Create Message Template
 | TMPL-001, TMPL-002, TMPL-003, TMPL-004, TMPL-024
-| TASK-001, TASK-002, TASK-003, TASK-005, TASK-007, TASK-008, TASK-010, TASK-011, TASK-012
+| TASK-001, TASK-002, TASK-003, TASK-005, TASK-007, TASK-008, TASK-010, TASK-011, TASK-012, TASK-019, TASK-020, TASK-022, TASK-023
 
 | US-002: Insert Placeholders in Template
 | TMPL-005, TMPL-006, TMPL-007, TMPL-008, TMPL-009
-| TASK-001, TASK-002, TASK-005, TASK-006, TASK-007
+| TASK-001, TASK-002, TASK-005, TASK-006, TASK-007, TASK-021, TASK-023
 
 | US-003: Edit Existing Template
 | TMPL-010, TMPL-011, TMPL-012, TMPL-013, TMPL-014
-| TASK-003, TASK-004, TASK-005, TASK-007, TASK-012
+| TASK-003, TASK-004, TASK-005, TASK-007, TASK-012, TASK-019, TASK-021, TASK-023
 
 | US-004: Preview Rendered Template
 | TMPL-015, TMPL-016, TMPL-017, TMPL-018
-| TASK-002, TASK-006, TASK-007, TASK-008
+| TASK-002, TASK-006, TASK-007, TASK-008, TASK-020, TASK-021, TASK-022, TASK-023
 
 | US-005: Default Placeholders
 | TMPL-019, TMPL-020, TMPL-021
-| TASK-001, TASK-002, TASK-005, TASK-007
+| TASK-001, TASK-002, TASK-005, TASK-007, TASK-021
 
 | US-006: Save Templates
 | TMPL-003, TMPL-022, TMPL-023
-| TASK-003, TASK-007, TASK-008, TASK-011
+| TASK-003, TASK-007, TASK-008, TASK-011, TASK-019, TASK-022
 
 | US-007: Locale-Aware Data Field Formatting
 | TMPL-025, TMPL-026, TMPL-027, TMPL-028
-| TASK-013, TASK-014, TASK-015
+| TASK-013, TASK-014, TASK-015, TASK-021
 
 | US-008: ISO Date/Time Placeholders
 | TMPL-029, TMPL-030, TMPL-031, TMPL-032
-| TASK-016, TASK-017, TASK-018
+| TASK-016, TASK-017, TASK-018, TASK-021
 |===
