@@ -30,4 +30,11 @@ describe('Print migration contracts', () => {
     expect(source).toContain('id="print-first-page-offset"');
     expect(source).toContain('getLetterTopMarginMm(i === 0)');
   });
+
+  it('uses zero page margins for print output', () => {
+    const source = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
+    expect(source).toContain('@page');
+    expect(source).toContain('margin: 0;');
+    expect(source).toContain('width: auto !important;');
+  });
 });

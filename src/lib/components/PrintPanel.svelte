@@ -16,7 +16,7 @@
 
   let { apartments, scheduleResult, templates }: Props = $props();
 
-  const SHEET_MARGIN_MM = 8;
+  const SHEET_MARGIN_MM = 0;
 
   let printMode = $state<PrintMode>('letters');
   let selectedTemplateId: string | null = $state(null);

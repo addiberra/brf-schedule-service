@@ -64,6 +64,11 @@ textarea {
     background: #fff;
   }
 
+  .print-preview {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
   .no-print,
   .no-print-inner {
     display: none !important;
@@ -74,11 +79,17 @@ textarea {
     box-shadow: none !important;
     border: none !important;
     margin: 0 !important;
+    width: auto !important;
+    min-height: auto !important;
     transform: none !important;
+  }
+
+  .print-letter-page {
+    break-inside: avoid-page;
   }
 }
 
 @page {
   size: A4;
-  margin: 8mm;
+  margin: 0;
 }
