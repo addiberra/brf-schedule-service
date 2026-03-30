@@ -21,7 +21,7 @@
   let printMode = $state<PrintMode>('letters');
   let selectedTemplateId: string | null = $state(null);
   let contentMarginMm = $state(10);
-  let firstPageTopAdjustmentMm = $state(-4);
+  let pageTopAdjustmentMm = $state(-4);
 
   $effect(() => {
     if (selectedTemplateId === null && templates.length > 0) {
@@ -47,7 +47,7 @@
     templates.map((template) => ({ value: template.id, label: template.name || 'Namnlös mall' }))
   );
   let safeContentMarginMm = $derived(clampMm(contentMarginMm, 4, 30));
-  let safeFirstPageTopAdjustmentMm = $derived(clampMm(firstPageTopAdjustmentMm, -12, 20));
+  let safePageTopAdjustmentMm = $derived(clampMm(pageTopAdjustmentMm, -12, 20));
 
   function handlePrint() {
     window.print();
@@ -58,8 +58,8 @@
     return Math.min(max, Math.max(min, value));
   }
 
-  function getLetterTopMarginMm(isFirstPage: boolean): number {
-    const adjustedMargin = safeContentMarginMm + (isFirstPage ? safeFirstPageTopAdjustmentMm : 0);
+  function getLetterTopMarginMm(): number {
+    const adjustedMargin = safeContentMarginMm + safePageTopAdjustmentMm;
     return Math.max(0, adjustedMargin);
   }
 </script>
@@ -124,17 +124,17 @@
     </div>
 
     <div class="space-y-1">
-      <Label.Root for="print-first-page-offset" class="text-sm font-medium text-stone-800">Första sidans toppjustering (mm)</Label.Root>
+      <Label.Root for="print-page-top-offset" class="text-sm font-medium text-stone-800">Toppmarginal per sida (mm)</Label.Root>
       <input
-        id="print-first-page-offset"
+        id="print-page-top-offset"
         class="w-full rounded-md border border-[var(--color-line-soft)] bg-white px-3 py-2 text-sm"
         type="number"
         min="-12"
         max="20"
         step="1"
-        bind:value={firstPageTopAdjustmentMm}
+        bind:value={pageTopAdjustmentMm}
       />
-      <p class="text-xs text-[var(--color-text-muted)]">Negativa värden flyttar upp innehållet på första brevet.</p>
+      <p class="text-xs text-[var(--color-text-muted)]">Justerar topputrymmet på varje utskriftssida. Negativa värden flyttar upp innehållet.</p>
     </div>
   </div>
 
@@ -151,7 +151,7 @@
         isLast={i === letterData.length - 1}
         sheetMarginMm={SHEET_MARGIN_MM}
         contentMarginMm={safeContentMarginMm}
-        topMarginMm={getLetterTopMarginMm(i === 0)}
+        topMarginMm={getLetterTopMarginMm()}
       />
     {/each}
   {:else if printMode === 'overview'}

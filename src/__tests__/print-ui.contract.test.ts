@@ -22,13 +22,16 @@ describe('Print migration contracts', () => {
     expect(source).toContain('width: calc(210mm - ${sheetMarginMm * 2}mm)');
     expect(source).toContain('min-height: calc(297mm - ${sheetMarginMm * 2}mm)');
     expect(source).toContain('padding-top: ${topMarginMm}mm;');
+    expect(source).toContain('COMPACT_LENGTH_THRESHOLD');
+    expect(source).toContain('DENSE_LENGTH_THRESHOLD');
+    expect(source).toContain("text-[10.5pt] leading-[1.32]");
   });
 
   it('exposes print margin controls in the print panel', () => {
     const source = readFileSync(panelPath, 'utf8');
     expect(source).toContain('id="print-content-margin"');
-    expect(source).toContain('id="print-first-page-offset"');
-    expect(source).toContain('getLetterTopMarginMm(i === 0)');
+    expect(source).toContain('id="print-page-top-offset"');
+    expect(source).toContain('getLetterTopMarginMm()');
   });
 
   it('uses zero page margins for print output', () => {
