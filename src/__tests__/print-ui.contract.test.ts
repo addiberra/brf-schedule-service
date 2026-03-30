@@ -19,8 +19,15 @@ describe('Print migration contracts', () => {
 
   it('keeps exact A4 utility sizing for print pages', () => {
     const source = readFileSync(letterPath, 'utf8');
-    expect(source).toContain('w-[210mm]');
-    expect(source).toContain('min-h-[297mm]');
-    expect(source).toContain('p-[15mm]');
+    expect(source).toContain('width: calc(210mm - ${sheetMarginMm * 2}mm)');
+    expect(source).toContain('min-height: calc(297mm - ${sheetMarginMm * 2}mm)');
+    expect(source).toContain('padding-top: ${topMarginMm}mm;');
+  });
+
+  it('exposes print margin controls in the print panel', () => {
+    const source = readFileSync(panelPath, 'utf8');
+    expect(source).toContain('id="print-content-margin"');
+    expect(source).toContain('id="print-first-page-offset"');
+    expect(source).toContain('getLetterTopMarginMm(i === 0)');
   });
 });

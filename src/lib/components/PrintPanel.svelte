@@ -16,8 +16,12 @@
 
   let { apartments, scheduleResult, templates }: Props = $props();
 
+  const SHEET_MARGIN_MM = 8;
+
   let printMode = $state<PrintMode>('letters');
   let selectedTemplateId: string | null = $state(null);
+  let contentMarginMm = $state(10);
+  let firstPageTopAdjustmentMm = $state(-4);
 
   $effect(() => {
     if (selectedTemplateId === null && templates.length > 0) {
@@ -42,9 +46,21 @@
   let templateItems = $derived(
     templates.map((template) => ({ value: template.id, label: template.name || 'Namnlös mall' }))
   );
+  let safeContentMarginMm = $derived(clampMm(contentMarginMm, 4, 30));
+  let safeFirstPageTopAdjustmentMm = $derived(clampMm(firstPageTopAdjustmentMm, -12, 20));
 
   function handlePrint() {
     window.print();
+  }
+
+  function clampMm(value: number, min: number, max: number): number {
+    if (!Number.isFinite(value)) return min;
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function getLetterTopMarginMm(isFirstPage: boolean): number {
+    const adjustedMargin = safeContentMarginMm + (isFirstPage ? safeFirstPageTopAdjustmentMm : 0);
+    return Math.max(0, adjustedMargin);
   }
 </script>
 
@@ -92,6 +108,36 @@
     <p class="text-sm text-amber-800">Inget schema att visa. Skapa ett besiktningsschema först.</p>
   {/if}
 
+  <div class="grid gap-3 rounded-xl border border-[var(--color-line-soft)] bg-[var(--color-surface-1)]/70 p-3 md:grid-cols-2">
+    <div class="space-y-1">
+      <Label.Root for="print-content-margin" class="text-sm font-medium text-stone-800">Inre sidmarginal (mm)</Label.Root>
+      <input
+        id="print-content-margin"
+        class="w-full rounded-md border border-[var(--color-line-soft)] bg-white px-3 py-2 text-sm"
+        type="number"
+        min="4"
+        max="30"
+        step="1"
+        bind:value={contentMarginMm}
+      />
+      <p class="text-xs text-[var(--color-text-muted)]">Gäller alla sidor i förhandsvisning och utskrift.</p>
+    </div>
+
+    <div class="space-y-1">
+      <Label.Root for="print-first-page-offset" class="text-sm font-medium text-stone-800">Första sidans toppjustering (mm)</Label.Root>
+      <input
+        id="print-first-page-offset"
+        class="w-full rounded-md border border-[var(--color-line-soft)] bg-white px-3 py-2 text-sm"
+        type="number"
+        min="-12"
+        max="20"
+        step="1"
+        bind:value={firstPageTopAdjustmentMm}
+      />
+      <p class="text-xs text-[var(--color-text-muted)]">Negativa värden flyttar upp innehållet på första brevet.</p>
+    </div>
+  </div>
+
   <Button.Root class="rounded-md bg-[var(--color-warm-700)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-warm-600)] disabled:cursor-not-allowed disabled:bg-stone-400" data-testid="print-btn" onclick={handlePrint} disabled={!canPrint}>
     Skriv ut
   </Button.Root>
@@ -100,9 +146,19 @@
 <div class="print-preview mt-6 space-y-6">
   {#if printMode === 'letters' && selectedTemplate}
     {#each letterData as letter, i}
-      <PrintLetterPage {letter} isLast={i === letterData.length - 1} />
+      <PrintLetterPage
+        {letter}
+        isLast={i === letterData.length - 1}
+        sheetMarginMm={SHEET_MARGIN_MM}
+        contentMarginMm={safeContentMarginMm}
+        topMarginMm={getLetterTopMarginMm(i === 0)}
+      />
     {/each}
   {:else if printMode === 'overview'}
-    <PrintScheduleOverview data={overviewData} />
+    <PrintScheduleOverview
+      data={overviewData}
+      sheetMarginMm={SHEET_MARGIN_MM}
+      contentMarginMm={safeContentMarginMm}
+    />
   {/if}
 </div>

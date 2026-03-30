@@ -3,12 +3,17 @@
 
   interface Props {
     data: ScheduleOverviewData;
+    sheetMarginMm: number;
+    contentMarginMm: number;
   }
 
-  let { data }: Props = $props();
+  let { data, sheetMarginMm, contentMarginMm }: Props = $props();
 </script>
 
-<div class="print-schedule-overview box-border w-[210mm] bg-white p-[15mm] text-[12pt] text-black [font-family:Georgia,'Times_New_Roman',serif]">
+<div
+  class="print-schedule-overview box-border bg-white text-[12pt] text-black [font-family:Georgia,'Times_New_Roman',serif]"
+  style={`width: calc(210mm - ${sheetMarginMm * 2}mm); min-height: calc(297mm - ${sheetMarginMm * 2}mm); padding: ${contentMarginMm}mm;`}
+>
   <h2 class="m-0 text-[18pt] font-semibold text-stone-900">Besiktningsschema</h2>
   <p class="mb-6 mt-2 text-[11pt] text-stone-700">Totalt antal lägenheter: {data.totalApartments}</p>
 
