@@ -60,11 +60,26 @@ textarea {
 }
 
 @media print {
+  html,
+  body,
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: auto !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+
   body {
     background: #fff;
   }
 
   .print-preview {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  [data-value='print'] {
     margin: 0 !important;
     padding: 0 !important;
   }

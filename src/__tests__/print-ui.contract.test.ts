@@ -36,5 +36,6 @@ describe('Print migration contracts', () => {
     expect(source).toContain('@page');
     expect(source).toContain('margin: 0;');
     expect(source).toContain('width: auto !important;');
+    expect(source).toContain('max-width: none !important;');
   });
 });
