@@ -1,6 +1,8 @@
 export type TenantAccessMethod = 'mainKey' | 'tenantOpens';
 
 export interface SchedulePrintAccessSettings {
+  /** Printed main heading for the schedule overview */
+  overviewTitle: string;
   /** Printed column header for schedule overview */
   columnHeader: string;
   /** Printed label when inspector may use BRF main key */

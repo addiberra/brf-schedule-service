@@ -110,6 +110,7 @@ export function generateScheduleOverviewData(
 
   return {
     dateGroups,
+    overviewTitle: accessSettings.overviewTitle,
     totalApartments: scheduleResult.appointments.length,
     accessColumnHeader: accessSettings.columnHeader,
   };

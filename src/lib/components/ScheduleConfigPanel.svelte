@@ -163,7 +163,7 @@ import BitsIsoTimeField from './BitsIsoTimeField.svelte';
   }
 
   function handleAccessLabelChange(
-    key: 'columnHeader' | 'mainKeyLabel' | 'tenantOpensLabel',
+    key: 'overviewTitle' | 'columnHeader' | 'mainKeyLabel' | 'tenantOpensLabel',
     value: string
   ) {
     scheduleConfig = {
@@ -281,7 +281,18 @@ import BitsIsoTimeField from './BitsIsoTimeField.svelte';
 
       <div class="space-y-3">
         <h3 class="text-sm font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">Tilltrade i schemautskrift</h3>
-        <div class="grid gap-3 md:grid-cols-3">
+        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div class="space-y-1 md:col-span-2 xl:col-span-1">
+            <Label.Root for="overview-title" class="text-sm font-medium text-stone-800">Rubrik:</Label.Root>
+            <input
+              id="overview-title"
+              class="w-full rounded-md border border-[var(--color-line-soft)] bg-white px-3 py-2 text-sm"
+              type="text"
+              value={scheduleConfig.accessSettings.overviewTitle}
+              oninput={(event) =>
+                handleAccessLabelChange('overviewTitle', (event.target as HTMLInputElement).value)}
+            />
+          </div>
           <div class="space-y-1">
             <Label.Root for="access-column-header" class="text-sm font-medium text-stone-800">Kolumnrubrik:</Label.Root>
             <input

@@ -76,6 +76,7 @@ function makeAccessSettings(
   overrides: Partial<SchedulePrintAccessSettings> = {}
 ): SchedulePrintAccessSettings {
   return {
+    overviewTitle: 'Besiktningsschema',
     columnHeader: 'Tilltrade',
     mainKeyLabel: 'Huvudnyckel OK',
     tenantOpensLabel: 'Boende oppnar',
@@ -212,6 +213,7 @@ describe('PRNT-005: Schedule overview listing all apartments', () => {
 
     expect(overview.totalApartments).toBe(0);
     expect(overview.dateGroups).toHaveLength(0);
+    expect(overview.overviewTitle).toBe('Besiktningsschema');
     expect(overview.accessColumnHeader).toBe('Tilltrade');
   });
 });
@@ -271,6 +273,7 @@ describe('PRNT-006: Overview formatted as table by date', () => {
     ];
     const result = makeScheduleResult(appointments);
     const accessSettings = makeAccessSettings({
+      overviewTitle: 'Min schemaoversikt',
       columnHeader: 'Inslapp',
       mainKeyLabel: 'Nyckel',
       tenantOpensLabel: 'Boende hemma',
@@ -285,6 +288,7 @@ describe('PRNT-006: Overview formatted as table by date', () => {
       accessSelections
     );
 
+    expect(overview.overviewTitle).toBe('Min schemaoversikt');
     expect(overview.accessColumnHeader).toBe('Inslapp');
     expect(overview.dateGroups[0].appointments[0].accessLabel).toBe('Nyckel');
     expect(overview.dateGroups[0].appointments[1].accessLabel).toBe('Boende hemma');

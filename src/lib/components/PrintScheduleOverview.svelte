@@ -95,7 +95,7 @@
     style={`width: calc(210mm - ${sheetMarginMm * 2}mm); min-height: calc(297mm - ${sheetMarginMm * 2}mm); padding: ${contentMarginMm}mm; padding-top: ${topMarginMm}mm;`}
   >
     {#if page.showSummary}
-      <h2 class="m-0 text-[16pt] font-semibold text-stone-900">Besiktningsschema</h2>
+      <h2 class="m-0 text-[16pt] font-semibold text-stone-900">{data.overviewTitle}</h2>
       <p class="mb-4 mt-1 text-[10pt] text-stone-700">Totalt antal lägenheter: {data.totalApartments}</p>
     {/if}
 

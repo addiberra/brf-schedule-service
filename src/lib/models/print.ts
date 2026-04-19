@@ -38,6 +38,8 @@ export interface ScheduleDateGroup {
 export interface ScheduleOverviewData {
   /** Groups of appointments organized by date */
   dateGroups: ScheduleDateGroup[];
+  /** Printed main heading for the overview */
+  overviewTitle: string;
   /** Total number of apartments in the schedule */
   totalApartments: number;
   /** Printed header for the access column */

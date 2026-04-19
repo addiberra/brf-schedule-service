@@ -60,6 +60,7 @@ const testConfig: ScheduleConfig = {
   excludedDates: ['2026-03-04'],
   maxPerDay: 10,
   accessSettings: {
+    overviewTitle: 'Besiktningsschema',
     columnHeader: 'Tilltrade',
     mainKeyLabel: 'Huvudnyckel OK',
     tenantOpensLabel: 'Boende oppnar',
@@ -126,6 +127,7 @@ describe('SCHED-034: Restore schedule on load', () => {
     expect(loaded!.config.durationMinutes).toBe(30);
     expect(loaded!.config.excludeWeekends).toBe(true);
     expect(loaded!.config.excludedDates).toEqual(['2026-03-04']);
+    expect(loaded!.config.accessSettings.overviewTitle).toBe('Besiktningsschema');
     expect(loaded!.config.accessSettings.columnHeader).toBe('Tilltrade');
   });
 
@@ -188,6 +190,7 @@ describe('backward compatibility: dailyEndTime', () => {
     const loaded = loadSchedule();
     expect(loaded).not.toBeNull();
     expect(loaded!.config.dailyEndTime).toBe(1080);
+    expect(loaded!.config.accessSettings.overviewTitle).toBe('Besiktningsschema');
     expect(loaded!.config.accessSettings.columnHeader).toBe('Tilltrade');
     expect(loaded!.accessSelections.size).toBe(0);
   });

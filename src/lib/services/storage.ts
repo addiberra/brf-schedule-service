@@ -118,6 +118,8 @@ export function loadSchedule(): {
       data.config.accessSettings = { ...DEFAULT_ACCESS_SETTINGS };
     } else {
       data.config.accessSettings = {
+        overviewTitle:
+          data.config.accessSettings.overviewTitle ?? DEFAULT_ACCESS_SETTINGS.overviewTitle,
         columnHeader:
           data.config.accessSettings.columnHeader ?? DEFAULT_ACCESS_SETTINGS.columnHeader,
         mainKeyLabel:

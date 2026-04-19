@@ -48,11 +48,18 @@ describe('Print migration contracts', () => {
 
   it('renders the configurable access column in the overview print table', () => {
     const source = readFileSync(overviewPath, 'utf8');
+    expect(source).toContain('{data.overviewTitle}');
     expect(source).toContain('{data.accessColumnHeader}');
     expect(source).toContain('{row.accessLabel}');
     expect(source).toContain('padding-top: ${topMarginMm}mm;');
     expect(source).toContain('break-after-page');
     expect(source).toContain('print-overview-stripe');
     expect(source).toContain('bg-stone-200');
+  });
+
+  it('exposes overview heading control in the schedule config panel', () => {
+    const source = readFileSync(resolve(process.cwd(), 'src/lib/components/ScheduleConfigPanel.svelte'), 'utf8');
+    expect(source).toContain('id="overview-title"');
+    expect(source).toContain("handleAccessLabelChange('overviewTitle'");
   });
 });

@@ -16,6 +16,7 @@ const MAX_MAX_PER_DAY = 100;
 export const DEFAULT_ACCESS_METHOD: TenantAccessMethod = 'mainKey';
 
 export const DEFAULT_ACCESS_SETTINGS: SchedulePrintAccessSettings = {
+  overviewTitle: 'Besiktningsschema',
   columnHeader: 'Tilltrade',
   mainKeyLabel: 'Huvudnyckel OK',
   tenantOpensLabel: 'Boende oppnar',
