@@ -1,3 +1,14 @@
+export type TenantAccessMethod = 'mainKey' | 'tenantOpens';
+
+export interface SchedulePrintAccessSettings {
+  /** Printed column header for schedule overview */
+  columnHeader: string;
+  /** Printed label when inspector may use BRF main key */
+  mainKeyLabel: string;
+  /** Printed label when tenant opens the door */
+  tenantOpensLabel: string;
+}
+
 /** Schedule configuration set by the user */
 export interface ScheduleConfig {
   /** Inspection period start date (YYYY-MM-DD) */
@@ -22,6 +33,8 @@ export interface ScheduleConfig {
   excludedDates: string[];
   /** Maximum apartments to inspect per day */
   maxPerDay: number;
+  /** Labels used for the printed access column in the schedule overview */
+  accessSettings: SchedulePrintAccessSettings;
 }
 
 /** A single scheduled appointment */

@@ -21,6 +21,9 @@
 //   PRNT-016: ISO date headings in schedule overview
 //   PRNT-017: 24-hour HH:MM in schedule overview
 //   PRNT-018: Letter rendering follows template date/time field formatting
+//   PRNT-019: Tenant access column in printed overview
+//   PRNT-020: Configured access column header in printed overview
+//   PRNT-021: Configured access choice labels in printed overview rows
 
 import { describe, it, expect } from 'vitest';
 import {
@@ -31,7 +34,9 @@ import {
 import type { Apartment } from '../lib/models/building.js';
 import type {
   ScheduleAppointment,
+  SchedulePrintAccessSettings,
   ScheduleResult,
+  TenantAccessMethod,
 } from '../lib/models/schedule.js';
 import type { MessageTemplate, PlaceholderMapping } from '../lib/models/template.js';
 import type { PrintMode } from '../lib/models/print.js';
@@ -65,6 +70,17 @@ function makeTemplate(
   placeholders: PlaceholderMapping[]
 ): MessageTemplate {
   return { id: 'test-template', name: 'Test', body, placeholders };
+}
+
+function makeAccessSettings(
+  overrides: Partial<SchedulePrintAccessSettings> = {}
+): SchedulePrintAccessSettings {
+  return {
+    columnHeader: 'Tilltrade',
+    mainKeyLabel: 'Huvudnyckel OK',
+    tenantOpensLabel: 'Boende oppnar',
+    ...overrides,
+  };
 }
 
 // --- Tests ---
@@ -196,6 +212,7 @@ describe('PRNT-005: Schedule overview listing all apartments', () => {
 
     expect(overview.totalApartments).toBe(0);
     expect(overview.dateGroups).toHaveLength(0);
+    expect(overview.accessColumnHeader).toBe('Tilltrade');
   });
 });
 
@@ -245,6 +262,32 @@ describe('PRNT-006: Overview formatted as table by date', () => {
     expect(overview.dateGroups[0].appointments[0].time).toBe('09:00');
     expect(overview.dateGroups[0].appointments[1].time).toBe('09:30');
     expect(overview.dateGroups[0].appointments[2].time).toBe('10:00');
+  });
+
+  it('PRNT-019/020/021: should include configured access header and resolved access labels', () => {
+    const appointments = [
+      makeAppointment('1001', 1, 1, '2026-03-10', 540),
+      makeAppointment('1002', 1, 2, '2026-03-10', 570),
+    ];
+    const result = makeScheduleResult(appointments);
+    const accessSettings = makeAccessSettings({
+      columnHeader: 'Inslapp',
+      mainKeyLabel: 'Nyckel',
+      tenantOpensLabel: 'Boende hemma',
+    });
+    const accessSelections = new Map<string, TenantAccessMethod>([
+      ['1002', 'tenantOpens'],
+    ]);
+
+    const overview = generateScheduleOverviewData(
+      result,
+      accessSettings,
+      accessSelections
+    );
+
+    expect(overview.accessColumnHeader).toBe('Inslapp');
+    expect(overview.dateGroups[0].appointments[0].accessLabel).toBe('Nyckel');
+    expect(overview.dateGroups[0].appointments[1].accessLabel).toBe('Boende hemma');
   });
 
   it('PRNT-016: should keep ISO YYYY-MM-DD date heading data for each group', () => {

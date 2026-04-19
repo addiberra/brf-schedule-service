@@ -1,17 +1,24 @@
 <script lang="ts">
-  import { Button, Tooltip } from 'bits-ui';
-  import type { ScheduleAppointment } from '../models/schedule.js';
+  import { Select, Tooltip } from 'bits-ui';
+  import type {
+    ScheduleAppointment,
+    SchedulePrintAccessSettings,
+    TenantAccessMethod,
+  } from '../models/schedule.js';
   import { formatTime, parseTime } from '../models/schedule-model.js';
   import BitsIsoDateField from './BitsIsoDateField.svelte';
   import BitsIsoTimeField from './BitsIsoTimeField.svelte';
 
   interface Props {
     appointment: ScheduleAppointment;
+    accessMethod: TenantAccessMethod;
+    accessSettings: SchedulePrintAccessSettings;
     onoverride: (apartmentId: string, date: string, startTime: number) => void;
     onrevert: (apartmentId: string) => void;
+    onaccesschange: (apartmentId: string, accessMethod: TenantAccessMethod) => void;
   }
 
-  let { appointment, onoverride, onrevert }: Props = $props();
+  let { appointment, accessMethod, accessSettings, onoverride, onrevert, onaccesschange }: Props = $props();
 
   let editing = $state(false);
   let editDate = $state('');
@@ -35,6 +42,11 @@
   function handleRevert() {
     onrevert(appointment.apartmentId);
   }
+
+  let accessItems = $derived([
+    { value: 'mainKey', label: accessSettings.mainKeyLabel },
+    { value: 'tenantOpens', label: accessSettings.tenantOpensLabel },
+  ]);
 </script>
 
 <Tooltip.Provider delayDuration={300}>
@@ -63,6 +75,30 @@
     {:else}
       <td class="px-2 py-2">{appointment.date}</td>
       <td class="px-2 py-2">{formatTime(appointment.startTime)}</td>
+      <td class="px-2 py-2">
+        <Select.Root
+          type="single"
+          value={accessMethod}
+          items={accessItems}
+          onValueChange={(value) => onaccesschange(appointment.apartmentId, value as TenantAccessMethod)}
+        >
+          <Select.Trigger class="min-w-40 rounded-md border border-[var(--color-line-soft)] bg-white px-3 py-2 text-left text-xs text-stone-800">
+            {accessMethod === 'mainKey' ? accessSettings.mainKeyLabel : accessSettings.tenantOpensLabel}
+          </Select.Trigger>
+          <Select.Portal>
+            <Select.Content class="z-50 mt-1 w-56 rounded-md border border-[var(--color-line-soft)] bg-white p-1 shadow-lg">
+              <Select.Viewport>
+                <Select.Item value="mainKey" label={accessSettings.mainKeyLabel} class="cursor-pointer rounded px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-[var(--color-surface-1)]">
+                  {accessSettings.mainKeyLabel}
+                </Select.Item>
+                <Select.Item value="tenantOpens" label={accessSettings.tenantOpensLabel} class="cursor-pointer rounded px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-[var(--color-surface-1)]">
+                  {accessSettings.tenantOpensLabel}
+                </Select.Item>
+              </Select.Viewport>
+            </Select.Content>
+          </Select.Portal>
+        </Select.Root>
+      </td>
       <td class="px-2 py-2">
         <div class="flex flex-wrap items-center gap-1">
           {#if appointment.manualOverride}

@@ -25,4 +25,13 @@ describe('Schedule ISO/24h display contracts', () => {
     expect(source).not.toContain('type="date"');
     expect(source).not.toContain('type="time"');
   });
+
+  it('renders configurable access column controls in the schedule table', () => {
+    const viewSource = readFileSync(viewPath, 'utf8');
+    const rowSource = readFileSync(rowPath, 'utf8');
+    expect(viewSource).toContain('{accessSettings.columnHeader}');
+    expect(rowSource).toContain('Select.Root');
+    expect(rowSource).toContain('accessSettings.mainKeyLabel');
+    expect(rowSource).toContain('accessSettings.tenantOpensLabel');
+  });
 });

@@ -1,9 +1,9 @@
 = Design: Print Output
-:version: 1.2.0
+:version: 1.3.0
 :status: Current
-:source-stories-version: 1.2.0
-:source-spec-version: 1.1.0
-:last-updated: 2026-03-03
+:source-stories-version: 1.3.0
+:source-spec-version: 1.2.0
+:last-updated: 2026-04-19
 :feature: print-output
 :toc:
 
@@ -17,7 +17,7 @@ The redesign intent is visual and structural (warm professional UI, shared primi
 2. Schedule overview (table grouped by date)
 3. Native browser print/PDF flow via `window.print()`
 
-No functional behavior changes are intended by this design update.
+The redesign remains in place, and this revision adds one functional extension: the printed schedule overview now includes a configurable tenant-access column derived from scheduling state.
 
 == Decisions and Constraints
 
@@ -46,7 +46,7 @@ Research conclusions for migration scope:
 * Tailwind v4 arbitrary values are appropriate for exact print sizing constraints (`w-[210mm]`, `min-h-[297mm]`, `p-[15mm]`).
 * Print media behavior still requires `@media print` and `@page` rules; utility classes complement but do not replace page context rules.
 * Bits UI primitives are applicable to PrintPanel controls (mode radio group, template select, print trigger button pattern) without changing domain behavior.
-* Existing print data composition in `print-model.ts` remains valid and is reused unchanged.
+* Existing print data composition in `print-model.ts` remains valid and is extended with tenant-access label data sourced from the scheduling feature.
 
 == System Design
 
@@ -94,7 +94,7 @@ flowchart TD
 ----
 flowchart LR
     APTS["Apartment[]<br/>(from building)"] --> PM["print-model.ts"]
-    SCHED["ScheduleResult<br/>(from schedule)"] --> PM
+    SCHED["ScheduleResult + access print config<br/>(from schedule)"] --> PM
     TMPL["MessageTemplate<br/>(selected template)"] --> PM
     PM -->|"ApartmentLetterData[]"| PLP["PrintLetterPage"]
     PM -->|"ScheduleOverviewData"| PSO["PrintScheduleOverview"]
@@ -116,6 +116,7 @@ State ownership remains unchanged:
 * `printMode` (`letters | overview`)
 * `selectedTemplateId` (`string | null`)
 * `letterData` and `overviewData` as derived read models
+* `overviewData` now carries the configured access-column header and each row's resolved access label for print rendering
 
 === Sequence Diagram: Print Individual Letters
 
@@ -144,7 +145,7 @@ sequenceDiagram
 
 === Data Model
 
-All print DTOs remain in `src/lib/models/print.ts` and are unchanged by the redesign.
+All print DTOs remain in `src/lib/models/print.ts`, with the schedule overview DTO extended to carry the access-column header and each row's resolved access label.
 
 [source,typescript]
 ----
@@ -167,11 +168,13 @@ interface ScheduleOverviewRow {
   apartmentId: string;
   floor: number;
   time: string;
+  accessLabel: string;
 }
 
 interface ScheduleOverviewData {
   dateGroups: ScheduleDateGroup[];
   totalApartments: number;
+  accessColumnHeader: string;
 }
 
 type PrintMode = 'letters' | 'overview';
@@ -182,7 +185,7 @@ type PrintMode = 'letters' | 'overview';
 Located at `src/lib/models/print-model.ts`. Pure functions with no side effects and no migration-driven logic changes.
 
 * `generateLetterData(apartments: Apartment[], scheduleResult: ScheduleResult, template: MessageTemplate): ApartmentLetterData[]` -- renders one letter payload per apartment.
-* `generateScheduleOverviewData(scheduleResult: ScheduleResult): ScheduleOverviewData` -- groups appointments by date and formats overview rows.
+* `generateScheduleOverviewData(scheduleResult: ScheduleResult, accessSettings: SchedulePrintAccessSettings): ScheduleOverviewData` -- groups appointments by date, formats overview rows, and resolves the configured access text shown in print.
 * `getAppointmentForApartment(apartmentId: string, scheduleResult: ScheduleResult): ScheduleAppointment | null` -- resolves per-apartment schedule information.
 
 === UI Components
@@ -222,7 +225,7 @@ Renders the schedule overview as a table organized by date.
 Behavior:
 
 * Renders heading and summary with warm redesign typography tokens.
-* Renders one table per date group (ISO heading + HH:MM rows).
+* Renders one table per date group (ISO heading + HH:MM rows) with an additional tenant-access column.
 * Uses print-aware utility classes to avoid row/date group splitting and preserve readability.
 
 === A4 Sizing and Print Media Behavior
@@ -338,3 +341,11 @@ Criteria::
 * Date headings in YYYY-MM-DD -> `generateScheduleOverviewData()` exposes raw ISO `date` and `PrintScheduleOverview` renders that value in date headings (PRNT-016)
 * Times in HH:MM -> Overview rows continue to use `formatTime()` output and render 24-hour values (PRNT-017)
 * Letter output follows template field formatting -> Letter content is still produced by `renderTemplate()` so selected template mappings control date/time style in printed letters (PRNT-018)
+
+=== US-007: Print Tenant Access Information in Schedule Overview
+
+Components:: PrintPanel, PrintScheduleOverview, print-model
+Criteria::
+* Tenant access column is added to the printed overview table structure (PRNT-019)
+* Print overview uses the configured access column header supplied from scheduling state (PRNT-020)
+* Each printed row resolves and renders the configured access label that matches the appointment's selected access method (PRNT-021)

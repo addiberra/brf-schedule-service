@@ -1,15 +1,23 @@
 <script lang="ts">
-  import type { ScheduleResult, ManualOverride } from '../models/schedule.js';
+  import type {
+    ScheduleResult,
+    ManualOverride,
+    SchedulePrintAccessSettings,
+    TenantAccessMethod,
+  } from '../models/schedule.js';
   import ScheduleAppointmentRow from './ScheduleAppointmentRow.svelte';
 
   interface Props {
     result: ScheduleResult;
     overrides: Map<string, ManualOverride>;
+    accessSelections: Map<string, TenantAccessMethod>;
+    accessSettings: SchedulePrintAccessSettings;
     onoverride: (apartmentId: string, date: string, startTime: number) => void;
     onrevert: (apartmentId: string) => void;
+    onaccesschange: (apartmentId: string, accessMethod: TenantAccessMethod) => void;
   }
 
-  let { result, overrides, onoverride, onrevert }: Props = $props();
+  let { result, overrides, accessSelections, accessSettings, onoverride, onrevert, onaccesschange }: Props = $props();
 
   let groupedByDate = $derived.by(() => {
     const groups = new Map<string, typeof result.appointments>();
@@ -50,12 +58,20 @@
                 <th class="px-2 py-2">Våning</th>
                 <th class="px-2 py-2">Datum</th>
                 <th class="px-2 py-2">Tid</th>
+                <th class="px-2 py-2">{accessSettings.columnHeader}</th>
                 <th class="px-2 py-2"></th>
               </tr>
             </thead>
             <tbody>
               {#each appointments as appointment (appointment.apartmentId)}
-                <ScheduleAppointmentRow {appointment} {onoverride} {onrevert} />
+                <ScheduleAppointmentRow
+                  {appointment}
+                  accessMethod={accessSelections.get(appointment.apartmentId) ?? 'mainKey'}
+                  accessSettings={accessSettings}
+                  {onoverride}
+                  {onrevert}
+                  {onaccesschange}
+                />
               {/each}
             </tbody>
           </table>

@@ -76,6 +76,11 @@ function makeConfig(overrides: Partial<ScheduleConfig> = {}): ScheduleConfig {
     excludeWeekends: true,
     excludedDates: [],
     maxPerDay: 10,
+    accessSettings: {
+      columnHeader: 'Tilltrade',
+      mainKeyLabel: 'Huvudnyckel OK',
+      tenantOpensLabel: 'Boende oppnar',
+    },
     ...overrides,
   };
 }

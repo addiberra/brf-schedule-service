@@ -1,6 +1,14 @@
 import type { BuildingConfig } from '../models/building.js';
-import type { ScheduleConfig, ManualOverride } from '../models/schedule.js';
+import type {
+  ScheduleConfig,
+  ManualOverride,
+  TenantAccessMethod,
+} from '../models/schedule.js';
 import type { MessageTemplate } from '../models/template.js';
+import {
+  DEFAULT_ACCESS_METHOD,
+  DEFAULT_ACCESS_SETTINGS,
+} from '../models/schedule-model.js';
 
 const STORAGE_KEY = 'brf-schedule:building';
 const SCHEDULE_STORAGE_KEY = 'brf-schedule:schedule';
@@ -63,6 +71,7 @@ export function clearBuilding(): void {
 interface StoredSchedule {
   config: ScheduleConfig;
   overrides: [string, ManualOverride][];
+  accessSelections?: [string, TenantAccessMethod][];
 }
 
 /**
@@ -71,12 +80,14 @@ interface StoredSchedule {
  */
 export function saveSchedule(
   config: ScheduleConfig,
-  overrides: Map<string, ManualOverride>
+  overrides: Map<string, ManualOverride>,
+  accessSelections: Map<string, TenantAccessMethod>
 ): void {
   try {
     const data: StoredSchedule = {
       config,
       overrides: Array.from(overrides.entries()),
+      accessSelections: Array.from(accessSelections.entries()),
     };
     localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(data));
   } catch {
@@ -91,6 +102,7 @@ export function saveSchedule(
 export function loadSchedule(): {
   config: ScheduleConfig;
   overrides: Map<string, ManualOverride>;
+  accessSelections: Map<string, TenantAccessMethod>;
 } | null {
   try {
     const raw = localStorage.getItem(SCHEDULE_STORAGE_KEY);
@@ -102,9 +114,28 @@ export function loadSchedule(): {
     if (data.config.dailyEndTime === undefined) {
       data.config.dailyEndTime = 1080; // 18:00
     }
+    if (data.config.accessSettings === undefined) {
+      data.config.accessSettings = { ...DEFAULT_ACCESS_SETTINGS };
+    } else {
+      data.config.accessSettings = {
+        columnHeader:
+          data.config.accessSettings.columnHeader ?? DEFAULT_ACCESS_SETTINGS.columnHeader,
+        mainKeyLabel:
+          data.config.accessSettings.mainKeyLabel ?? DEFAULT_ACCESS_SETTINGS.mainKeyLabel,
+        tenantOpensLabel:
+          data.config.accessSettings.tenantOpensLabel ??
+          DEFAULT_ACCESS_SETTINGS.tenantOpensLabel,
+      };
+    }
     return {
       config: data.config,
       overrides: new Map(data.overrides),
+      accessSelections: new Map(
+        (data.accessSelections ?? []).map(([apartmentId, method]) => [
+          apartmentId,
+          method ?? DEFAULT_ACCESS_METHOD,
+        ])
+      ),
     };
   } catch {
     return null;

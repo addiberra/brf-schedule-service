@@ -1,5 +1,10 @@
 import type { Apartment } from './building.js';
-import type { ScheduleAppointment, ScheduleResult } from './schedule.js';
+import type {
+  ScheduleAppointment,
+  SchedulePrintAccessSettings,
+  ScheduleResult,
+  TenantAccessMethod,
+} from './schedule.js';
 import type { MessageTemplate } from './template.js';
 import type {
   ApartmentLetterData,
@@ -8,7 +13,11 @@ import type {
   ScheduleOverviewRow,
 } from './print.js';
 import { renderTemplate } from './template-model.js';
-import { formatTime } from './schedule-model.js';
+import {
+  DEFAULT_ACCESS_METHOD,
+  DEFAULT_ACCESS_SETTINGS,
+  formatTime,
+} from './schedule-model.js';
 
 /**
  * Looks up the appointment for a specific apartment from the schedule result.
@@ -57,17 +66,25 @@ export function generateLetterData(
  * sorting each group by start time, and formatting times as HH:MM strings.
  */
 export function generateScheduleOverviewData(
-  scheduleResult: ScheduleResult
+  scheduleResult: ScheduleResult,
+  accessSettings: SchedulePrintAccessSettings = DEFAULT_ACCESS_SETTINGS,
+  accessSelections: Map<string, TenantAccessMethod> = new Map()
 ): ScheduleOverviewData {
   // Build a map of date -> appointments
   const dateMap = new Map<string, ScheduleOverviewRow[]>();
 
   for (const appointment of scheduleResult.appointments) {
     const rows = dateMap.get(appointment.date);
+    const accessMethod =
+      accessSelections.get(appointment.apartmentId) ?? DEFAULT_ACCESS_METHOD;
     const row: ScheduleOverviewRow = {
       apartmentId: appointment.apartmentId,
       floor: appointment.floor,
       time: formatTime(appointment.startTime),
+      accessLabel:
+        accessMethod === 'mainKey'
+          ? accessSettings.mainKeyLabel
+          : accessSettings.tenantOpensLabel,
     };
 
     if (rows) {
@@ -94,5 +111,6 @@ export function generateScheduleOverviewData(
   return {
     dateGroups,
     totalApartments: scheduleResult.appointments.length,
+    accessColumnHeader: accessSettings.columnHeader,
   };
 }

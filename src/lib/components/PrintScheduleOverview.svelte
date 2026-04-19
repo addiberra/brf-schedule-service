@@ -26,6 +26,7 @@
             <th class="border-b-2 border-stone-900 px-3 py-2 text-left">Lägenhet</th>
             <th class="border-b-2 border-stone-900 px-3 py-2 text-left">Våning</th>
             <th class="border-b-2 border-stone-900 px-3 py-2 text-left">Tid</th>
+            <th class="border-b-2 border-stone-900 px-3 py-2 text-left">{data.accessColumnHeader}</th>
           </tr>
         </thead>
         <tbody>
@@ -34,6 +35,7 @@
               <td class="border-b border-stone-300 px-3 py-2">{row.apartmentId}</td>
               <td class="border-b border-stone-300 px-3 py-2">{row.floor}</td>
               <td class="border-b border-stone-300 px-3 py-2">{row.time}</td>
+              <td class="border-b border-stone-300 px-3 py-2">{row.accessLabel}</td>
             </tr>
           {/each}
         </tbody>

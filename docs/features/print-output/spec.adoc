@@ -1,7 +1,7 @@
 = Specification: Print Output
-:version: 1.1.0
-:source-stories-version: 1.2.0
-:last-updated: 2026-03-03
+:version: 1.2.0
+:source-stories-version: 1.3.0
+:last-updated: 2026-04-19
 :feature: print-output
 :prefix: PRNT
 :toc:
@@ -136,6 +136,27 @@ Type:: Event-driven
 Source:: US-006: ISO Date/Time in Printed Schedule, Criterion 3
 Verification:: Configure a template with date/time placeholders and print apartment letters. Confirm the rendered date/time output matches the placeholder field formatting defined in the template.
 
+== PRNT-019
+The system shall add a tenant access column to the printed schedule overview table.
+
+Type:: Ubiquitous
+Source:: US-007: Print Tenant Access Information in Schedule Overview, Criterion 1
+Verification:: Generate a schedule overview. Confirm that each printed overview table contains a tenant access column in addition to the existing apartment, floor, and time columns.
+
+== PRNT-020
+When the system renders the printed schedule overview, the system shall use the configured access column header text.
+
+Type:: Event-driven
+Source:: US-007: Print Tenant Access Information in Schedule Overview, Criterion 2
+Verification:: Configure a custom access column header in the scheduling view. Open the schedule overview print preview. Confirm the overview uses the configured header text.
+
+== PRNT-021
+When the system renders a printed schedule overview row, the system shall display the configured printed access choice label that corresponds to the appointment's selected access method.
+
+Type:: Event-driven
+Source:: US-007: Print Tenant Access Information in Schedule Overview, Criterion 3
+Verification:: Configure custom printed choice labels, assign different access methods to at least two apartments, and open the schedule overview print preview. Confirm each printed row shows the configured label that matches the selected access method.
+
 == Traceability
 
 [cols="1,2,2", options="header"]
@@ -213,4 +234,16 @@ Verification:: Configure a template with date/time placeholders and print apartm
 | PRNT-018
 | Letter rendering follows template date/time field formatting
 | US-006: Criterion 3
+
+| PRNT-019
+| Add tenant access column to printed overview table
+| US-007: Criterion 1
+
+| PRNT-020
+| Use configured access column header text in printed overview
+| US-007: Criterion 2
+
+| PRNT-021
+| Render configured access choice label per appointment row
+| US-007: Criterion 3
 |===

@@ -1,6 +1,6 @@
 = User Stories: Print Output
-:version: 1.2.0
-:last-updated: 2026-03-03
+:version: 1.3.0
+:last-updated: 2026-04-19
 :feature: print-output
 :toc:
 
@@ -72,3 +72,14 @@ Acceptance Criteria:
 * [ ] The system shall display schedule overview date headings in YYYY-MM-DD format.
 * [ ] The system shall display schedule overview times in 24-hour HH:MM format.
 * [ ] The system shall keep apartment letter date/time placeholder output aligned with the template feature's selected field formatting.
+
+== US-007: Print Tenant Access Information in Schedule Overview
+As a BRF administrator,
+I want the printed schedule overview to include a configurable access column,
+so that the inspector can see whether the BRF main key may be used or whether the tenant opens the door.
+
+Acceptance Criteria:
+
+* [ ] The system shall add a tenant access column to the printed schedule overview table.
+* [ ] The system shall use the configured access column header text in the printed schedule overview.
+* [ ] The system shall display the configured printed access choice label that corresponds to each appointment's selected access method.

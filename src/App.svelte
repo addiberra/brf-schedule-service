@@ -1,7 +1,11 @@
 <script lang="ts">
   import { Tabs } from 'bits-ui';
   import type { Apartment } from './lib/models/building.js';
-  import type { ScheduleResult, ManualOverride } from './lib/models/schedule.js';
+  import type {
+    ScheduleResult,
+    ManualOverride,
+    TenantAccessMethod,
+  } from './lib/models/schedule.js';
   import type { MessageTemplate } from './lib/models/template.js';
   import { loadBuilding, loadSchedule, loadTemplates } from './lib/services/storage.js';
   import { generateAllApartments } from './lib/models/building-model.js';
@@ -18,6 +22,7 @@
   const savedSchedule = loadSchedule();
   let scheduleConfig = $state(savedSchedule?.config ?? createDefaultScheduleConfig());
   let scheduleOverrides: Map<string, ManualOverride> = $state(savedSchedule?.overrides ?? new Map());
+  let scheduleAccessSelections: Map<string, TenantAccessMethod> = $state(savedSchedule?.accessSelections ?? new Map());
 
   let scheduleResult: ScheduleResult = $derived.by(() => {
     const errors = validateScheduleConfig(scheduleConfig);
@@ -34,9 +39,14 @@
     apartments = newApartments;
   }
 
-  function handleScheduleChange(config: typeof scheduleConfig, overrides: Map<string, ManualOverride>) {
+  function handleScheduleChange(
+    config: typeof scheduleConfig,
+    overrides: Map<string, ManualOverride>,
+    accessSelections: Map<string, TenantAccessMethod>
+  ) {
     scheduleConfig = config;
     scheduleOverrides = overrides;
+    scheduleAccessSelections = accessSelections;
   }
 
   function handleTemplatesChange(newTemplates: MessageTemplate[]) {
@@ -72,7 +82,13 @@
     </Tabs.Content>
 
     <Tabs.Content value="print">
-      <PrintPanel {apartments} {scheduleResult} {templates} />
+      <PrintPanel
+        {apartments}
+        {scheduleResult}
+        {templates}
+        accessSettings={scheduleConfig.accessSettings}
+        accessSelections={scheduleAccessSelections}
+      />
     </Tabs.Content>
   </Tabs.Root>
 </main>

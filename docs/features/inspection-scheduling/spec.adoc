@@ -1,7 +1,7 @@
 = Specification: Inspection Scheduling
-:version: 1.2.0
-:source-stories-version: 1.3.0
-:last-updated: 2026-03-03
+:version: 1.3.0
+:source-stories-version: 1.4.0
+:last-updated: 2026-04-19
 :feature: inspection-scheduling
 :prefix: SCHED
 :toc:
@@ -337,6 +337,55 @@ Type:: Event-driven
 Source:: US-011: ISO Date and 24-Hour Time Display, Criterion 4
 Verification:: Generate appointments on multiple dates. Confirm each group header is rendered as YYYY-MM-DD.
 
+== SCHED-048
+The system shall provide inputs in the scheduling view for the printed access column header text and for both printed choice labels.
+
+Type:: Ubiquitous
+Source:: US-012: Administer Tenant Access Choice for Summary Print, Criterion 1
+Verification:: Open the scheduling view. Confirm that inputs are available for the access column header text, the main-key choice label, and the tenant-opens choice label.
+
+== SCHED-049
+The system shall provide a per-appointment control in the scheduling view for selecting which access method applies to that apartment.
+
+Type:: Ubiquitous
+Source:: US-012: Administer Tenant Access Choice for Summary Print, Criterion 2
+Verification:: Generate a schedule. Confirm that each appointment row includes a control for selecting the apartment's access method.
+
+== SCHED-050
+When the user changes the printed access labels, the system shall persist the updated labels to browser storage.
+
+Type:: Event-driven
+Source:: US-012: Administer Tenant Access Choice for Summary Print, Criterion 3
+Verification:: Update the access column header text and both choice labels. Reload the application. Confirm the updated labels are restored.
+
+== SCHED-051
+When the user changes an appointment's selected access method, the system shall persist the updated selection to browser storage.
+
+Type:: Event-driven
+Source:: US-012: Administer Tenant Access Choice for Summary Print, Criterion 3
+Verification:: Generate a schedule, change one apartment's access method, and reload the application. Confirm the same apartment still shows the selected access method.
+
+== SCHED-052
+When the application loads, the system shall restore the previously saved access labels and per-appointment access selections.
+
+Type:: Event-driven
+Source:: US-012: Administer Tenant Access Choice for Summary Print, Criterion 4
+Verification:: Save custom access labels and at least one apartment access selection. Reload the application. Confirm the saved labels and selection are restored in the scheduling view.
+
+== SCHED-053
+If previously saved schedule data does not contain access labels, then the system shall default the printed access column header and both printed choice labels to Swedish default values.
+
+Type:: Unwanted behavior
+Source:: US-012: Administer Tenant Access Choice for Summary Print, Criterion 5
+Verification:: Load legacy schedule data that lacks access label fields. Confirm the scheduling view shows the default Swedish column header and both default Swedish choice labels.
+
+== SCHED-054
+If previously saved schedule data does not contain per-appointment access selections, then the system shall default each appointment to the configured main-key access choice.
+
+Type:: Unwanted behavior
+Source:: US-012: Administer Tenant Access Choice for Summary Print, Criterion 5
+Verification:: Load legacy schedule data that lacks per-appointment access selections. Generate a schedule. Confirm each appointment uses the default main-key access choice until changed.
+
 == Traceability
 
 [cols="1,2,2", options="header"]
@@ -530,4 +579,32 @@ Verification:: Generate appointments on multiple dates. Confirm each group heade
 | SCHED-047
 | Group headers in YYYY-MM-DD
 | US-011: Criterion 4
+
+| SCHED-048
+| Inputs for access column header and choice labels
+| US-012: Criterion 1
+
+| SCHED-049
+| Per-appointment access method control
+| US-012: Criterion 2
+
+| SCHED-050
+| Persist updated access labels
+| US-012: Criterion 3
+
+| SCHED-051
+| Persist updated per-appointment access selections
+| US-012: Criterion 3
+
+| SCHED-052
+| Restore saved access labels and selections on load
+| US-012: Criterion 4
+
+| SCHED-053
+| Default Swedish access labels for legacy saved data
+| US-012: Criterion 5
+
+| SCHED-054
+| Default main-key access choice for legacy saved data
+| US-012: Criterion 5
 |===

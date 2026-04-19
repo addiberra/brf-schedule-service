@@ -22,6 +22,8 @@ export interface ScheduleOverviewRow {
   floor: number;
   /** Scheduled time as HH:MM */
   time: string;
+  /** Resolved printed access label */
+  accessLabel: string;
 }
 
 /** A group of appointments for a single date */
@@ -38,6 +40,8 @@ export interface ScheduleOverviewData {
   dateGroups: ScheduleDateGroup[];
   /** Total number of apartments in the schedule */
   totalApartments: number;
+  /** Printed header for the access column */
+  accessColumnHeader: string;
 }
 
 /** Print mode selection */

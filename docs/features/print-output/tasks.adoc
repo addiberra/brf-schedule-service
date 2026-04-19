@@ -1,16 +1,16 @@
 = Implementation Tasks: Print Output
-:version: 2.0.0
+:version: 2.1.0
 :status: Implemented
-:source-design-version: 1.2.0
-:source-stories-version: 1.2.0
-:source-spec-version: 1.1.0
-:last-updated: 2026-03-03
+:source-design-version: 1.3.0
+:source-stories-version: 1.3.0
+:source-spec-version: 1.2.0
+:last-updated: 2026-04-19
 :feature: print-output
 :toc:
 
 == Overview
 
-This feature adds print output capability to the BRF inspection schedule application. It composes data from building configuration, inspection scheduling, and message templates to produce two printable documents: individual apartment letters and a schedule overview. Historical implementation phases are preserved, and this version adds redesign migration tasks aligned to design v1.2.0 (Tailwind v4 + Bits UI + print layout migration). 5 phases, 16 tasks total.
+This feature adds print output capability to the BRF inspection schedule application. It composes data from building configuration, inspection scheduling, and message templates to produce two printable documents: individual apartment letters and a schedule overview. Historical implementation phases are preserved, and this version adds a tenant-access overview column extension after the redesign migration. 6 phases, 19 tasks total.
 
 == Phase 1: Data Model and Business Logic
 
@@ -149,6 +149,31 @@ Stories:: US-001, US-002, US-003, US-005, US-006
 Specs:: PRNT-002, PRNT-008, PRNT-011, PRNT-014, PRNT-016, PRNT-017, PRNT-018
 Description:: Add or update tests that verify Bits-driven mode switching, print trigger readiness, A4 pagination behavior, and preserved ISO/template formatting semantics after migration.
 
+== Phase 6: Tenant Access Column in Schedule Overview
+
+Extend the printed schedule overview so it renders the scheduling feature's configurable access column header and resolved access labels.
+
+* [x] TASK-017: Extend print overview data model with access column fields [parallel]
++
+Components:: src/lib/models/print.ts, src/lib/models/print-model.ts
+Stories:: US-007
+Specs:: PRNT-019, PRNT-020, PRNT-021
+Description:: Extend print overview DTOs and data composition so the overview carries the configured access-column header and each row's resolved printed access label.
+
+* [x] TASK-018: Render the access column in the printed schedule overview [sequential]
++
+Components:: src/lib/components/PrintPanel.svelte, src/lib/components/PrintScheduleOverview.svelte
+Stories:: US-007
+Specs:: PRNT-019, PRNT-020, PRNT-021
+Description:: Pass access settings and access selections into the print overview flow and render the extra access column in the printed date-grouped tables.
+
+* [x] TASK-019: Add regression tests for overview access column rendering [sequential]
++
+Components:: src/__tests__/print-model.test.ts, src/__tests__/print-ui.contract.test.ts
+Stories:: US-007
+Specs:: PRNT-019, PRNT-020, PRNT-021
+Description:: Add tests that verify the printed overview includes the access column, uses the configured column header, and renders the configured choice label that matches each appointment's selected access method.
+
 == Traceability
 
 [cols="1,1,1", options="header"]
@@ -178,4 +203,8 @@ Description:: Add or update tests that verify Bits-driven mode switching, print 
 | US-006: ISO Date/Time in Printed Schedule
 | PRNT-016, PRNT-017, PRNT-018
 | TASK-009, TASK-010, TASK-011, TASK-016
+
+| US-007: Print Tenant Access Information in Schedule Overview
+| PRNT-019, PRNT-020, PRNT-021
+| TASK-017, TASK-018, TASK-019
 |===

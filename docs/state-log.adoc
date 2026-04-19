@@ -1,5 +1,18 @@
 = State Transition Log
-:last-updated: 2026-03-03
+:last-updated: 2026-04-19
+
+== TRANSITION-008
+:date: 2026-04-19
+:intent: Add a configurable tenant access column to the printed schedule overview, with per-appointment choice administered in the scheduling view
+:type: Feature evolution
+:risk: High
+:features: inspection-scheduling (extended), print-output (extended)
+:desired-state: BRF administrators can configure the printed access column header and both printed choice labels in the scheduling feature, set the selected access method per apartment in the scheduling view, and print the selected access text as an extra column in the schedule overview
+:prior-state: Schedule appointments only store date and time overrides, and the printed schedule overview contains only apartment, floor, and time columns.
+:capabilities-invoked: needs-stories, needs-spec, needs-design, needs-tasks, needs-tests, needs-implementation, needs-architecture
+:constraints-checked: Hosting (pass -- static SPA unchanged), Data (pass -- localStorage-only persistence retained), UI (pass -- user-facing text remains Swedish), Print (pass -- browser-native print retained, A4 behavior unchanged), Quality (pass -- 295 tests passing, build clean)
+:result: Achieved
+:artifacts-modified: docs/features/inspection-scheduling/user-stories.adoc (v1.4.0), docs/features/inspection-scheduling/spec.adoc (v1.3.0), docs/features/inspection-scheduling/design.adoc (v2.1.0), docs/features/inspection-scheduling/tasks.adoc (v3.1.0), docs/features/print-output/user-stories.adoc (v1.3.0), docs/features/print-output/spec.adoc (v1.2.0), docs/features/print-output/design.adoc (v1.3.0), docs/features/print-output/tasks.adoc (v2.1.0), docs/architecture.adoc (v1.3.0), src/App.svelte, src/lib/models/schedule.ts, src/lib/models/schedule-model.ts, src/lib/services/storage.ts, src/lib/components/ScheduleConfigPanel.svelte, src/lib/components/ScheduleView.svelte, src/lib/components/ScheduleAppointmentRow.svelte, src/lib/models/print.ts, src/lib/models/print-model.ts, src/lib/components/PrintPanel.svelte, src/lib/components/PrintScheduleOverview.svelte, src/__tests__/schedule-model.test.ts, src/__tests__/schedule-storage.test.ts, src/__tests__/schedule-view.contract.test.ts, src/__tests__/print-model.test.ts, src/__tests__/print-ui.contract.test.ts
 
 == TRANSITION-007
 :date: 2026-03-03

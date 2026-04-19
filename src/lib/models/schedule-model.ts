@@ -4,12 +4,22 @@ import type {
   ScheduleAppointment,
   ManualOverride,
   ScheduleResult,
+  SchedulePrintAccessSettings,
+  TenantAccessMethod,
 } from './schedule.js';
 
 const MIN_DURATION = 5;
 const MAX_DURATION = 120;
 const MIN_MAX_PER_DAY = 1;
 const MAX_MAX_PER_DAY = 100;
+
+export const DEFAULT_ACCESS_METHOD: TenantAccessMethod = 'mainKey';
+
+export const DEFAULT_ACCESS_SETTINGS: SchedulePrintAccessSettings = {
+  columnHeader: 'Tilltrade',
+  mainKeyLabel: 'Huvudnyckel OK',
+  tenantOpensLabel: 'Boende oppnar',
+};
 
 
 
@@ -34,6 +44,7 @@ export function createDefaultScheduleConfig(): ScheduleConfig {
     excludeWeekends: true,
     excludedDates: [],
     maxPerDay: 10,
+    accessSettings: { ...DEFAULT_ACCESS_SETTINGS },
   };
 }
 

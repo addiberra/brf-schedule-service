@@ -1,7 +1,11 @@
 <script lang="ts">
   import { Button, RadioGroup, Select, Label } from 'bits-ui';
   import type { Apartment } from '../models/building.js';
-  import type { ScheduleResult } from '../models/schedule.js';
+  import type {
+    SchedulePrintAccessSettings,
+    ScheduleResult,
+    TenantAccessMethod,
+  } from '../models/schedule.js';
   import type { MessageTemplate } from '../models/template.js';
   import type { PrintMode } from '../models/print.js';
   import { generateLetterData, generateScheduleOverviewData } from '../models/print-model.js';
@@ -12,9 +16,11 @@
     apartments: Apartment[];
     scheduleResult: ScheduleResult;
     templates: MessageTemplate[];
+    accessSettings: SchedulePrintAccessSettings;
+    accessSelections: Map<string, TenantAccessMethod>;
   }
 
-  let { apartments, scheduleResult, templates }: Props = $props();
+  let { apartments, scheduleResult, templates, accessSettings, accessSelections }: Props = $props();
 
   const SHEET_MARGIN_MM = 0;
 
@@ -37,7 +43,9 @@
     if (printMode !== 'letters' || !selectedTemplate) return [];
     return generateLetterData(apartments, scheduleResult, selectedTemplate);
   });
-  let overviewData = $derived(generateScheduleOverviewData(scheduleResult));
+  let overviewData = $derived(
+    generateScheduleOverviewData(scheduleResult, accessSettings, accessSelections)
+  );
   let canPrint = $derived(
     (printMode === 'letters' && letterData.length > 0 && selectedTemplate !== null) ||
       (printMode === 'overview' && overviewData.dateGroups.length > 0)

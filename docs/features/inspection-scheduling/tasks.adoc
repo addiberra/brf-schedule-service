@@ -1,16 +1,16 @@
 = Implementation Tasks: Inspection Scheduling
-:version: 3.0.0
+:version: 3.1.0
 :status: Implemented
-:source-design-version: 2.0.0
-:source-stories-version: 1.3.0
-:source-spec-version: 1.2.0
-:last-updated: 2026-03-03
+:source-design-version: 2.1.0
+:source-stories-version: 1.4.0
+:source-spec-version: 1.3.0
+:last-updated: 2026-04-19
 :feature: inspection-scheduling
 :toc:
 
 == Overview
 
-Implement the inspection scheduling feature with historical implementation phases preserved and a new redesign migration phase aligned to design v2.0.0 (Tailwind v4, Bits UI primitives, tabbed shell integration). Earlier phases cover existing scheduling behavior; the latest phase captures migration work without behavioral changes. 7 phases, 23 tasks total.
+Implement the inspection scheduling feature with historical implementation phases preserved and a new extension phase for tenant access administration in the scheduling view. Earlier phases cover the existing scheduling behavior and redesign migration. 8 phases, 27 tasks total.
 
 == Phase 1: Data Model and Core Logic
 
@@ -206,6 +206,38 @@ Stories:: US-001, US-004, US-006, US-011
 Specs:: SCHED-002, SCHED-018, SCHED-027, SCHED-044, SCHED-046
 Description:: Add tests that verify schedule behavior parity after migration, including tabbed access, exclusion recalculation, override preservation, and ISO date/time rendering.
 
+== Phase 8: Tenant Access Administration for Summary Print
+
+Extend schedule-managed state so the scheduling view administers printed access labels and each apartment's selected access method.
+
+* [x] TASK-024: Extend schedule persistence model for access labels and selections [parallel]
++
+Components:: src/lib/models/schedule.ts, src/lib/models/schedule-model.ts, src/lib/services/storage.ts
+Stories:: US-012
+Specs:: SCHED-050, SCHED-051, SCHED-052, SCHED-053, SCHED-054
+Description:: Add schedule print access settings and per-apartment access selections to the persisted schedule state, including Swedish defaults and legacy-data migration when saved access fields are missing.
+
+* [x] TASK-025: Add scheduling view controls for configurable access labels [parallel]
++
+Components:: src/lib/components/ScheduleConfigPanel.svelte
+Stories:: US-012
+Specs:: SCHED-048, SCHED-050, SCHED-052
+Description:: Add inputs in the scheduling view for the printed access column header plus both printed choice labels, and wire them through the existing autosave flow.
+
+* [x] TASK-026: Add per-appointment access method administration to the schedule table [sequential]
++
+Components:: src/lib/components/ScheduleView.svelte, src/lib/components/ScheduleAppointmentRow.svelte
+Stories:: US-012
+Specs:: SCHED-049, SCHED-051, SCHED-052, SCHED-054
+Description:: Add a configurable access column to the scheduling table and a per-row selector that lets the administrator choose the tenant access method for each scheduled apartment.
+
+* [x] TASK-027: Add regression tests for access label persistence and scheduling view rendering [sequential]
++
+Components:: src/__tests__/schedule-storage.test.ts, src/__tests__/schedule-view.contract.test.ts
+Stories:: US-012
+Specs:: SCHED-048, SCHED-049, SCHED-050, SCHED-051, SCHED-052, SCHED-053, SCHED-054
+Description:: Add tests covering persisted access labels and selections, legacy default migration, and the scheduling view's configurable access column rendering.
+
 == Traceability
 
 [cols="1,1,1", options="header"]
@@ -255,4 +287,8 @@ Description:: Add tests that verify schedule behavior parity after migration, in
 | US-011: ISO Date and 24-Hour Time Display
 | SCHED-044, SCHED-045, SCHED-046, SCHED-047
 | TASK-016, TASK-017, TASK-018, TASK-022, TASK-023
+
+| US-012: Administer Tenant Access Choice for Summary Print
+| SCHED-048, SCHED-049, SCHED-050, SCHED-051, SCHED-052, SCHED-053, SCHED-054
+| TASK-024, TASK-025, TASK-026, TASK-027
 |===

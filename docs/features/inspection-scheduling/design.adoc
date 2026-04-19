@@ -1,9 +1,9 @@
 = Design: Inspection Scheduling
-:version: 2.0.0
+:version: 2.1.0
 :status: Current
-:source-stories-version: 1.3.0
-:source-spec-version: 1.2.0
-:last-updated: 2026-03-03
+:source-stories-version: 1.4.0
+:source-spec-version: 1.3.0
+:last-updated: 2026-04-19
 :feature: inspection-scheduling
 :toc:
 
@@ -14,7 +14,7 @@ This feature is already implemented and remains behaviorally unchanged. This des
 * Tailwind CSS v4 utility styling replaces component-scoped CSS in scheduling views.
 * Bits UI primitives become the interaction baseline for scheduling controls.
 * The feature is hosted inside the new tabbed application shell.
-* Existing scheduling logic, persistence behavior, and spec-visible outputs remain unchanged.
+* Existing scheduling logic remains unchanged, while schedule-managed appointment metadata now also includes configurable print access labels and a per-appointment access choice.
 
 All requirements in `spec.adoc` remain authoritative and are preserved.
 
@@ -40,6 +40,7 @@ No unresolved unknowns remain.
 Resolved points:
 
 * Bits UI primitives (`Checkbox`, `Select`, `Button`, `Dialog`, `Label`) cover all interactive scheduling controls while preserving existing behavior.
+* The new access-method configuration belongs to the scheduling feature because the BRF administrator administers both the printed labels and each apartment's selected access method in the same view that manages appointments.
 * Date and time input behavior remains on native `type="date"` and `type="time"` controls to preserve exact current value semantics (`YYYY-MM-DD`, `HH:MM`) and browser affordances.
 * If a richer calendar/time popover is added later, Bits UI `Popover` + `Calendar` composition is the preferred extension path, but it is not required for current behavior parity.
 
@@ -103,7 +104,7 @@ sequenceDiagram
 
     User->>Tabs: Opens "Schema" tab
     Tabs-->>SCP: Activate scheduling panel
-    User->>SCP: Updates period/time/lunch/exclusions/max
+    User->>SCP: Updates period/time/lunch/exclusions/max/access labels
     SCP->>SM: validateScheduleConfig(config)
     SM-->>SCP: Validation errors (if any)
     alt Valid state
@@ -140,6 +141,26 @@ sequenceDiagram
     SAR->>SV: onrevert(apartmentId)
 ----
 
+=== Access Choice Administration Sequence
+
+[source,mermaid]
+----
+sequenceDiagram
+    actor User
+    participant SCP as ScheduleConfigPanel
+    participant SV as ScheduleView
+    participant SAR as ScheduleAppointmentRow
+    participant ST as storage
+
+    User->>SCP: Edits access column header and choice labels
+    SCP->>ST: saveSchedule(config, overrides)
+    SCP->>SV: Render rows with updated choice labels
+    User->>SAR: Selects apartment access method
+    SAR->>SV: onaccesschange(apartmentId, accessMethod)
+    SV->>SCP: Propagate updated overrides map
+    SCP->>ST: saveSchedule(config, overrides)
+----
+
 === UI Architecture and Primitive Mapping
 
 ==== Tailwind CSS v4 strategy
@@ -169,7 +190,7 @@ No functional domain changes are introduced:
 
 * `schedule-model.ts` remains the source of validation and scheduling rules.
 * `calculateSchedule()` ordering, exclusion handling, lunch handling, daily end time handling, override preservation, and unscheduled warnings remain unchanged.
-* `storage.ts` schedule save/load/clear behavior and key namespace remain unchanged.
+* `storage.ts` schedule save/load/clear behavior and key namespace remain unchanged, but the stored schedule payload now also includes access-label configuration and per-apartment access selections with defaults for legacy saved data.
 
 == Story Resolution
 
@@ -273,3 +294,14 @@ Criteria::
 * Time presentation remains HH:MM in 24-hour format (SCHED-045)
 * Manual override edit values remain ISO date and 24-hour time values (SCHED-046)
 * Group headers remain YYYY-MM-DD keys (SCHED-047)
+
+=== US-012: Administer Tenant Access Choice for Summary Print
+
+Components:: ScheduleConfigPanel, ScheduleView, ScheduleAppointmentRow, storage
+Criteria::
+* Scheduling view exposes configurable access column header and both printed choice labels (SCHED-048)
+* Each appointment row exposes an access-method selector administered alongside other appointment details (SCHED-049)
+* Access-label edits persist through the existing schedule save flow (SCHED-050)
+* Per-appointment access selections persist through the existing schedule save flow (SCHED-051)
+* Saved labels and selections restore when scheduling view is reopened or the app reloads (SCHED-052)
+* Legacy saved schedule data falls back to Swedish defaults for access labels and access selections (SCHED-053, SCHED-054)

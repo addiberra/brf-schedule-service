@@ -1,6 +1,6 @@
 = System Architecture
-:version: 1.2.0
-:last-updated: 2026-03-03
+:version: 1.3.0
+:last-updated: 2026-04-19
 :toc:
 
 == Feature Design Sources
@@ -10,9 +10,9 @@
 | Feature | Design Version
 
 | building-configuration | 2.1.0
-| inspection-scheduling | 1.2.0
+| inspection-scheduling | 2.1.0
 | message-templates | 1.2.0
-| print-output | 1.1.0
+| print-output | 1.3.0
 |===
 
 == Overview
@@ -133,13 +133,13 @@ Pure TypeScript functions with no side effects. Each feature has a type definiti
 | Building configuration types. Validation (floors 1-30, apartments 1-20), configurable apartment numbering start (1000-9999), flexible digit position assignment for floor and apartment numbers within the 4-digit ID, apartment ID generation via digit substitution algorithm, floor adjustment, default config.
 
 | `schedule.ts` / `schedule-model.ts`
-| Schedule types. Date arithmetic, ISO date handling (`YYYY-MM-DD`), 24-hour time formatting (`HH:MM` via minutes since midnight), weekend/exclusion filtering, lunch break handling, scheduling algorithm (sequential floor-by-floor assignment with manual overrides), validation.
+| Schedule types. Date arithmetic, ISO date handling (`YYYY-MM-DD`), 24-hour time formatting (`HH:MM` via minutes since midnight), weekend/exclusion filtering, lunch break handling, scheduling algorithm (sequential floor-by-floor assignment with manual overrides), configurable print access labels, per-apartment access selections, validation.
 
 | `template.ts` / `template-model.ts`
 | Template types. Placeholder parsing (`{...}` tokens), data field resolution (apartment + appointment data), template rendering (string substitution), default placeholder mappings where `{datum}` uses ISO date field while legacy Swedish date mapping remains supported.
 
 | `print.ts` / `print-model.ts`
-| Print data types. Composes data from all three upstream features: generates per-apartment letter data (rendered templates) and schedule overview data (date-grouped appointment tables with ISO date headings and 24-hour times).
+| Print data types. Composes data from all three upstream features: generates per-apartment letter data (rendered templates) and schedule overview data (date-grouped appointment tables with ISO date headings, 24-hour times, and a configurable tenant-access column).
 |===
 
 === Services (Persistence)
@@ -154,7 +154,7 @@ A single module `storage.ts` provides save/load/clear functions for each data do
 | `BuildingConfig` as JSON
 
 | `brf-schedule:schedule`
-| `ScheduleConfig` + `ManualOverride[]` tuples as JSON
+| `ScheduleConfig`, `ManualOverride[]`, and per-apartment access selections as JSON
 
 | `brf-schedule:templates`
 | `MessageTemplate[]` as JSON
@@ -176,7 +176,7 @@ All operations are wrapped in `try/catch` for robustness (private browsing, quot
 
 | Inspection Scheduling
 | `ScheduleConfigPanel`, `ScheduleView`, `ScheduleAppointmentRow`
-| Date/time/exclusion configuration, appointment list, manual overrides
+| Date/time/exclusion configuration, access-label configuration, appointment list, manual overrides, per-appointment access selection
 
 | Message Templates
 | `MessageTemplatePanel`, `TemplateList`, `TemplateEditor`, `TemplatePreview`
@@ -184,7 +184,7 @@ All operations are wrapped in `try/catch` for robustness (private browsing, quot
 
 | Print Output
 | `PrintPanel`, `PrintLetterPage`, `PrintScheduleOverview`
-| Mode selection, A4 letter rendering, schedule table, print trigger
+| Mode selection, A4 letter rendering, schedule table with access column, print trigger
 |===
 
 `App.svelte` is the root component and data flow hub. It loads persisted data on startup, computes shared derived state (apartments, schedule result), and passes data down to feature panels via props and callbacks.

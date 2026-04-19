@@ -8,6 +8,7 @@ const { resolve } = require('path');
 
 const panelPath = resolve(process.cwd(), 'src/lib/components/PrintPanel.svelte');
 const letterPath = resolve(process.cwd(), 'src/lib/components/PrintLetterPage.svelte');
+const overviewPath = resolve(process.cwd(), 'src/lib/components/PrintScheduleOverview.svelte');
 
 describe('Print migration contracts', () => {
   it('uses Bits primitives for mode and template controls', () => {
@@ -40,5 +41,11 @@ describe('Print migration contracts', () => {
     expect(source).toContain('margin: 0;');
     expect(source).toContain('width: auto !important;');
     expect(source).toContain('max-width: none !important;');
+  });
+
+  it('renders the configurable access column in the overview print table', () => {
+    const source = readFileSync(overviewPath, 'utf8');
+    expect(source).toContain('{data.accessColumnHeader}');
+    expect(source).toContain('{row.accessLabel}');
   });
 });

@@ -1,7 +1,11 @@
 <script lang="ts">
   import { Button, Collapsible, Label, Switch, Tooltip } from 'bits-ui';
   import type { Apartment } from '../models/building.js';
-  import type { ScheduleConfig, ManualOverride } from '../models/schedule.js';
+  import type {
+    ScheduleConfig,
+    ManualOverride,
+    TenantAccessMethod,
+  } from '../models/schedule.js';
   import {
     createDefaultScheduleConfig,
     validateScheduleConfig,
@@ -20,7 +24,11 @@ import BitsIsoTimeField from './BitsIsoTimeField.svelte';
   interface Props {
     apartments: Apartment[];
     buildingConfigured: boolean;
-    onschedulechange?: (config: ScheduleConfig, overrides: Map<string, ManualOverride>) => void;
+    onschedulechange?: (
+      config: ScheduleConfig,
+      overrides: Map<string, ManualOverride>,
+      accessSelections: Map<string, TenantAccessMethod>
+    ) => void;
   }
 
   let { apartments, buildingConfigured, onschedulechange }: Props = $props();
@@ -28,6 +36,7 @@ import BitsIsoTimeField from './BitsIsoTimeField.svelte';
   const saved = loadSchedule();
   let scheduleConfig: ScheduleConfig = $state(saved?.config ?? createDefaultScheduleConfig());
   let overrides: Map<string, ManualOverride> = $state(saved?.overrides ?? new Map());
+  let accessSelections: Map<string, TenantAccessMethod> = $state(saved?.accessSelections ?? new Map());
   let validationErrors: Map<string, string> = $state(new Map());
   let newExcludedDate = $state('');
 
@@ -41,8 +50,8 @@ import BitsIsoTimeField from './BitsIsoTimeField.svelte';
 
   $effect(() => {
     const errors = validateScheduleConfig(scheduleConfig);
-    if (errors.size === 0) saveSchedule(scheduleConfig, overrides);
-    onschedulechange?.(scheduleConfig, overrides);
+    if (errors.size === 0) saveSchedule(scheduleConfig, overrides, accessSelections);
+    onschedulechange?.(scheduleConfig, overrides, accessSelections);
   });
 
   function updateValidation() {
@@ -142,6 +151,28 @@ import BitsIsoTimeField from './BitsIsoTimeField.svelte';
     const next = new Map(overrides);
     next.delete(apartmentId);
     overrides = next;
+  }
+
+  function handleAccessSelectionChange(
+    apartmentId: string,
+    accessMethod: TenantAccessMethod
+  ) {
+    const next = new Map(accessSelections);
+    next.set(apartmentId, accessMethod);
+    accessSelections = next;
+  }
+
+  function handleAccessLabelChange(
+    key: 'columnHeader' | 'mainKeyLabel' | 'tenantOpensLabel',
+    value: string
+  ) {
+    scheduleConfig = {
+      ...scheduleConfig,
+      accessSettings: {
+        ...scheduleConfig.accessSettings,
+        [key]: value,
+      },
+    };
   }
 </script>
 
@@ -247,9 +278,56 @@ import BitsIsoTimeField from './BitsIsoTimeField.svelte';
         <input id="max-per-day" class="w-full max-w-52 rounded-md border border-[var(--color-line-soft)] bg-white px-3 py-2 text-sm" type="number" min="1" max="100" value={scheduleConfig.maxPerDay} oninput={handleMaxPerDayChange} aria-invalid={validationErrors.has('maxPerDay')} />
         {#if validationErrors.has('maxPerDay')}<p class="text-sm text-red-700" role="alert">{validationErrors.get('maxPerDay')}</p>{/if}
       </div>
+
+      <div class="space-y-3">
+        <h3 class="text-sm font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">Tilltrade i schemautskrift</h3>
+        <div class="grid gap-3 md:grid-cols-3">
+          <div class="space-y-1">
+            <Label.Root for="access-column-header" class="text-sm font-medium text-stone-800">Kolumnrubrik:</Label.Root>
+            <input
+              id="access-column-header"
+              class="w-full rounded-md border border-[var(--color-line-soft)] bg-white px-3 py-2 text-sm"
+              type="text"
+              value={scheduleConfig.accessSettings.columnHeader}
+              oninput={(event) =>
+                handleAccessLabelChange('columnHeader', (event.target as HTMLInputElement).value)}
+            />
+          </div>
+          <div class="space-y-1">
+            <Label.Root for="access-main-key-label" class="text-sm font-medium text-stone-800">Val 1:</Label.Root>
+            <input
+              id="access-main-key-label"
+              class="w-full rounded-md border border-[var(--color-line-soft)] bg-white px-3 py-2 text-sm"
+              type="text"
+              value={scheduleConfig.accessSettings.mainKeyLabel}
+              oninput={(event) =>
+                handleAccessLabelChange('mainKeyLabel', (event.target as HTMLInputElement).value)}
+            />
+          </div>
+          <div class="space-y-1">
+            <Label.Root for="access-tenant-opens-label" class="text-sm font-medium text-stone-800">Val 2:</Label.Root>
+            <input
+              id="access-tenant-opens-label"
+              class="w-full rounded-md border border-[var(--color-line-soft)] bg-white px-3 py-2 text-sm"
+              type="text"
+              value={scheduleConfig.accessSettings.tenantOpensLabel}
+              oninput={(event) =>
+                handleAccessLabelChange('tenantOpensLabel', (event.target as HTMLInputElement).value)}
+            />
+          </div>
+        </div>
+      </div>
     </div>
 
-    <ScheduleView result={scheduleResult} {overrides} onoverride={handleOverride} onrevert={handleRevert} />
+    <ScheduleView
+      result={scheduleResult}
+      {overrides}
+      {accessSelections}
+      accessSettings={scheduleConfig.accessSettings}
+      onoverride={handleOverride}
+      onrevert={handleRevert}
+      onaccesschange={handleAccessSelectionChange}
+    />
   {/if}
 </section>
 </Tooltip.Provider>
