@@ -50,5 +50,6 @@ describe('Print migration contracts', () => {
     expect(source).toContain('{row.accessLabel}');
     expect(source).toContain('padding-top: ${topMarginMm}mm;');
     expect(source).toContain('break-after-page');
+    expect(source).toContain("bg-stone-50/70");
   });
 });
