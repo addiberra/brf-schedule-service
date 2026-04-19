@@ -42,6 +42,8 @@ describe('Print migration contracts', () => {
     expect(source).toContain('margin: 0;');
     expect(source).toContain('width: auto !important;');
     expect(source).toContain('max-width: none !important;');
+    expect(source).toContain('print-color-adjust: exact;');
+    expect(source).toContain('.print-overview-stripe');
   });
 
   it('renders the configurable access column in the overview print table', () => {
@@ -50,6 +52,7 @@ describe('Print migration contracts', () => {
     expect(source).toContain('{row.accessLabel}');
     expect(source).toContain('padding-top: ${topMarginMm}mm;');
     expect(source).toContain('break-after-page');
-    expect(source).toContain("bg-stone-50/70");
+    expect(source).toContain('print-overview-stripe');
+    expect(source).toContain('bg-stone-200');
   });
 });

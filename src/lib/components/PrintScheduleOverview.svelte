@@ -113,11 +113,11 @@
           </thead>
           <tbody>
             {#each group.appointments as row, rowIndex}
-              <tr class={rowIndex % 2 === 0 ? 'bg-stone-50/70' : 'bg-white'}>
-                <td class="border-b border-stone-300 px-3 py-2">{row.apartmentId}</td>
-                <td class="border-b border-stone-300 px-3 py-2">{row.floor}</td>
-                <td class="border-b border-stone-300 px-3 py-2">{row.time}</td>
-                <td class="border-b border-stone-300 px-3 py-2">{row.accessLabel}</td>
+              <tr>
+                <td class={`border-b border-stone-300 px-3 py-2 ${rowIndex % 2 === 0 ? 'bg-stone-200 print-overview-stripe' : 'bg-white'}`}>{row.apartmentId}</td>
+                <td class={`border-b border-stone-300 px-3 py-2 ${rowIndex % 2 === 0 ? 'bg-stone-200 print-overview-stripe' : 'bg-white'}`}>{row.floor}</td>
+                <td class={`border-b border-stone-300 px-3 py-2 ${rowIndex % 2 === 0 ? 'bg-stone-200 print-overview-stripe' : 'bg-white'}`}>{row.time}</td>
+                <td class={`border-b border-stone-300 px-3 py-2 ${rowIndex % 2 === 0 ? 'bg-stone-200 print-overview-stripe' : 'bg-white'}`}>{row.accessLabel}</td>
               </tr>
             {/each}
           </tbody>

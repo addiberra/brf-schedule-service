@@ -99,6 +99,16 @@ textarea {
     transform: none !important;
   }
 
+  .print-schedule-overview,
+  .print-schedule-overview * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-overview-stripe {
+    background: #d6d3d1 !important;
+  }
+
   .print-letter-page {
     break-inside: avoid-page;
   }
