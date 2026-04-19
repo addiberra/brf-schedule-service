@@ -31,6 +31,18 @@
     let remainingRows = FIRST_PAGE_ROW_BUDGET;
 
     for (const group of data.dateGroups) {
+      const fullGroupCost = DATE_GROUP_HEADER_ROW_COST + group.appointments.length;
+
+      if (
+        currentPage.dateGroups.length > 0 &&
+        fullGroupCost > remainingRows &&
+        fullGroupCost <= FOLLOWING_PAGE_ROW_BUDGET
+      ) {
+        pages.push(currentPage);
+        currentPage = createPage(false);
+        remainingRows = FOLLOWING_PAGE_ROW_BUDGET;
+      }
+
       let appointmentIndex = 0;
 
       while (appointmentIndex < group.appointments.length) {
