@@ -95,13 +95,13 @@
     style={`width: calc(210mm - ${sheetMarginMm * 2}mm); min-height: calc(297mm - ${sheetMarginMm * 2}mm); padding: ${contentMarginMm}mm; padding-top: ${topMarginMm}mm;`}
   >
     {#if page.showSummary}
-      <h2 class="m-0 text-[18pt] font-semibold text-stone-900">Besiktningsschema</h2>
-      <p class="mb-6 mt-2 text-[11pt] text-stone-700">Totalt antal lägenheter: {data.totalApartments}</p>
+      <h2 class="m-0 text-[16pt] font-semibold text-stone-900">Besiktningsschema</h2>
+      <p class="mb-4 mt-1 text-[10pt] text-stone-700">Totalt antal lägenheter: {data.totalApartments}</p>
     {/if}
 
     {#each page.dateGroups as group}
-      <div class="mb-6 break-inside-avoid">
-        <h3 class="mb-2 text-[14pt] font-semibold text-stone-900">{group.date}</h3>
+      <div class="mb-5 break-inside-avoid">
+        <h3 class="mb-1 text-[13pt] font-semibold text-stone-900">{group.date}</h3>
         <table class="w-full border-collapse text-[11pt]">
           <thead>
             <tr>

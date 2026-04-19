@@ -27,7 +27,7 @@
   let printMode = $state<PrintMode>('letters');
   let selectedTemplateId: string | null = $state(null);
   let contentMarginMm = $state(10);
-  let pageTopAdjustmentMm = $state(-4);
+  let pageTopAdjustmentMm = $state(10);
 
   $effect(() => {
     if (selectedTemplateId === null && templates.length > 0) {
