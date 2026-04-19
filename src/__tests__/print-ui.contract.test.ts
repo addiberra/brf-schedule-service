@@ -33,6 +33,7 @@ describe('Print migration contracts', () => {
     expect(source).toContain('id="print-content-margin"');
     expect(source).toContain('id="print-page-top-offset"');
     expect(source).toContain('getLetterTopMarginMm()');
+    expect(source).toContain('topMarginMm={safeContentMarginMm + safePageTopAdjustmentMm}');
   });
 
   it('uses zero page margins for print output', () => {
@@ -47,5 +48,7 @@ describe('Print migration contracts', () => {
     const source = readFileSync(overviewPath, 'utf8');
     expect(source).toContain('{data.accessColumnHeader}');
     expect(source).toContain('{row.accessLabel}');
+    expect(source).toContain('padding-top: ${topMarginMm}mm;');
+    expect(source).toContain('break-after-page');
   });
 });

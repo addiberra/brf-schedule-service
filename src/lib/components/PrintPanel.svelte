@@ -167,6 +167,7 @@
       data={overviewData}
       sheetMarginMm={SHEET_MARGIN_MM}
       contentMarginMm={safeContentMarginMm}
+      topMarginMm={safeContentMarginMm + safePageTopAdjustmentMm}
     />
   {/if}
 </div>
