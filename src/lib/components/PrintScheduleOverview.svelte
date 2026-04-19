@@ -6,9 +6,11 @@
     showSummary: boolean;
   }
 
-  const FIRST_PAGE_ROW_BUDGET = 18;
-  const FOLLOWING_PAGE_ROW_BUDGET = 24;
-  const DATE_GROUP_HEADER_ROW_COST = 3;
+  // Heuristic layout units tuned to the actual printed table density so dates
+  // can share a page when they visibly fit, while still avoiding awkward splits.
+  const FIRST_PAGE_ROW_BUDGET = 26;
+  const FOLLOWING_PAGE_ROW_BUDGET = 28;
+  const DATE_GROUP_HEADER_ROW_COST = 2;
 
   interface Props {
     data: ScheduleOverviewData;
